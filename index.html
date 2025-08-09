@@ -249,17 +249,20 @@
       box-shadow: inset 0 0 0 2px #0b101a, 0 10px 24px rgba(0, 0, 0, .30);
       overflow: hidden;
       contain: layout paint size;
-      height: calc(var(--card-w));
+      min-height: calc(var(--card-w));
+      flex: 1 1 auto;
+      display: block;
     }
 
     /* narrower */
     .zone {
       position: absolute;
-      inset: 6px;
+      left: 6px; right: 6px; top: 6px; bottom: 6px;
       display: flex;
       gap: 10px;
       flex-wrap: nowrap;
-      align-items: flex-start;
+      align-items: center;          /* центрирование по вертикали */
+      justify-content: center;      /* по горизонтали центр по умолчанию */
       overflow-x: auto;
       overflow-y: hidden;
       border-radius: 10px;
@@ -270,7 +273,7 @@
     .card {
       width: var(--card-w);
       height: calc(var(--card-w)*0.72);
-      border-radius: 12px;
+      border-radius: 6px;
       border: 1px solid #2f3850;
       background: linear-gradient(180deg, #1d2536, #141b2a);
       display: flex;
@@ -330,20 +333,24 @@
     /* Forbid FX as card border */
     .forbidFx {
       border-color: var(--forbid) !important;
-      box-shadow: 0 0 0 2px #ffd36b55 inset, 0 0 18px #ffd36b33;
+      /* only inner glow, no outside overflow */
+      box-shadow: 0 0 0 2px #ffd36bbb inset, 0 0 0 3px #ffd36b44 inset;
     }
 
     .badge {
       position: absolute;
-      top: 4px;
-      right: 4px;
+      top: 5px;
+      right: 5px;
       background: #0f1422;
       border: 1px solid #2a3244;
-      color: #1eeb8f;
-      padding: 0 4px;
-      font-size: 10px;
-      border-radius: 9px;
-      z-index: 2;
+      color: #ffd36b;
+      padding: 0 calc(var(--card-w) * 0.06);
+      font-size: calc(var(--card-w) * 0.14);
+      font-weight: 800;
+      border-radius: 10px;
+      z-index: 5;
+      pointer-events: none;
+      line-height: 1.15;
       box-shadow: 0 3px 8px rgba(0, 0, 0, .35)
     }
 
@@ -855,7 +862,7 @@
       }
 
       .L {
-        font-size: clamp(16px, 4.9vw, 26px)
+        font-size: clamp(14px, 4.9vw, 18px)
       }
 
       .boardGrid {
@@ -864,7 +871,7 @@
       }
 
       .boardFlat {
-        height: calc(var(--card-w))
+        min-height: calc(var(--card-w))
       }
 
       /* mobile fit */
@@ -948,12 +955,29 @@
       }
 
       .boardFlat {
-        height: calc(var(--card-w))
+        min-height: calc(var(--card-w))
       }
 
       .zone {
-        inset: 7px
+        left: 6px; right: 6px; top: 6px; bottom: 6px;
+        align-items: center;
+        justify-content: center;
       }
+
+      /* уменьшить толщину обводки карт на маленьких экранах */
+      .card { border-width: 1px; box-shadow: 0 6px 10px rgba(0,0,0,.28), inset 0 0 0 1px #c8d2ee22; }
+      .pile .mini { border-width: 1px; box-shadow: 0 6px 10px rgba(0,0,0,.28); }
+
+      /* уменьшить толщину обводки карт на маленьких экранах */
+      .card { border-width: 1px; box-shadow: 0 6px 10px rgba(0,0,0,.28), inset 0 0 0 1px #c8d2ee22; }
+      .pile .mini { border-width: 1px; box-shadow: 0 6px 10px rgba(0,0,0,.28); }
+
+      /* сделать буквы визуально меньше относительно карты в зоне */
+      /* Уменьшаем букву и добавляем внутренние отступы карты на мобилках, чтобы буква не занимала всю карту */
+      .zone .card { padding: calc(var(--card-w) * 0.08); }
+      .zone .card .L { font-size: calc(var(--card-w) * 0.30); }
+      .zone .card.hand { padding: calc(var(--card-w) * 0.06); }
+      .zone .card.hand .L { font-size: calc(var(--card-w) * 0.26); }
 
       .logPanel {
         height: auto
@@ -1202,7 +1226,13 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
         recoverYou: (c) => `You recovered ${c} to hand.`, recoverAI: "AI recovered a card to hand.",
         stealYou: (c) => `You moved opponent ${c} to DISCARD.`, stealAI: (c) => `AI stole your ${c} to your DISCARD.`,
         tYou: "You set a Trap (T): AI will discard 1 next turn.", tAI: "AI set a Trap (T): you will discard 1 next turn.",
-        winVictory: "Victory!", winDefeat: "Defeat", winDraw: "Draw",
+        winVictory: "🎉 Victory!", winDefeat: "😞 Defeat", winDraw: "Draw",
+        loseByFirst: "Opponent assembled F I R S T.",
+        loseByFive: "Opponent made 5 of a kind.",
+        loseByDeck: "Your deck ran out on a required draw.",
+        winByFirst: "You assembled F I R S T.",
+        winByFive: "You made 5 of a kind.",
+        winByDeck: "AI had no cards to draw.",
         showLog: "Show", hideLog: "Hide"
       },
       ru: {
@@ -1246,7 +1276,13 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
         recoverYou: (c) => `Ты вернул ${c} в руку.`, recoverAI: "ИИ вернул карту в руку.",
         stealYou: (c) => `Ты отправил карту противника ${c} в DISCARD.`, stealAI: (c) => `ИИ отправил твою ${c} в DISCARD.`,
         tYou: "Ты поставил Ловушку (T): ИИ сбросит 1 в следующий ход.", tAI: "ИИ поставил Ловушку (T): ты сбросишь 1 в следующий ход.",
-        winVictory: "Победа!", winDefeat: "Поражение", winDraw: "Ничья",
+        winVictory: "🎉 Победа!", winDefeat: "😞 Поражение", winDraw: "Ничья",
+        loseByFirst: "Противник собрал F I R S T.",
+        loseByFive: "Противник собрал 5 одинаковых карт.",
+        loseByDeck: "В колоде не осталось карт при доборе.",
+        winByFirst: "Ты собрал F I R S T.",
+        winByFive: "Ты собрал 5 одинаковых карт.",
+        winByDeck: "У ИИ закончились карты для добора.",
         showLog: "Показать", hideLog: "Скрыть"
       }
     };
@@ -1353,12 +1389,14 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
         const cnt = groups[l].length; if (cnt === 0) return;
         const stack = document.createElement('div');
         stack.className = 'stack';
-        const maxOverlap = Math.min(3, cnt);
-        for (let i = 0; i < maxOverlap; i++) {
+        const cw = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--card-w')) || 100;
+        const step = Math.max(3, Math.round(cw * 0.05));
+        // Underlayers: 0 for 1 card, 1 for 2 cards, 2 for 3 cards, 0 (flat) for 4+
+        const underLayers = (cnt === 1) ? 0 : (cnt === 2 ? 1 : (cnt === 3 ? 2 : 0));
+        for (let i = 0; i < underLayers; i++) {
           const card = cardEl(l);
           card.classList.add('card-layer');
-          const offset = i * Math.round((parseInt(getComputedStyle(document.documentElement).getPropertyValue('--card-w')) || 100) * 0.06);
-          // use translate to avoid reflow on scale changes
+          const offset = i * step;
           card.style.transform = `translate(${offset}px, ${-offset}px)`;
           card.style.opacity = 0.92 - i * 0.12;
           stack.appendChild(card);
@@ -1366,13 +1404,16 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
         // Top visible card
         const topCard = cardEl(l);
         topCard.classList.add('card-top');
-        const topOffset = maxOverlap * Math.round((parseInt(getComputedStyle(document.documentElement).getPropertyValue('--card-w')) || 100) * 0.06);
+        const topOffset = underLayers * step;
         topCard.style.transform = `translate(${topOffset}px, ${-topOffset}px)`;
         stack.appendChild(topCard);
-        // If more than 3, show count badge and flatten
+        // If more than 3, show count badge and flatten (no underlayers already)
         if (cnt > 3) {
-          const b = document.createElement('div'); b.className = 'countTL'; b.textContent = '×' + cnt;
-          stack.appendChild(b);
+          const existing = stack.querySelector('.countTL');
+          const text = '×' + cnt;
+          if (existing) existing.textContent = text; else {
+            const b = document.createElement('div'); b.className = 'countTL'; b.textContent = text; stack.appendChild(b);
+          }
         }
         container.appendChild(stack);
       });
@@ -1382,17 +1423,37 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
       document.querySelectorAll('.forbidFx').forEach(el => el.classList.remove('forbidFx'));
       document.querySelectorAll('.badge').forEach(el => el.remove());
       if (G.traps.forbidAI) {
-        const idx = lastIndexOf(G.you.space, 'F');
+        // Forbid for AI: highlight player's top F stack top card and show badge letter
         const zone = document.getElementById('youSpace');
-        if (idx >= 0 && zone.children[idx]) {
-          const el = zone.children[idx]; el.classList.add('forbidFx');
-          const b = document.createElement('div'); b.className = 'badge'; b.textContent = G.traps.forbidAI; el.appendChild(b);
+        if (zone) {
+          const stacks = Array.from(zone.querySelectorAll('.stack'));
+          for (let i = stacks.length - 1; i >= 0; i--) {
+            const top = stacks[i].querySelector('.card-top .L');
+            if (top && top.textContent === 'F') {
+              const topCard = stacks[i].querySelector('.card-top');
+              if (topCard) {
+                topCard.classList.add('forbidFx');
+                const b = document.createElement('div'); b.className = 'badge'; b.textContent = G.traps.forbidAI; topCard.appendChild(b);
+              }
+              break;
+            }
+          }
         }
       }
       if (G.traps.forbidYou) {
-        const idx = lastIndexOf(G.ai.space, 'F');
+        // Forbid for player: highlight AI's top F stack (no badge text shown to AI)
         const zone = document.getElementById('aiSpace');
-        if (idx >= 0 && zone.children[idx]) zone.children[idx].classList.add('forbidFx');
+        if (zone) {
+          const stacks = Array.from(zone.querySelectorAll('.stack'));
+          for (let i = stacks.length - 1; i >= 0; i--) {
+            const top = stacks[i].querySelector('.card-top .L');
+            if (top && top.textContent === 'F') {
+              const topCard = stacks[i].querySelector('.card-top');
+              if (topCard) topCard.classList.add('forbidFx');
+              break;
+            }
+          }
+        }
       }
     }
     function lastIndexOf(arr, val) { for (let i = arr.length - 1; i >= 0; i--) { if (arr[i] === val) return i; } return -1; }
@@ -1421,7 +1482,7 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
     function draw(side, n) {
       const S = (side === 'you') ? G.you : G.ai;
       for (let i = 0; i < n; i++) {
-        if (S.deck.length === 0) { defeat(side); return; }
+        if (S.deck.length === 0) { defeat(side, 'deck'); return; }
         const c = S.deck.pop(); S.hand.push(c);
         logAdd(side === 'you' ? tt('drewYou') : tt('drewAI'));
         enforceHandLimit(side); if (G.over) return;
@@ -1479,19 +1540,30 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
 
     function endTurn() { if (G.over) return; G.turn = (G.turn === 'you') ? 'ai' : 'you'; render(); setTimeout(startTurn, 380); }
 
-    function defeat(side) {
+    function defeat(side, reason) {
       if (G.over) return; G.over = true;
-      document.getElementById('winTitle').textContent = side === 'you' ? "😞 Defeat" : "🎉 Victory!";
-      document.getElementById('winMsg').textContent = side === 'you' ? 'Your deck was empty on a required draw.' : 'AI had no cards to draw.';
+      const isYouLose = (side === 'you');
+      document.getElementById('winTitle').textContent = isYouLose ? tt('winDefeat') : tt('winVictory');
+      let msg = '';
+      if (reason === 'first') msg = isYouLose ? tt('loseByFirst') : tt('winByFirst');
+      else if (reason === 'five') msg = isYouLose ? tt('loseByFive') : tt('winByFive');
+      else if (reason === 'deck') msg = isYouLose ? tt('loseByDeck') : tt('winByDeck');
+      else msg = isYouLose ? tt('winDefeat') : tt('winVictory');
+      document.getElementById('winMsg').textContent = msg;
       document.getElementById('winModal').style.display = 'flex';
     }
 
     function checkWin() {
-      // Check win conditions for both sides
-      const hasAll = (arr) => TYPES.every(t => arr.includes(t));
-      const fiveOfOne = (arr) => TYPES.some(t => arr.filter(x => x === t).length >= 5);
-      if (hasAll(G.you.space) || fiveOfOne(G.you.space)) { defeat('ai'); return true; }
-      if (hasAll(G.ai.space) || fiveOfOne(G.ai.space)) { defeat('you'); return true; }
+      // Count helper ensures robust checks even with UI stacking
+      const buildCounts = (arr) => arr.reduce((m, x) => { m[x] = (m[x] || 0) + 1; return m; }, { F:0,I:0,R:0,S:0,T:0 });
+      const youC = buildCounts(G.you.space);
+      const aiC = buildCounts(G.ai.space);
+      const hasAllCounts = (c) => TYPES.every(t => (c[t] || 0) >= 1);
+      const fiveOfAny = (c) => TYPES.some(t => (c[t] || 0) >= 5);
+      if (hasAllCounts(youC)) { defeat('ai', 'first'); return true; }
+      if (fiveOfAny(youC)) { defeat('ai', 'five'); return true; }
+      if (hasAllCounts(aiC)) { defeat('you', 'first'); return true; }
+      if (fiveOfAny(aiC)) { defeat('you', 'five'); return true; }
       return false;
     }
 
