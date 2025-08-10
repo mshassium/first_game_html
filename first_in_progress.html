@@ -1102,6 +1102,30 @@
       }
     }
 
+    @media (orientation: portrait) {
+      .pile .count{
+        display: none;
+      }
+      .boardGrid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+      .rightCol {
+        grid-row: 1;
+        grid-column: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--gap);
+      }
+      .rightCol .logPanel {
+        display: none;
+      }
+      .leftCol {
+        grid-row: 2;
+        width: 100%;
+      }
+    }
+
     .mini-card-btn:hover .card,
     .mini-card-btn:focus .card {
       transform: scale(1.12);
