@@ -17,7 +17,7 @@
       --muted: #aab3c2;
       --accent: #8fb1ff;
       --outline: #4a5a84;
-      --ring: #3aa1ff80;
+      --ring: #3affce80;
       --forbid: #ffd36b;
       --card-w: clamp(84px, 11vw, 112px);
       --card-w-hand: var(--card-w);
@@ -281,7 +281,7 @@
       justify-content: center;
       position: relative;
       box-shadow: 0 8px 14px rgba(0, 0, 0, .35), inset 0 0 0 2px #c8d2ee22;
-      transition: transform .12s ease-out, box-shadow .12s ease-out
+      transition: transform .3s ease-out, box-shadow .3s ease-out
     }
 
     /* Neon per-letter fills (match main menu chips) */
@@ -311,6 +311,8 @@
       box-shadow: 0 10px 16px rgba(0, 0, 0, .4), 0 0 0 2px var(--outline) inset;
       transform: translateY(-2px)
     }
+
+    /* (removed special F ability animations) */
 
     .L {
       font-size: clamp(32px, 5.8vw, 52px);
@@ -371,7 +373,7 @@
     /* Turn highlight */
     .activeTurn {
       outline: 2px solid var(--ring);
-      box-shadow: 0 0 0 6px #3aa1ff14 inset, 0 0 0 2px var(--ring) inset
+      box-shadow: 0 0 0 6px #3affc414 inset, 0 0 0 2px var(--ring) inset
     }
 
     /* Discard piles */
@@ -546,10 +548,14 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)) 16px;
-      background: radial-gradient(1200px 600px at 50% 10%, #1a2440cc, transparent), linear-gradient(180deg, #0e1422f2, #0a0f18f2);
-      min-height: 100dvh;
-      box-sizing: border-box;
+      background: #0c1014;
+    }
+
+    .main-menu {
+      background: #10182a;
+      border-radius: 24px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.5);
+      padding: 40px 32px 32px 32px;
     }
 
     .menu .cardmenu {
@@ -623,13 +629,14 @@
       gap: clamp(10px, 2vh, 16px);
       justify-content: center;
       align-items: center;
-      margin-top: clamp(10px, 2vh, 16px)
+      margin-top: clamp(10px, 2vh, 16px);
+      padding-bottom: clamp(10px, 2vh, 16px);
     }
 
     .menu-card {
       width: clamp(40px, 9vh, 64px);
       height: clamp(40px, 9vh, 64px);
-      border-radius: 50%;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -773,21 +780,47 @@
 
     .choices {
       display: flex;
-      gap: 8px;
-      flex-wrap: wrap
+      gap: 18px;
+      justify-content: flex-start;
+      margin-top: 18px;
     }
 
-    .choice {
-      padding: 8px 12px;
-      border: 1px solid #2a3142;
+    .mini-card-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      outline: none;
+      box-shadow: none;
       border-radius: 10px;
-      background: #161b28;
-      color: #dbe5ff;
-      cursor: pointer
+      transition: transform 0.12s;
     }
 
-    .choice:hover {
-      outline: 2px solid var(--outline)
+    .mini-card-btn:active {
+      transform: scale(0.96);
+    }
+
+    .mini-card-btn .card {
+      width: 44px;
+      height: 32px;
+      min-width: 44px;
+      min-height: 32px;
+      font-size: 18px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px #0004;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .mini-card-btn .L {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      line-height: 1;
+      color: var(--text);
     }
 
     .diceOverlay {
@@ -1068,6 +1101,18 @@
         gap: 10px;
       }
     }
+
+    .mini-card-btn:hover .card,
+    .mini-card-btn:focus .card {
+      transform: scale(1.12);
+      box-shadow: 0 0 0 4px var(--ring), 0 2px 8px #0006;
+      z-index: 2;
+    }
+    .mini-card-btn:active .card {
+      transform: scale(1.09);
+      box-shadow: 0 0 0 4px var(--ring), 0 2px 8px #0006;
+      z-index: 2;
+    }
   </style>
 </head>
 
@@ -1076,7 +1121,6 @@
     <header>
       <div class="center">
         <div class="titlebar">
-          <h1 id="titleTxt">F!RST</h1>
           <span class="pill"><span id="turnKey">Turn</span>: <b id="turnLbl">—</b></span>
           <span class="pill"><span id="yourHandKey">Your hand</span>: <b id="youHandCount">0</b>/7</span>
           <span class="pill"><span id="aiHandKey">AI hand</span>: <b id="aiHandCount">0</b></span>
@@ -1124,6 +1168,7 @@
             <div class="panel" id="panelAiDiscard">
               <div class="title" id="aiDiscardTitle">DISCARD — AI</div>
               <div id="aiDiscard" class="stackPiles" style="flex:1 1 auto"></div>
+              <div id="aiHandHidden" style="display:none"></div>
             </div>
             <div class="panel" id="panelYouDiscard">
               <div class="title" id="youDiscardTitle">DISCARD — You</div>
@@ -1145,17 +1190,17 @@
   <!-- Menus and modals -->
   <div id="menu" class="menu" style="display:flex">
     <div class="cardmenu main-menu">
-      <div class="main-title">F!RST</div>
-      <div class="items">
-        <button class="btn big modern" id="menuNewGame">New Game</button>
-        <button class="btn big modern" id="menuRules">Rules</button>
-      </div>
       <div class="menu-cards">
         <div class="menu-card card-f">F</div>
         <div class="menu-card card-i">I</div>
         <div class="menu-card card-r">R</div>
         <div class="menu-card card-s">S</div>
         <div class="menu-card card-t">T</div>
+      </div>
+      <div class="items">
+        <button class="btn big modern" id="menuNewGame">New Game</button>
+        <button class="btn big modern" id="menuRules">Rules</button>
+        <button class="btn big modern" id="menuLangBtn">🇬🇧 EN</button>
       </div>
     </div>
   </div>
@@ -1351,7 +1396,6 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
     let LANG = 'en';
     function tt(key, ...args) { const v = I18N[LANG][key]; return (typeof v === 'function') ? v(...args) : v; }
     function applyTexts() {
-      document.getElementById('titleTxt').textContent = tt('title');
       document.getElementById('turnKey').textContent = tt('turnKey');
       document.getElementById('yourHandKey').textContent = tt('yourHandKey');
       document.getElementById('aiHandKey').textContent = tt('aiHandKey');
@@ -1643,16 +1687,21 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
       if (G.traps.forbidYou === letter) {
         G.traps.forbidYou = null;
         const handEl = pickHandCardEl(index);
-        G.you.hand.splice(index, 1);
-        animateForbidden(handEl, document.getElementById('youSpace'), document.getElementById('youDiscard'), letter);
-        logAdd(`Forbid triggered: your ${letter} went to DISCARD.`);
-        render(); if (!checkWin()) setTimeout(endTurn, 650); return;
+        animateFly(handEl, document.getElementById('youDiscard'), () => {
+          G.you.hand.splice(index, 1);
+          G.you.discard.push(letter);
+          logAdd(`Forbid triggered: your ${letter} went to DISCARD.`);
+          render(); if (!checkWin()) setTimeout(endTurn, 650);
+        }, 500);
+        return;
       }
       const src = pickHandCardEl(index);
-      G.you.hand.splice(index, 1); G.you.space.push(letter);
-      animateFly(src, document.getElementById('youSpace'));
-      logAdd(`You played ${letter}.`); render();
-      resolveEffect('you', letter, () => { if (!checkWin()) endTurn(); });
+      G.you.hand.splice(index, 1);
+      animateFly(src, document.getElementById('youSpace'), () => {
+        G.you.space.push(letter);
+        logAdd(`You played ${letter}.`); render();
+        resolveEffect('you', letter, () => { if (!checkWin()) endTurn(); });
+      });
     }
 
     function resolveEffect(side, letter, done) {
@@ -1735,43 +1784,52 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
       const letter = hand[idx];
       if (G.traps.forbidAI === letter) {
         G.traps.forbidAI = null;
+        const handEl = null; // AI hand не отображается, но для анимации создаём карту
         const fake = document.createElement('div'); fake.className = 'card'; fake.appendChild(Object.assign(document.createElement('div'), { className: 'L ' + letter, textContent: letter }));
-        document.getElementById('aiSpace').appendChild(fake);
-        setTimeout(() => {
-          animateFly(fake, document.getElementById('aiDiscard'));
+        const aiHand = document.getElementById('aiHandHidden') || document.body;
+        const discard = document.getElementById('aiDiscard');
+        // Позиционируем карту примерно из центра руки AI
+        const rectFrom = aiHand.getBoundingClientRect ? aiHand.getBoundingClientRect() : {left:window.innerWidth/2,top:window.innerHeight/2,width:40,height:40};
+        fake.style.position = 'fixed'; fake.style.left = (rectFrom.left + rectFrom.width/2 - 20) + 'px'; fake.style.top = (rectFrom.top + rectFrom.height/2 - 30) + 'px'; fake.style.margin = '0'; fake.style.zIndex = '250'; fake.style.pointerEvents = 'none';
+        document.body.appendChild(fake);
+        animateFly(fake, discard, () => {
           if (fake.parentNode) fake.parentNode.removeChild(fake);
-        }, 50);
-        G.ai.hand.splice(idx, 1); G.ai.discard.push(letter);
-        logAdd(`Forbid: AI's ${letter} went to DISCARD.`);
-        render(); if (!checkWin()) setTimeout(endTurn, 650); return;
+          G.ai.hand.splice(idx, 1);
+          G.ai.discard.push(letter);
+          logAdd(`Forbid: AI's ${letter} went to DISCARD.`);
+          render(); if (!checkWin()) setTimeout(endTurn, 650);
+        }, 500);
+        return;
       }
-      G.ai.hand.splice(idx, 1); G.ai.space.push(letter);
-      animateFly(null, document.getElementById('aiSpace'));
-      logAdd(`AI played ${letter}.`); render();
-      if (letter === 'F') {
-        const tChosen = pickMostType(G.you.space) || TYPES[Math.floor(Math.random() * 5)];
-        G.traps.forbidYou = tChosen; logAdd("AI forbade a letter for you."); render(); finalize(); return;
-      }
-      if (letter === 'I') { draw('ai', 1); finalize(); return; }
-      if (letter === 'R') {
-        if (G.ai.discard.length > 0) {
-          const c = G.ai.discard.pop(); G.ai.hand.push(c);
-          animateFromDiscardTo('ai', 'hand', c);
-          logAdd(tt('recoverAI')); enforceHandLimit('ai');
+      G.ai.hand.splice(idx, 1);
+      animateFly(null, document.getElementById('aiSpace'), () => {
+        G.ai.space.push(letter);
+        logAdd(`AI played ${letter}.`); render();
+        if (letter === 'F') {
+          const tChosen = pickMostType(G.you.space) || TYPES[Math.floor(Math.random() * 5)];
+          G.traps.forbidYou = tChosen; logAdd("AI forbade a letter for you."); render(); finalize(); return;
         }
-        finalize(); return;
-      }
-      if (letter === 'S') {
-        if (G.you.space.length > 0) {
-          const i = G.you.space.length - 1;
-          animateFromSpaceOrHand('you', 'space', i, document.getElementById('youDiscard'));
-          const removed = G.you.space.pop(); G.you.discard.push(removed);
-          logAdd(`AI stole your ${removed} to your DISCARD.`); render();
+        if (letter === 'I') { draw('ai', 1); finalize(); return; }
+        if (letter === 'R') {
+          if (G.ai.discard.length > 0) {
+            const c = G.ai.discard.pop(); G.ai.hand.push(c);
+            animateFromDiscardTo('ai', 'hand', c);
+            logAdd(tt('recoverAI')); enforceHandLimit('ai');
+          }
+          finalize(); return;
         }
-        finalize(); return;
-      }
-      if (letter === 'T') { G.traps.tNextYou++; logAdd(tt('tAI')); finalize(); return; }
-      finalize();
+        if (letter === 'S') {
+          if (G.you.space.length > 0) {
+            const i = G.you.space.length - 1;
+            animateFromSpaceOrHand('you', 'space', i, document.getElementById('youDiscard'));
+            const removed = G.you.space.pop(); G.you.discard.push(removed);
+            logAdd(`AI stole your ${removed} to your DISCARD.`); render();
+          }
+          finalize(); return;
+        }
+        if (letter === 'T') { G.traps.tNextYou++; logAdd(tt('tAI')); finalize(); return; }
+        finalize();
+      });
       function finalize() { if (!checkWin()) endTurn(); }
     }
 
@@ -1797,7 +1855,7 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
 
     /* ===== Anim & helpers ===== */
     function pickHandCardEl(index) { const hand = document.getElementById('youHand'); return hand.children[index]; }
-    function animateFly(fromEl, toContainer) {
+    function animateFly(fromEl, toContainer, cb, duration) {
       const rectTo = toContainer.getBoundingClientRect();
       let rectFrom;
       let ghost;
@@ -1812,7 +1870,7 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
       const targetY = rectTo.top + rectTo.height / 2 - (rectFrom.top + rectFrom.height / 2);
       ghost.style.position = 'fixed'; ghost.style.left = (rectFrom.left) + 'px'; ghost.style.top = (rectFrom.top) + 'px'; ghost.style.margin = '0'; ghost.style.zIndex = '250'; ghost.style.pointerEvents = 'none';
       document.body.appendChild(ghost);
-      const t0 = performance.now(), dur = 500; function step(now) { const p = Math.min(1, (now - t0) / dur); const x = targetX * p, y = targetY * p, s = 1 - 0.12 * p; ghost.style.transform = `translate(${x}px, ${y}px) scale(${s})`; if (p < 1) requestAnimationFrame(step); else document.body.removeChild(ghost); } requestAnimationFrame(step);
+      const t0 = performance.now(), dur = duration || 300; function step(now) { const p = Math.min(1, (now - t0) / dur); const x = targetX * p, y = targetY * p, s = 1 - 0.12 * p; ghost.style.transform = `translate(${x}px, ${y}px) scale(${s})`; if (p < 1) requestAnimationFrame(step); else { document.body.removeChild(ghost); if (cb) cb(); } } requestAnimationFrame(step);
     }
     function animateForbidden(fromEl, spaceContainer, discardContainer, letter) {
       animateFly(fromEl, spaceContainer);
@@ -1821,10 +1879,11 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
         const rectSpace = spaceContainer.getBoundingClientRect();
         fake.style.position = 'fixed'; fake.style.left = (rectSpace.left + 24) + 'px'; fake.style.top = (rectSpace.top + 24) + 'px'; fake.style.margin = '0'; fake.style.zIndex = '250'; fake.style.pointerEvents = 'none';
         document.body.appendChild(fake);
-        animateFly(fake, discardContainer);
+        animateFly(fake, discardContainer, undefined, 700);
         setTimeout(() => { if (fake.parentNode) fake.parentNode.removeChild(fake); }, 520);
       }, 250);
     }
+    // (removed runForbidSequence animations)
     function animateFromSpaceOrHand(side, area, index, targetContainer) {
       const zoneId = side === 'you' ? (area === 'space' ? 'youSpace' : 'youHand') : (area === 'space' ? 'aiSpace' : 'aiHandHidden');
       const zone = document.getElementById(zoneId);
@@ -1938,8 +1997,8 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
       area.innerHTML = '';
       options.forEach(o => {
         const b = document.createElement('button');
-        b.className = 'btn';
-        b.textContent = o;
+        b.className = 'mini-card-btn';
+        b.innerHTML = `<div class="card card-${o}"><div class="L">${o}</div></div>`;
         b.addEventListener('click', () => { modal.style.display = 'none'; cb(o); });
         area.appendChild(b);
       });
@@ -1954,8 +2013,8 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
       area.innerHTML = '';
       list.forEach((letter, idx) => {
         const b = document.createElement('button');
-        b.className = 'btn';
-        b.textContent = letter;
+        b.className = 'mini-card-btn';
+        b.innerHTML = `<div class="card card-${letter}"><div class="L">${letter}</div></div>`;
         b.addEventListener('click', () => { modal.style.display = 'none'; cb(idx); });
         area.appendChild(b);
       });
@@ -2029,6 +2088,17 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
       else boot();
     })();
+
+    const menuLangBtn = document.getElementById('menuLangBtn');
+    function updateMenuLangBtn() {
+      menuLangBtn.textContent = (LANG === 'ru' ? '🇷🇺 Русский' : '🇬🇧 English');
+    }
+    menuLangBtn.addEventListener('click', () => {
+      LANG = (LANG === 'ru' ? 'en' : 'ru');
+      applyTexts();
+      updateMenuLangBtn();
+    });
+    updateMenuLangBtn();
 
   </script>
 </body>
