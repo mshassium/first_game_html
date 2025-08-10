@@ -629,7 +629,8 @@
       gap: clamp(10px, 2vh, 16px);
       justify-content: center;
       align-items: center;
-      margin-top: clamp(10px, 2vh, 16px)
+      margin-top: clamp(10px, 2vh, 16px);
+      padding-bottom: clamp(10px, 2vh, 16px);
     }
 
     .menu-card {
@@ -1120,7 +1121,6 @@
     <header>
       <div class="center">
         <div class="titlebar">
-          <h1 id="titleTxt">F!RST</h1>
           <span class="pill"><span id="turnKey">Turn</span>: <b id="turnLbl">—</b></span>
           <span class="pill"><span id="yourHandKey">Your hand</span>: <b id="youHandCount">0</b>/7</span>
           <span class="pill"><span id="aiHandKey">AI hand</span>: <b id="aiHandCount">0</b></span>
@@ -1190,18 +1190,17 @@
   <!-- Menus and modals -->
   <div id="menu" class="menu" style="display:flex">
     <div class="cardmenu main-menu">
-      <div class="main-title">F!RST</div>
-      <div class="items">
-        <button class="btn big modern" id="menuNewGame">New Game</button>
-        <button class="btn big modern" id="menuRules">Rules</button>
-        <button class="btn big modern" id="menuLangBtn">🇬🇧 EN</button>
-      </div>
       <div class="menu-cards">
         <div class="menu-card card-f">F</div>
         <div class="menu-card card-i">I</div>
         <div class="menu-card card-r">R</div>
         <div class="menu-card card-s">S</div>
         <div class="menu-card card-t">T</div>
+      </div>
+      <div class="items">
+        <button class="btn big modern" id="menuNewGame">New Game</button>
+        <button class="btn big modern" id="menuRules">Rules</button>
+        <button class="btn big modern" id="menuLangBtn">🇬🇧 EN</button>
       </div>
     </div>
   </div>
@@ -1397,7 +1396,6 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
     let LANG = 'en';
     function tt(key, ...args) { const v = I18N[LANG][key]; return (typeof v === 'function') ? v(...args) : v; }
     function applyTexts() {
-      document.getElementById('titleTxt').textContent = tt('title');
       document.getElementById('turnKey').textContent = tt('turnKey');
       document.getElementById('yourHandKey').textContent = tt('yourHandKey');
       document.getElementById('aiHandKey').textContent = tt('aiHandKey');
