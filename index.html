@@ -2,1292 +2,1322 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <title>F!RST — v18</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <style>
-    :root {
-      --zone-k: 0.78;
-      --zone-c: 20px;
-      --page-max: 1280px;
-      --bg: #0c1014;
-      --panel-b: #232b39;
-      --text: #f2f5fb;
-      --muted: #aab3c2;
-      --accent: #8fb1ff;
-      --outline: #4a5a84;
-      --ring: #3affce80;
-      --forbid: #ffd36b;
-      --card-w: clamp(84px, 11vw, 112px);
-      --card-w-hand: var(--card-w);
-      --gap: 12px;
-    }
-
-    * {
-      box-sizing: border-box
-    }
-
-    html,
-    body {
-      height: 100svh;
-      height: 100dvh;
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
-      overflow: hidden;
-      overscroll-behavior: none
-    }
-
-    .wrap {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden
-    }
-
-    .center {
-      max-width: var(--page-max);
-      margin: 0 auto;
-      position: relative
-    }
-
-    /* ===== Header ===== */
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 120;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 8px 14px;
-      background: linear-gradient(180deg, #0c1014, #0c1014cc 80%, transparent);
-      backdrop-filter: saturate(110%) blur(4px)
-    }
-
-    header .center {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      width: 100%
-    }
-
-    .titlebar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-      white-space: nowrap;
-      overflow-x: auto;
-      scrollbar-width: none
-    }
-
-    .titlebar::-webkit-scrollbar {
-      display: none
-    }
-
-    h1 {
-      font-size: 18px;
-      margin: 0;
-      color: var(--accent);
-      white-space: nowrap
-    }
-
-    .pill {
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--panel-b);
-      background: #0f1422b3;
-      color: #dae6ff;
-      font-size: 12px;
-      backdrop-filter: blur(4px);
-      white-space: nowrap
-    }
-
-    .btn {
-      background: #1a2233;
-      color: var(--text);
-      border: 1px solid var(--panel-b);
-      border-radius: 10px;
-      padding: 8px 12px;
-      cursor: pointer
-    }
-
-    .btn:hover {
-      background: #1f2a40
-    }
-
-    .icon-btn {
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900
-    }
-
-    .controls {
-      display: flex;
-      gap: 8px;
-      align-items: center
-    }
-
-    #hamburger {
-      display: none;
-      width: 40px;
-      height: 36px;
-      border-radius: 10px;
-      font-weight: 900
-    }
-
-    .quickMenu {
-      position: fixed;
-      right: 10px;
-      top: 54px;
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-      background: #0f1728;
-      border: 1px solid #2d3754;
-      border-radius: 12px;
-      padding: 10px;
-      box-shadow: 0 16px 36px rgba(0, 0, 0, .55);
-      z-index: 300
-    }
-
-    .quickMenu .btn {
-      width: 200px;
-      text-align: left
-    }
-
-    /* ===== Layout ===== */
-    .boardShell {
-      position: relative;
-      flex: 1;
-      overflow: hidden
-    }
-
-    .boardGrid {
-      position: absolute;
-      inset: 48px 0 0 0;
-      display: grid;
-      grid-template-columns: 1fr minmax(260px, 320px);
-      gap: var(--gap);
-      overflow: hidden;
-      padding: 0 var(--gap) var(--gap) var(--gap);
-      transform-origin: top left
-    }
-
-    .leftCol {
-      display: grid;
-      grid-template-rows: auto auto auto;
-      gap: var(--gap);
-      min-width: 0;
-      min-height: 0
-    }
-
-    .rightCol {
-      display: grid;
-      grid-template-rows: auto auto 1fr;
-      gap: var(--gap);
-      min-width: 0;
-      min-height: 0
-    }
-
-    .panel {
-      background: radial-gradient(500px 280px at 50% -10%, #16213a, #0e1420 70%);
-      border: 1px solid #2a3550;
-      border-radius: 14px;
-      padding: 10px;
-      box-shadow: 0 10px 20px rgba(0, 0, 0, .30), 0 0 0 1px #0b1220 inset, 0 0 24px #1a2b5533 inset;
-      overflow: hidden;
-      min-height: 0;
-      display: flex;
-      flex-direction: column
-    }
-
-    .title {
-      font-weight: 800;
-      margin-bottom: 6px;
-      font-size: 13px;
-      color: #dbe5ff;
-      letter-spacing: .3px;
-      text-shadow: 0 1px 0 #000;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      white-space: nowrap
-    }
-
-    .chip {
-      font-size: 11px;
-      padding: 2px 6px;
-      border: 1px solid #2f3a56;
-      border-radius: 999px;
-      background: #101828;
-      color: #dbe5ff
-    }
-
-    .note {
-      font-size: 12px;
-      color: var(--muted)
-    }
-
-    /* Space panels */
-    .boardFlat {
-      position: relative;
-      width: 100%;
-      border-radius: 14px;
-      background: linear-gradient(180deg, #172134, #0c1424);
-      border: 1px solid #2c3958;
-      box-shadow: inset 0 0 0 2px #0b101a, inset 0 0 28px #0e1a33aa, 0 10px 24px rgba(0, 0, 0, .30);
-      overflow: hidden;
-      contain: layout paint size;
-      min-height: calc(var(--card-w));
-      flex: 1 1 auto;
-      display: block;
-    }
-
-    /* narrower */
-    .zone {
-      position: absolute;
-      left: 6px; right: 6px; top: 6px; bottom: 6px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: nowrap;
-      align-items: center;          /* центрирование по вертикали */
-      justify-content: center;      /* по горизонтали центр по умолчанию */
-      overflow-x: auto;
-      overflow-y: hidden;
-      border-radius: 10px;
-      clip-path: inset(0 round 10px)
-    }
-
-    /* Cards */
-    .card {
-      width: var(--card-w);
-      height: calc(var(--card-w)*0.72);
-      border-radius: 10px;
-      border: 1px solid #2f3850;
-      background: linear-gradient(180deg, #1d2536, #141b2a);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      box-shadow: 0 8px 14px rgba(0, 0, 0, .35), inset 0 0 0 2px #c8d2ee22;
-      transition: transform .3s ease-out, box-shadow .3s ease-out
-    }
-
-    /* Neon per-letter fills (match main menu chips) */
-    .card-F { background: linear-gradient(135deg, #2d5a87, #1a2f49); border-color: #3a5e86; box-shadow: 0 8px 14px rgba(0,0,0,.35), 0 0 0 2px #9cc8ff33 inset, inset 0 0 0 2px #c8d2ee22; }
-    .card-I { background: linear-gradient(135deg, #2d7a54, #163d2c); border-color: #2f7d57; box-shadow: 0 8px 14px rgba(0,0,0,.35), 0 0 0 2px #a9ffcf33 inset, inset 0 0 0 2px #c8d2ee22; }
-    .card-R { background: linear-gradient(135deg, #9a7542, #3c2a18); border-color: #8c6a3f; box-shadow: 0 8px 14px rgba(0,0,0,.35), 0 0 0 2px #ffd19533 inset, inset 0 0 0 2px #c8d2ee22; }
-    .card-S { background: linear-gradient(135deg, #9a4262, #361a28); border-color: #8b3b58; box-shadow: 0 8px 14px rgba(0,0,0,.35), 0 0 0 2px #ff9aa433 inset, inset 0 0 0 2px #c8d2ee22; }
-    .card-T { background: linear-gradient(135deg, #6e4d9a, #2a2140); border-color: #65458f; box-shadow: 0 8px 14px rgba(0,0,0,.35), 0 0 0 2px #c6b3ff33 inset, inset 0 0 0 2px #c8d2ee22; }
-
-    /* Forbid badge on F: high contrast (amber) and compact */
-    .card-F .badge {
-      background: rgba(255, 211, 107, 0.16);
-      border-color: rgba(255, 211, 107, 0.55);
-      color: #ffd36b;
-    }
-
-    .card.hand {
-      width: var(--card-w-hand);
-      height: var(--card-w-hand)
-    }
-
-    .card.clickable {
-      cursor: pointer
-    }
-
-    .card.clickable:hover {
-      box-shadow: 0 10px 16px rgba(0, 0, 0, .4), 0 0 0 2px var(--outline) inset;
-      transform: translateY(-2px)
-    }
-
-    /* (removed special F ability animations) */
-
-    .L {
-      font-size: clamp(32px, 5.8vw, 52px);
-      font-weight: 1000;
-      letter-spacing: 2px;
-      line-height: 1;
-      text-shadow: 0 1px 0 #000
-    }
-
-    .card.hand .L {
-      font-size: calc(0.576 * (clamp(32px, 5.8vw, 52px)));
-    }
-
-    .L.F {
-      color: #9cc8ff
-    }
-
-    .L.I {
-      color: #a9ffcf
-    }
-
-    .L.R {
-      color: #ffd195
-    }
-
-    .L.S {
-      color: #ff9aa4
-    }
-
-    .L.T {
-      color: #c6b3ff
-    }
-
-    /* Forbid FX as card border */
-    .forbidFx {
-      border-color: var(--forbid) !important;
-      /* only inner glow, no outside overflow */
-      box-shadow: 0 0 0 2px #ffd36bbb inset, 0 0 0 3px #ffd36b44 inset;
-    }
-
-    .badge {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      background: #0f1422;
-      border: 1px solid #2a3244;
-      color: #ffd36b;
-      padding: 0 calc(var(--card-w) * 0.06);
-      font-size: calc(var(--card-w) * 0.14);
-      font-weight: 800;
-      border-radius: 10px;
-      z-index: 5;
-      pointer-events: none;
-      line-height: 1.15;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, .35)
-    }
-
-    /* Turn highlight */
-    .activeTurn {
-      outline: 2px solid var(--ring);
-      box-shadow: 0 0 0 6px #3affc414 inset, 0 0 0 2px var(--ring) inset
-    }
-
-    /* Discard piles */
-    .stackPiles {
-      display: grid;
-      gap: 10px;
-      overflow: hidden
-    }
-
-    .pile {
-      position: relative;
-      display: inline-flex;
-      align-items: flex-end;
-      gap: 10px;
-      flex-wrap: nowrap;
-      padding-left: 24px;
-      max-width: 100%
-    }
-
-    .pile .mini {
-      width: 30px;
-      height: 42px;
-      border-radius: 8px;
-      border: 1px solid #2f3850;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      box-shadow: 0 6px 10px rgba(0, 0, 0, .28), inset 0 0 0 2px #c8d2ee22;
-      flex: 0 0 auto
-    }
-
-    .pile .mini b {
-      font-size: 18px;
-      line-height: 1;
-      text-shadow: 0 1px 0 #000
-    }
-
-    /* Discard mini cards per-letter fill to match main cards */
-    .mini-F { background: linear-gradient(135deg, #2d5a87, #1a2f49); border-color: #3a5e86; }
-    .mini-I { background: linear-gradient(135deg, #2d7a54, #163d2c); border-color: #2f7d57; }
-    .mini-R { background: linear-gradient(135deg, #9a7542, #3c2a18); border-color: #8c6a3f; }
-    .mini-S { background: linear-gradient(135deg, #9a4262, #361a28); border-color: #8b3b58; }
-    .mini-T { background: linear-gradient(135deg, #6e4d9a, #2a2140); border-color: #65458f; }
-    .pile .mini b.F { color: #9cc8ff; }
-    .pile .mini b.I { color: #a9ffcf; }
-    .pile .mini b.R { color: #ffd195; }
-    .pile .mini b.S { color: #ff9aa4; }
-    .pile .mini b.T { color: #c6b3ff; }
-
-    /* per-letter count badge on mini card */
-    .miniCount {
-      position: absolute;
-      top: 2px;
-      right: 2px;
-      background: rgba(10,14,24,.9);
-      border: 1px solid #2a3244;
-      color: #e6eeff;
-      font-size: 10px;
-      padding: 0 4px;
-      border-radius: 999px;
-      line-height: 1.1;
-      pointer-events: none;
-    }
-
-    .pile .mini+.mini {
-      margin-left: -14px
-    }
-
-    .pile .count {
-      position: absolute;
-      top: 2px;
-      right: 2px;
-      background: #0f1422;
-      border: 1px solid #2a3244;
-      color: #dbe5ff;
-      padding: 2px 6px;
-      font-size: 12px;
-      border-radius: 999px;
-      z-index: 3
-    }
-
-    /* Space stacks */
-    .stack {
-      position: relative;
-      width: var(--card-w);
-      height: calc(var(--card-w) * 0.72);
-      flex: 0 0 auto;
-      overflow: hidden;
-    }
-    .stack .card {
-      position: absolute;
-      left: 0;
-      top: 0;
-    }
-    .stack .card-layer:nth-child(1) { z-index: 1; }
-    .stack .card-layer:nth-child(2) { z-index: 2; }
-    .stack .card-layer:nth-child(3) { z-index: 3; }
-    .stack .card-top { z-index: 4; }
-    .stack .countTL {
-      position: absolute;
-      top: 3px;
-      left: 3px;
-      background: rgba(15, 20, 34, 0.9);
-      border: 1px solid #2a3244;
-      color: #e6eeff;
-      padding: 0 4px;
-      font-size: clamp(9px, calc(var(--card-w) * 0.18), 13px);
-      border-radius: 999px;
-      z-index: 5;
-      pointer-events: none;
-      line-height: 1.2;
-    }
-
-    /* Hand */
-    .handPanel {
-      padding: 10px
-    }
-
-    .handRow {
-      display: flex;
-      gap: 8px;
-      flex-wrap: nowrap;
-      align-items: center;
-      justify-content: center; /* center the whole hand */
-      padding: 4px;
-      overflow: hidden;
-      scrollbar-width: none
-    }
-
-    /* Log */
-    .logPanel {
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      height: auto
-    }
-
-    .logHeader {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 6px
-    }
-
-    .log {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow: auto;
-      background: #0e1524;
-      border: 1px solid #25314a;
-      border-radius: 10px;
-      padding: 10px;
-      color: #c6d0ec;
-      font-size: 13px;
-      line-height: 1.35
-    }
-
-    .logPanel.collapsed {
-      height: 42px
-    }
-
-    .logPanel.collapsed .log {
-      display: none
-    }
-
-    /* Menu, modals, dice */
-    .menu {
-      position: fixed;
-      inset: 0;
-      z-index: 280;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #0c1014;
-    }
-
-    .main-menu {
-      background: #10182a;
-      border-radius: 24px;
-      box-shadow: 0 10px 24px rgba(0,0,0,.5);
-      padding: 40px 32px 32px 32px;
-    }
-
-    .menu .cardmenu {
-      background: linear-gradient(180deg, #0f1728, #0b1220);
-      border: 1px solid #2d3754;
-      border-radius: 20px;
-      padding: 22px;
-      width: min(520px, 92vw);
-      box-shadow: 0 28px 56px rgba(0, 0, 0, .55);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      overflow: hidden;
-    }
-
-    .main-menu {
-      padding: clamp(20px, 5vh, 40px) clamp(16px, 4vw, 32px);
-      gap: clamp(16px, 3vh, 32px)
-    }
-
-    .main-title {
-      font-size: clamp(36px, 8vh, 72px);
-      font-weight: 900;
-      color: #9cc8ff;
-      text-shadow: 0 0 30px #9cc8ff66, 0 2px 4px rgba(0,0,0,0.8);
-      margin-bottom: clamp(8px, 2vh, 24px);
-      letter-spacing: clamp(1px, 0.6vw, 4px)
-    }
-
-    .menu .muted {
-      color: #acb6cf;
-      font-size: 13px;
-      margin-bottom: 12px
-    }
-
-    .menu .items {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: clamp(12px, 2.5vh, 16px);
-      width: 100%;
-      margin-bottom: clamp(16px, 3vh, 32px)
-    }
-
-    .menu .btn.big {
-      font-size: clamp(14px, 2.4vh, 18px);
-      font-weight: 700;
-      padding: clamp(10px, 2.6vh, 18px) clamp(16px, 4.2vh, 32px);
-      width: 100%;
-      max-width: 320px;
-      border-radius: 16px
-    }
-
-    .menu .btn.big.modern {
-      background: linear-gradient(135deg, #1a2738, #0e1625);
-      border: 1.5px solid #3a4a6a;
-      color: #e8f0ff;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3)
-    }
-
-    .menu .btn.big.modern:hover {
-      background: linear-gradient(135deg, #1f2d42, #12192a);
-      border-color: #4a5a84;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.4)
-    }
-
-    .menu-cards {
-      display: flex;
-      gap: clamp(10px, 2vh, 16px);
-      justify-content: center;
-      align-items: center;
-      margin-top: clamp(10px, 2vh, 16px);
-      padding-bottom: clamp(10px, 2vh, 16px);
-    }
-
-    .menu-card {
-      width: clamp(40px, 9vh, 64px);
-      height: clamp(40px, 9vh, 64px);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: clamp(20px, 4vh, 32px);
-      font-weight: 900;
-      position: relative;
-      box-shadow: 0 0 0 3px transparent, 0 4px 12px rgba(0,0,0,0.4);
-      transition: all 0.3s ease;
-      cursor: pointer;
-    }
-
-    .card-f {
-      background: linear-gradient(135deg, #4a7ba7, #2d5a87);
-      color: #9cc8ff;
-      box-shadow: 0 0 0 3px #9cc8ff44, 0 4px 12px rgba(0,0,0,0.4)
-    }
-
-    .card-i {
-      background: linear-gradient(135deg, #4a9a6e, #2d7a54);
-      color: #a9ffcf;
-      box-shadow: 0 0 0 3px #a9ffcf44, 0 4px 12px rgba(0,0,0,0.4)
-    }
-
-    .card-r {
-      background: linear-gradient(135deg, #b8935a, #9a7542);
-      color: #ffd195;
-      box-shadow: 0 0 0 3px #ffd19544, 0 4px 12px rgba(0,0,0,0.4)
-    }
-
-    .card-s {
-      background: linear-gradient(135deg, #b85a75, #9a4262);
-      color: #ff9aa4;
-      box-shadow: 0 0 0 3px #ff9aa444, 0 4px 12px rgba(0,0,0,0.4)
-    }
-
-    .card-t {
-      background: linear-gradient(135deg, #8a6bb8, #6e4d9a);
-      color: #c6b3ff;
-      box-shadow: 0 0 0 3px #c6b3ff44, 0 4px 12px rgba(0,0,0,0.4)
-    }
-
-    @media (hover: hover) {
-      .menu-card:hover {
-        transform: translateY(-4px) scale(1.05);
-        box-shadow: 0 0 0 3px currentColor, 0 8px 24px rgba(0,0,0,0.5);
-      }
-    }
-
-    /* Активное состояние по тапу (мобайлы) */
-    .menu-card.menu-card-active {
-      transform: translateY(-4px) scale(1.05);
-      box-shadow: 0 0 0 3px currentColor, 0 8px 24px rgba(0,0,0,0.5);
-    }
-
-    .rules-container {
-      width: min(800px, 95vw);
-      max-height: 90vh;
-      display: flex;
-      flex-direction: column
-    }
-
-    .rules-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid #2d3754
-    }
-
-    .rules-header h2 {
-      margin: 0;
-      color: #dbe5ff;
-      font-size: 20px;
-      font-weight: 800;
-      flex: 1;
-      text-align: center
-    }
-
-    .rules-lang-btn {
-      font-size: 12px;
-      padding: 6px 10px;
-      min-width: 70px;
-      border-radius: 8px;
-      margin-left: 16px
-    }
-
-    .rules-content {
-      flex: 1;
-      overflow-y: auto;
-      max-height: 60vh;
-      padding-right: 8px;
-      margin-bottom: 20px
-    }
-
-    .rules-text {
-      font-size: 14px;
-      color: #dfe7ff;
-      line-height: 1.6;
-      text-align: left
-    }
-
-    .rules-footer {
-      text-align: center;
-      padding-top: 16px;
-      border-top: 1px solid #2d3754
-    }
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      z-index: 260;
-      backdrop-filter: blur(2px)
-    }
-
-    .modal .box {
-      background: #10182a;
-      border: 1px solid #2a3450;
-      border-radius: 14px;
-      max-width: 720px;
-      width: 100%;
-      box-shadow: 0 10px 24px rgba(0, 0, 0, .5)
-    }
-
-    .modal .head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 12px;
-      border-bottom: 1px solid #253254
-    }
-
-    .modal .body {
-      padding: 12px;
-      /* text-align: center */
-    }
-
-    .choices {
-      display: flex;
-      gap: 18px;
-      justify-content: flex-start;
-      margin-top: 18px;
-    }
-
-    .mini-card-btn {
-      background: none;
-      border: none;
-      padding: 0;
-      margin: 0;
-      cursor: pointer;
-      outline: none;
-      box-shadow: none;
-      border-radius: 10px;
-      transition: transform 0.12s;
-    }
-
-    .mini-card-btn:active {
-      transform: scale(0.96);
-    }
-
-    .mini-card-btn .card {
-      width: 44px;
-      height: 32px;
-      min-width: 44px;
-      min-height: 32px;
-      font-size: 18px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px #0004;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-    }
-
-    .mini-card-btn .L {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      line-height: 1;
-      color: var(--text);
-    }
-
-    .diceOverlay {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 240;
-      background: rgba(5, 8, 12, .6)
-    }
-
-    .diceArea {
-      display: flex;
-      gap: 40px;
-      align-items: center
-    }
-
-    .die {
-      width: 72px;
-      height: 72px;
-      position: relative;
-      transform-style: preserve-3d;
-      transform: rotateX(0) rotateY(0)
-    }
-
-    .face {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background: #e8eefc;
-      border-radius: 10px;
-      box-shadow: inset 0 0 0 2px #b5c3ea;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      color: #1b2b5a;
-      font-size: 28px
-    }
-
-    .face:nth-child(1) {
-      transform: translateZ(36px)
-    }
-
-    .face:nth-child(2) {
-      transform: rotateY(90deg) translateZ(36px)
-    }
-
-    .face:nth-child(3) {
-      transform: rotateY(180deg) translateZ(36px)
-    }
-
-    .face:nth-child(4) {
-      transform: rotateY(-90deg) translateZ(36px)
-    }
-
-    .face:nth-child(5) {
-      transform: rotateX(90deg) translateZ(36px)
-    }
-
-    .face:nth-child(6) {
-      transform: rotateX(-90deg) translateZ(36px)
-    }
-
-    .diceTxt {
-      color: #dbe5ff;
-      font-weight: 800;
-      text-shadow: 0 1px 0 #000
-    }
-
-    .handRow::-webkit-scrollbar {
-      display: none
-    }
-
-    ::-webkit-scrollbar {
-      height: 8px;
-      width: 8px
-    }
-
-    ::-webkit-scrollbar-track {
-      background: #0b1019
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: #22334a;
-      border-radius: 8px
-    }
-
-    /* ===== Mobile-first ===== */
-    @media (max-width: 900px) {
-      :root {
-        --zone-k: 1.00;
-        --zone-c: 14px;
-      }
-
-      :root {
-        --zone-k: 0.78;
-        --zone-c: 20px;
-        --card-w: clamp(34px, 8.8vw, 62px);
-        --gap: 8px;
-        --page-max: 980px;
-      }
-
-      h1 {
-        font-size: 15px
-      }
-
-      .pill {
-        padding: 4px 6px;
-        font-size: 11px
-      }
-
-      .title {
-        font-size: 12px
-      }
-
-      .L {
-        font-size: clamp(14px, 4.9vw, 18px)
-      }
-
-      .boardGrid {
-        inset: 10px 0 0 0;
-        gap: 8px;
-      }
-
-      .boardFlat {
-        min-height: calc(var(--card-w))
-      }
-
-      /* mobile fit */
-      .zone {
-        inset: 8px
-      }
-
-      .logPanel {
-        height: auto
-      }
-
-      .controls .btn {
-        display: none
-      }
-
-      #hamburger {
-        display: block
-      }
-
-      /* Main menu mobile adaptations */
-      .main-title {
-        font-size: 48px;
-        margin-bottom: 16px;
-        letter-spacing: 2px
-      }
-
-      .main-menu {
-        padding: 24px 20px
-      }
-
-      .menu-cards {
-        gap: 12px;
-        margin-top: 12px
-      }
-
-      .menu-card {
-        width: 48px;
-        height: 48px;
-        font-size: 24px
-      }
-
-      .menu .btn.big {
-        font-size: 16px;
-        padding: 14px 24px
-      }
-    }
-
-    @media (max-width: 600px) {
-      :root {
-        --zone-k: 1.04;
-        --zone-c: 12px;
-      }
-
-      :root {
-        --zone-k: 0.78;
-        --zone-c: 18px;
-        --card-w: clamp(28px, 7.6vw, 52px);
-        --gap: 6px;
-      }
-
-      h1 {
-        font-size: 13px
-      }
-
-      .pill {
-        padding: 3px 5px;
-        font-size: 10px
-      }
-
-      .title {
-        font-size: 12px
-      }
-
-      .L {
-        font-size: clamp(15px, 4.4vw, 22px)
-      }
-
-      .boardGrid {
-        inset: 6px 0 0 0;
-        gap: 6px;
-      }
-
-      .boardFlat {
-        min-height: calc(var(--card-w) * 0.92)
-      }
-
-      .zone {
-        left: 6px; right: 6px; top: 6px; bottom: 6px;
-        align-items: center;
-        justify-content: center;
-      }
-
-      /* уменьшить толщину обводки карт на маленьких экранах */
-      .card { border-width: 1px; box-shadow: 0 6px 10px rgba(0,0,0,.28), inset 0 0 0 1px #c8d2ee22; }
-      .pile .mini { border-width: 1px; box-shadow: 0 6px 10px rgba(0,0,0,.28); }
-
-      /* уменьшить толщину обводки карт на маленьких экранах */
-      .card { border-width: 1px; box-shadow: 0 6px 10px rgba(0,0,0,.28), inset 0 0 0 1px #c8d2ee22; }
-      .pile .mini { border-width: 1px; box-shadow: 0 6px 10px rgba(0,0,0,.28); }
-
-      /* сделать буквы визуально меньше относительно карты в зоне */
-      /* Уменьшаем букву и добавляем внутренние отступы карты на мобилках, чтобы буква не занимала всю карту */
-      .zone .card { padding: calc(var(--card-w) * 0.06); }
-      .zone .card .L { font-size: calc(var(--card-w) * 0.26); }
-      .zone .card.hand { padding: calc(var(--card-w) * 0.05); }
-      .zone .card.hand .L { font-size: calc(var(--card-w) * 0.22); }
-
-      .logPanel {
-        height: auto
-      }
-
-      /* smaller discard badges on very small screens */
-      .pile .mini .miniCount {
-        font-size: 8px;
-        padding: 0 3px;
-        top: 1px;
-        right: 1px;
-      }
-
-      /* smaller forbid badge on F on small screens */
-      .card .badge {
-        font-size: 10px;
-        padding: 0 4px;
-        top: 3px;
-        right: 3px;
-      }
-    }
-
-    @media (min-width: 700px) and (max-width: 1180px) {
-      :root {
-        --zone-k: 0.86;
-        --zone-c: 18px;
-      }
-
-      :root {
-        --zone-k: 0.78;
-        --zone-c: 20px;
-        --card-w: clamp(88px, 8.6vw, 140px);
-      }
-
-      .L {
-        font-size: clamp(30px, 5.4vw, 58px);
-      }
-
-      .boardFlat {
-        height: calc(var(--card-w));
-      }
-
-      .handRow {
-        gap: 10px;
-      }
-    }
-
-    .mini-card-btn:hover .card,
-    .mini-card-btn:focus .card {
-      transform: scale(1.12);
-      box-shadow: 0 0 0 4px var(--ring), 0 2px 8px #0006;
-      z-index: 2;
-    }
-    .mini-card-btn:active .card {
-      transform: scale(1.09);
-      box-shadow: 0 0 0 4px var(--ring), 0 2px 8px #0006;
-      z-index: 2;
-    }
-  </style>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"/>
+    <title>F!RST — v18</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <style>
+        :root {
+          --zone-k: 0.78;
+          --zone-c: 20px;
+          --page-max: 1280px;
+          --bg: #0c1014;
+          --panel-b: #232b39;
+          --text: #f2f5fb;
+          --muted: #aab3c2;
+          --accent: #8fb1ff;
+          --outline: #4a5a84;
+          --ring: #3affce80;
+          --forbid: #ffd36b;
+          --card-w: clamp(84px, 11vw, 112px);
+          --card-w-hand: var(--card-w);
+          --gap: 12px;
+        }
+
+        * {
+          box-sizing: border-box
+        }
+
+        html,
+        body {
+          height: 100svh;
+          height: 100dvh;
+          margin: 0;
+          background: var(--bg);
+          color: var(--text);
+          font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+          overflow: hidden;
+          overscroll-behavior: none
+        }
+
+        .wrap {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden
+        }
+
+        .center {
+          max-width: var(--page-max);
+          margin: 0 auto;
+          position: relative
+        }
+
+        /* ===== Header ===== */
+        header {
+          position: sticky;
+          top: 0;
+          z-index: 120;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          padding: 8px 14px;
+          background: linear-gradient(180deg, #0c1014, #0c1014cc 80%, transparent);
+          backdrop-filter: saturate(110%) blur(4px)
+        }
+
+        header .center {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          width: 100%
+        }
+
+        .titlebar {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+          white-space: nowrap;
+          overflow-x: auto;
+          scrollbar-width: none
+        }
+
+        .titlebar::-webkit-scrollbar {
+          display: none
+        }
+
+        h1 {
+          font-size: 18px;
+          margin: 0;
+          color: var(--accent);
+          white-space: nowrap
+        }
+
+        .pill {
+          padding: 6px 10px;
+          border-radius: 999px;
+          border: 1px solid var(--panel-b);
+          background: #0f1422b3;
+          color: #dae6ff;
+          font-size: 12px;
+          backdrop-filter: blur(4px);
+          white-space: nowrap
+        }
+
+        .btn {
+          background: #1a2233;
+          color: var(--text);
+          border: 1px solid var(--panel-b);
+          border-radius: 10px;
+          padding: 8px 12px;
+          cursor: pointer
+        }
+
+        .btn:hover {
+          background: #1f2a40
+        }
+
+        .icon-btn {
+          width: 34px;
+          height: 34px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 900
+        }
+
+        .controls {
+          display: flex;
+          gap: 8px;
+          align-items: center
+        }
+
+        #hamburger {
+          display: none;
+          width: 40px;
+          height: 36px;
+          border-radius: 10px;
+          font-weight: 900
+        }
+
+        .quickMenu {
+          position: fixed;
+          right: 10px;
+          top: 54px;
+          display: none;
+          flex-direction: column;
+          gap: 8px;
+          background: #0f1728;
+          border: 1px solid #2d3754;
+          border-radius: 12px;
+          padding: 10px;
+          box-shadow: 0 16px 36px rgba(0, 0, 0, .55);
+          z-index: 300
+        }
+
+        .quickMenu .btn {
+          width: 200px;
+          text-align: left
+        }
+
+        /* ===== Layout ===== */
+        .boardShell {
+          position: relative;
+          flex: 1;
+          overflow: hidden
+        }
+
+        .boardGrid {
+          position: absolute;
+          inset: 48px 0 0 0;
+          display: grid;
+          grid-template-columns: 1fr minmax(260px, 320px);
+          gap: var(--gap);
+          overflow: hidden;
+          padding: 0 var(--gap) var(--gap) var(--gap);
+          transform-origin: top left
+        }
+
+        .leftCol {
+          display: grid;
+          grid-template-rows: auto auto auto;
+          gap: var(--gap);
+          min-width: 0;
+          min-height: 0
+        }
+
+        .rightCol {
+          display: grid;
+          grid-template-rows: auto auto 1fr;
+          gap: var(--gap);
+          min-width: 0;
+          min-height: 0
+        }
+
+        .panel {
+          background: radial-gradient(500px 280px at 50% -10%, #16213a, #0e1420 70%);
+          border: 1px solid #2a3550;
+          border-radius: 14px;
+          padding: 10px;
+          box-shadow: 0 10px 20px rgba(0, 0, 0, .30), 0 0 0 1px #0b1220 inset, 0 0 24px #1a2b5533 inset;
+          overflow: hidden;
+          min-height: 0;
+          display: flex;
+          flex-direction: column
+        }
+
+        .title {
+          font-weight: 800;
+          margin-bottom: 6px;
+          font-size: 13px;
+          color: #dbe5ff;
+          letter-spacing: .3px;
+          text-shadow: 0 1px 0 #000;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          white-space: nowrap
+        }
+
+        .chip {
+          font-size: 11px;
+          padding: 2px 6px;
+          border: 1px solid #2f3a56;
+          border-radius: 999px;
+          background: #101828;
+          color: #dbe5ff
+        }
+
+        .note {
+          font-size: 12px;
+          color: var(--muted)
+        }
+
+        /* Space panels */
+        .boardFlat {
+          position: relative;
+          width: 100%;
+          border-radius: 14px;
+          background: linear-gradient(180deg, #172134, #0c1424);
+          border: 1px solid #2c3958;
+          box-shadow: inset 0 0 0 2px #0b101a, inset 0 0 28px #0e1a33aa, 0 10px 24px rgba(0, 0, 0, .30);
+          overflow: hidden;
+          contain: layout paint size;
+          min-height: calc(var(--card-w));
+          flex: 1 1 auto;
+          display: block;
+        }
+
+        /* narrower */
+        .zone {
+          position: absolute;
+          left: 6px; right: 6px; top: 6px; bottom: 6px;
+          display: flex;
+          gap: 10px;
+          flex-wrap: nowrap;
+          align-items: center;          /* центрирование по вертикали */
+          justify-content: center;      /* по горизонтали центр по умолчанию */
+          overflow-x: auto;
+          overflow-y: hidden;
+          border-radius: 10px;
+          clip-path: inset(0 round 10px)
+        }
+
+        /* Cards */
+        .card {
+          width: var(--card-w);
+          height: calc(var(--card-w)*0.72);
+          border-radius: 10px;
+          border: 1px solid #2f3850;
+          background: linear-gradient(180deg, #1d2536, #141b2a);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          box-shadow: 0 8px 14px rgba(0, 0, 0, .35), inset 0 0 0 2px #c8d2ee22;
+          transition: transform .3s ease-out, box-shadow .3s ease-out
+        }
+
+        /* Neon per-letter fills (match main menu chips) */
+        .card-F { background: linear-gradient(135deg, #2d5a87, #1a2f49); border-color: #3a5e86; box-shadow: 0 8px 14px rgba(0,0,0,.35), 0 0 0 2px #9cc8ff33 inset, inset 0 0 0 2px #c8d2ee22; }
+        .card-I { background: linear-gradient(135deg, #2d7a54, #163d2c); border-color: #2f7d57; box-shadow: 0 8px 14px rgba(0,0,0,.35), 0 0 0 2px #a9ffcf33 inset, inset 0 0 0 2px #c8d2ee22; }
+        .card-R { background: linear-gradient(135deg, #9a7542, #3c2a18); border-color: #8c6a3f; box-shadow: 0 8px 14px rgba(0,0,0,.35), 0 0 0 2px #ffd19533 inset, inset 0 0 0 2px #c8d2ee22; }
+        .card-S { background: linear-gradient(135deg, #9a4262, #361a28); border-color: #8b3b58; box-shadow: 0 8px 14px rgba(0,0,0,.35), 0 0 0 2px #ff9aa433 inset, inset 0 0 0 2px #c8d2ee22; }
+        .card-T { background: linear-gradient(135deg, #6e4d9a, #2a2140); border-color: #65458f; box-shadow: 0 8px 14px rgba(0,0,0,.35), 0 0 0 2px #c6b3ff33 inset, inset 0 0 0 2px #c8d2ee22; }
+
+        /* Forbid badge on F: high contrast (amber) and compact */
+        .card-F .badge {
+          background: rgba(255, 211, 107, 0.16);
+          border-color: rgba(255, 211, 107, 0.55);
+          color: #ffd36b;
+        }
+
+        .card.hand {
+          width: var(--card-w-hand);
+          height: var(--card-w-hand)
+        }
+
+        .card.clickable {
+          cursor: pointer
+        }
+
+        .card.clickable:hover {
+          box-shadow: 0 10px 16px rgba(0, 0, 0, .4), 0 0 0 2px var(--outline) inset;
+          transform: translateY(-2px)
+        }
+
+        /* (removed special F ability animations) */
+
+        .L {
+          font-size: clamp(32px, 5.8vw, 52px);
+          font-weight: 1000;
+          letter-spacing: 2px;
+          line-height: 1;
+          text-shadow: 0 1px 0 #000
+        }
+
+        .card.hand .L {
+          font-size: calc(0.576 * (clamp(32px, 5.8vw, 52px)));
+        }
+
+        .L.F {
+          color: #9cc8ff
+        }
+
+        .L.I {
+          color: #a9ffcf
+        }
+
+        .L.R {
+          color: #ffd195
+        }
+
+        .L.S {
+          color: #ff9aa4
+        }
+
+        .L.T {
+          color: #c6b3ff
+        }
+
+        /* Forbid FX as card border */
+        .forbidFx {
+          border-color: var(--forbid) !important;
+          /* only inner glow, no outside overflow */
+          box-shadow: 0 0 0 2px #ffd36bbb inset, 0 0 0 3px #ffd36b44 inset;
+        }
+
+        .badge {
+          position: absolute;
+          top: 5px;
+          right: 5px;
+          background: #0f1422;
+          border: 1px solid #2a3244;
+          color: #ffd36b;
+          padding: 0 calc(var(--card-w) * 0.06);
+          font-size: calc(var(--card-w) * 0.14);
+          font-weight: 800;
+          border-radius: 10px;
+          z-index: 5;
+          pointer-events: none;
+          line-height: 1.15;
+          box-shadow: 0 3px 8px rgba(0, 0, 0, .35)
+        }
+
+        /* Turn highlight */
+        .activeTurn {
+          outline: 2px solid var(--ring);
+          box-shadow: 0 0 0 6px #3affc414 inset, 0 0 0 2px var(--ring) inset
+        }
+
+        /* Discard piles */
+        .stackPiles {
+          display: grid;
+          gap: 10px;
+          overflow: hidden
+        }
+
+        .pile {
+          position: relative;
+          display: inline-flex;
+          align-items: flex-end;
+          gap: 10px;
+          flex-wrap: nowrap;
+          padding-left: 24px;
+          max-width: 100%
+        }
+
+        .pile .mini {
+          width: 30px;
+          height: 42px;
+          border-radius: 8px;
+          border: 1px solid #2f3850;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          box-shadow: 0 6px 10px rgba(0, 0, 0, .28), inset 0 0 0 2px #c8d2ee22;
+          flex: 0 0 auto
+        }
+
+        .pile .mini b {
+          font-size: 18px;
+          line-height: 1;
+          text-shadow: 0 1px 0 #000
+        }
+
+        /* Discard mini cards per-letter fill to match main cards */
+        .mini-F { background: linear-gradient(135deg, #2d5a87, #1a2f49); border-color: #3a5e86; }
+        .mini-I { background: linear-gradient(135deg, #2d7a54, #163d2c); border-color: #2f7d57; }
+        .mini-R { background: linear-gradient(135deg, #9a7542, #3c2a18); border-color: #8c6a3f; }
+        .mini-S { background: linear-gradient(135deg, #9a4262, #361a28); border-color: #8b3b58; }
+        .mini-T { background: linear-gradient(135deg, #6e4d9a, #2a2140); border-color: #65458f; }
+        .pile .mini b.F { color: #9cc8ff; }
+        .pile .mini b.I { color: #a9ffcf; }
+        .pile .mini b.R { color: #ffd195; }
+        .pile .mini b.S { color: #ff9aa4; }
+        .pile .mini b.T { color: #c6b3ff; }
+
+        /* per-letter count badge on mini card */
+        .miniCount {
+          position: absolute;
+          top: 2px;
+          right: 2px;
+          background: rgba(10,14,24,.9);
+          border: 1px solid #2a3244;
+          color: #e6eeff;
+          font-size: 10px;
+          padding: 0 4px;
+          border-radius: 999px;
+          line-height: 1.1;
+          pointer-events: none;
+        }
+
+        .pile .mini+.mini {
+          margin-left: -14px
+        }
+
+        .pile .count {
+          position: absolute;
+          top: 2px;
+          right: 2px;
+          background: #0f1422;
+          border: 1px solid #2a3244;
+          color: #dbe5ff;
+          padding: 2px 6px;
+          font-size: 12px;
+          border-radius: 999px;
+          z-index: 3
+        }
+
+        /* Space stacks */
+        .stack {
+          position: relative;
+          width: var(--card-w);
+          height: calc(var(--card-w) * 0.72);
+          flex: 0 0 auto;
+          overflow: hidden;
+        }
+        .stack .card {
+          position: absolute;
+          left: 0;
+          top: 0;
+        }
+        .stack .card-layer:nth-child(1) { z-index: 1; }
+        .stack .card-layer:nth-child(2) { z-index: 2; }
+        .stack .card-layer:nth-child(3) { z-index: 3; }
+        .stack .card-top { z-index: 4; }
+        .stack .countTL {
+          position: absolute;
+          top: 3px;
+          left: 3px;
+          background: rgba(15, 20, 34, 0.9);
+          border: 1px solid #2a3244;
+          color: #e6eeff;
+          padding: 0 4px;
+          font-size: clamp(9px, calc(var(--card-w) * 0.18), 13px);
+          border-radius: 999px;
+          z-index: 5;
+          pointer-events: none;
+          line-height: 1.2;
+        }
+
+        /* Hand */
+        .handPanel {
+          padding: 10px
+        }
+
+        .handRow {
+          display: flex;
+          gap: 8px;
+          flex-wrap: nowrap;
+          align-items: center;
+          justify-content: center; /* center the whole hand */
+          padding: 4px;
+          overflow: hidden;
+          scrollbar-width: none
+        }
+
+        /* Log */
+        .logPanel {
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          height: auto
+        }
+
+        .logHeader {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 6px
+        }
+
+        .log {
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow: auto;
+          background: #0e1524;
+          border: 1px solid #25314a;
+          border-radius: 10px;
+          padding: 10px;
+          color: #c6d0ec;
+          font-size: 13px;
+          line-height: 1.35
+        }
+
+        .logPanel.collapsed {
+          height: 42px
+        }
+
+        .logPanel.collapsed .log {
+          display: none
+        }
+
+        /* Menu, modals, dice */
+        .menu {
+          position: fixed;
+          inset: 0;
+          z-index: 280;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #0c1014;
+        }
+
+        .main-menu {
+          background: #10182a;
+          border-radius: 24px;
+          box-shadow: 0 10px 24px rgba(0,0,0,.5);
+          padding: 40px 32px 32px 32px;
+        }
+
+        .menu .cardmenu {
+          background: linear-gradient(180deg, #0f1728, #0b1220);
+          border: 1px solid #2d3754;
+          border-radius: 20px;
+          padding: 22px;
+          width: min(520px, 92vw);
+          box-shadow: 0 28px 56px rgba(0, 0, 0, .55);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          overflow: hidden;
+        }
+
+        .main-menu {
+          padding: clamp(20px, 5vh, 40px) clamp(16px, 4vw, 32px);
+          gap: clamp(16px, 3vh, 32px)
+        }
+
+        .main-title {
+          font-size: clamp(36px, 8vh, 72px);
+          font-weight: 900;
+          color: #9cc8ff;
+          text-shadow: 0 0 30px #9cc8ff66, 0 2px 4px rgba(0,0,0,0.8);
+          margin-bottom: clamp(8px, 2vh, 24px);
+          letter-spacing: clamp(1px, 0.6vw, 4px)
+        }
+
+        .menu .muted {
+          color: #acb6cf;
+          font-size: 13px;
+          margin-bottom: 12px
+        }
+
+        .menu .items {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: clamp(12px, 2.5vh, 16px);
+          width: 100%;
+          margin-bottom: clamp(16px, 3vh, 32px)
+        }
+
+        .menu .btn.big {
+          font-size: clamp(14px, 2.4vh, 18px);
+          font-weight: 700;
+          padding: clamp(10px, 2.6vh, 18px) clamp(16px, 4.2vh, 32px);
+          width: 100%;
+          max-width: 320px;
+          border-radius: 16px
+        }
+
+        .menu .btn.big.modern {
+          background: linear-gradient(135deg, #1a2738, #0e1625);
+          border: 1.5px solid #3a4a6a;
+          color: #e8f0ff;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3)
+        }
+
+        .menu .btn.big.modern:hover {
+          background: linear-gradient(135deg, #1f2d42, #12192a);
+          border-color: #4a5a84;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.4)
+        }
+
+        .menu-cards {
+          display: flex;
+          gap: clamp(10px, 2vh, 16px);
+          justify-content: center;
+          align-items: center;
+          margin-top: clamp(10px, 2vh, 16px);
+          padding-bottom: clamp(10px, 2vh, 16px);
+        }
+
+        .menu-card {
+          width: clamp(40px, 9vh, 64px);
+          height: clamp(40px, 9vh, 64px);
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: clamp(20px, 4vh, 32px);
+          font-weight: 900;
+          position: relative;
+          box-shadow: 0 0 0 3px transparent, 0 4px 12px rgba(0,0,0,0.4);
+          transition: all 0.3s ease;
+          cursor: pointer;
+        }
+
+        .card-f {
+          background: linear-gradient(135deg, #4a7ba7, #2d5a87);
+          color: #9cc8ff;
+          box-shadow: 0 0 0 3px #9cc8ff44, 0 4px 12px rgba(0,0,0,0.4)
+        }
+
+        .card-i {
+          background: linear-gradient(135deg, #4a9a6e, #2d7a54);
+          color: #a9ffcf;
+          box-shadow: 0 0 0 3px #a9ffcf44, 0 4px 12px rgba(0,0,0,0.4)
+        }
+
+        .card-r {
+          background: linear-gradient(135deg, #b8935a, #9a7542);
+          color: #ffd195;
+          box-shadow: 0 0 0 3px #ffd19544, 0 4px 12px rgba(0,0,0,0.4)
+        }
+
+        .card-s {
+          background: linear-gradient(135deg, #b85a75, #9a4262);
+          color: #ff9aa4;
+          box-shadow: 0 0 0 3px #ff9aa444, 0 4px 12px rgba(0,0,0,0.4)
+        }
+
+        .card-t {
+          background: linear-gradient(135deg, #8a6bb8, #6e4d9a);
+          color: #c6b3ff;
+          box-shadow: 0 0 0 3px #c6b3ff44, 0 4px 12px rgba(0,0,0,0.4)
+        }
+
+        @media (hover: hover) {
+          .menu-card:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 0 0 3px currentColor, 0 8px 24px rgba(0,0,0,0.5);
+          }
+        }
+
+        /* Активное состояние по тапу (мобайлы) */
+        .menu-card.menu-card-active {
+          transform: translateY(-4px) scale(1.05);
+          box-shadow: 0 0 0 3px currentColor, 0 8px 24px rgba(0,0,0,0.5);
+        }
+
+        .rules-container {
+          width: min(800px, 95vw);
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column
+        }
+
+        .rules-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 20px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid #2d3754
+        }
+
+        .rules-header h2 {
+          margin: 0;
+          color: #dbe5ff;
+          font-size: 20px;
+          font-weight: 800;
+          flex: 1;
+          text-align: center
+        }
+
+        .rules-lang-btn {
+          font-size: 12px;
+          padding: 6px 10px;
+          min-width: 70px;
+          border-radius: 8px;
+          margin-left: 16px
+        }
+
+        .rules-content {
+          flex: 1;
+          overflow-y: auto;
+          max-height: 60vh;
+          padding-right: 8px;
+          margin-bottom: 20px
+        }
+
+        .rules-text {
+          font-size: 14px;
+          color: #dfe7ff;
+          line-height: 1.6;
+          text-align: left
+        }
+
+        .rules-footer {
+          text-align: center;
+          padding-top: 16px;
+          border-top: 1px solid #2d3754
+        }
+
+        .modal {
+          position: fixed;
+          inset: 0;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+          z-index: 260;
+          backdrop-filter: blur(2px)
+        }
+
+        .modal .box {
+          background: #10182a;
+          border: 1px solid #2a3450;
+          border-radius: 14px;
+          max-width: 720px;
+          width: 100%;
+          box-shadow: 0 10px 24px rgba(0, 0, 0, .5)
+        }
+
+        .modal .head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 12px;
+          border-bottom: 1px solid #253254
+        }
+
+        .modal .body {
+          padding: 12px;
+          /* text-align: center */
+        }
+
+        .choices {
+          display: flex;
+          gap: 18px;
+          justify-content: flex-start;
+          margin-top: 18px;
+        }
+
+        .mini-card-btn {
+          background: none;
+          border: none;
+          padding: 0;
+          margin: 0;
+          cursor: pointer;
+          outline: none;
+          box-shadow: none;
+          border-radius: 10px;
+          transition: transform 0.12s;
+        }
+
+        .mini-card-btn:active {
+          transform: scale(0.96);
+        }
+
+        .mini-card-btn .card {
+          width: 44px;
+          height: 32px;
+          min-width: 44px;
+          min-height: 32px;
+          font-size: 18px;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px #0004;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+        }
+
+        .mini-card-btn .L {
+          font-size: 18px;
+          font-weight: 700;
+          letter-spacing: 1px;
+          line-height: 1;
+          color: var(--text);
+        }
+
+        .diceOverlay {
+          position: fixed;
+          inset: 0;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          z-index: 240;
+          background: rgba(5, 8, 12, .6)
+        }
+
+        .diceArea {
+          display: flex;
+          gap: 40px;
+          align-items: center
+        }
+
+        .die {
+          width: 72px;
+          height: 72px;
+          position: relative;
+          transform-style: preserve-3d;
+          transform: rotateX(0) rotateY(0)
+        }
+
+        .face {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          background: #e8eefc;
+          border-radius: 10px;
+          box-shadow: inset 0 0 0 2px #b5c3ea;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 900;
+          color: #1b2b5a;
+          font-size: 28px
+        }
+
+        .face:nth-child(1) {
+          transform: translateZ(36px)
+        }
+
+        .face:nth-child(2) {
+          transform: rotateY(90deg) translateZ(36px)
+        }
+
+        .face:nth-child(3) {
+          transform: rotateY(180deg) translateZ(36px)
+        }
+
+        .face:nth-child(4) {
+          transform: rotateY(-90deg) translateZ(36px)
+        }
+
+        .face:nth-child(5) {
+          transform: rotateX(90deg) translateZ(36px)
+        }
+
+        .face:nth-child(6) {
+          transform: rotateX(-90deg) translateZ(36px)
+        }
+
+        .diceTxt {
+          color: #dbe5ff;
+          font-weight: 800;
+          text-shadow: 0 1px 0 #000
+        }
+
+        .handRow::-webkit-scrollbar {
+          display: none
+        }
+
+        ::-webkit-scrollbar {
+          height: 8px;
+          width: 8px
+        }
+
+        ::-webkit-scrollbar-track {
+          background: #0b1019
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: #22334a;
+          border-radius: 8px
+        }
+
+        /* ===== Mobile-first ===== */
+        @media (max-width: 900px) {
+          :root {
+            --zone-k: 1.00;
+            --zone-c: 14px;
+          }
+
+          :root {
+            --zone-k: 0.78;
+            --zone-c: 20px;
+            --card-w: clamp(34px, 8.8vw, 62px);
+            --gap: 8px;
+            --page-max: 980px;
+          }
+
+          h1 {
+            font-size: 15px
+          }
+
+          .pill {
+            padding: 4px 6px;
+            font-size: 11px
+          }
+
+          .title {
+            font-size: 12px
+          }
+
+          .L {
+            font-size: clamp(14px, 4.9vw, 18px)
+          }
+
+          .boardGrid {
+            inset: 10px 0 0 0;
+            gap: 8px;
+          }
+
+          .boardFlat {
+            min-height: calc(var(--card-w))
+          }
+
+          /* mobile fit */
+          .zone {
+            inset: 8px
+          }
+
+          .logPanel {
+            height: auto
+          }
+
+          .controls .btn {
+            display: none
+          }
+
+          #hamburger {
+            display: block
+          }
+
+          /* Main menu mobile adaptations */
+          .main-title {
+            font-size: 48px;
+            margin-bottom: 16px;
+            letter-spacing: 2px
+          }
+
+          .main-menu {
+            padding: 24px 20px
+          }
+
+          .menu-cards {
+            gap: 12px;
+            margin-top: 12px
+          }
+
+          .menu-card {
+            width: 48px;
+            height: 48px;
+            font-size: 24px
+          }
+
+          .menu .btn.big {
+            font-size: 16px;
+            padding: 14px 24px
+          }
+        }
+
+        @media (max-width: 600px) {
+          :root {
+            --zone-k: 1.04;
+            --zone-c: 12px;
+          }
+
+          :root {
+            --zone-k: 0.78;
+            --zone-c: 18px;
+            --card-w: clamp(28px, 7.6vw, 52px);
+            --gap: 6px;
+          }
+
+          h1 {
+            font-size: 13px
+          }
+
+          .pill {
+            padding: 3px 5px;
+            font-size: 10px
+          }
+
+          .title {
+            font-size: 12px
+          }
+
+          .L {
+            font-size: clamp(15px, 4.4vw, 22px)
+          }
+
+          .boardGrid {
+            inset: 6px 0 0 0;
+            gap: 6px;
+          }
+
+          .boardFlat {
+            min-height: calc(var(--card-w) * 0.92)
+          }
+
+          .zone {
+            left: 6px; right: 6px; top: 6px; bottom: 6px;
+            align-items: center;
+            justify-content: center;
+          }
+
+          /* уменьшить толщину обводки карт на маленьких экранах */
+          .card { border-width: 1px; box-shadow: 0 6px 10px rgba(0,0,0,.28), inset 0 0 0 1px #c8d2ee22; }
+          .pile .mini { border-width: 1px; box-shadow: 0 6px 10px rgba(0,0,0,.28); }
+
+          /* уменьшить толщину обводки карт на маленьких экранах */
+          .card { border-width: 1px; box-shadow: 0 6px 10px rgba(0,0,0,.28), inset 0 0 0 1px #c8d2ee22; }
+          .pile .mini { border-width: 1px; box-shadow: 0 6px 10px rgba(0,0,0,.28); }
+
+          /* сделать буквы визуально меньше относительно карты в зоне */
+          /* Уменьшаем букву и добавляем внутренние отступы карты на мобилках, чтобы буква не занимала всю карту */
+          .zone .card { padding: calc(var(--card-w) * 0.06); }
+          .zone .card .L { font-size: calc(var(--card-w) * 0.26); }
+          .zone .card.hand { padding: calc(var(--card-w) * 0.05); }
+          .zone .card.hand .L { font-size: calc(var(--card-w) * 0.22); }
+
+          .logPanel {
+            height: auto
+          }
+
+          /* smaller discard badges on very small screens */
+          .pile .mini .miniCount {
+            font-size: 8px;
+            padding: 0 3px;
+            top: 1px;
+            right: 1px;
+          }
+
+          /* smaller forbid badge on F on small screens */
+          .card .badge {
+            font-size: 10px;
+            padding: 0 4px;
+            top: 3px;
+            right: 3px;
+          }
+        }
+
+        @media (min-width: 700px) and (max-width: 1180px) {
+          :root {
+            --zone-k: 0.86;
+            --zone-c: 18px;
+          }
+
+          :root {
+            --zone-k: 0.78;
+            --zone-c: 20px;
+            --card-w: clamp(88px, 8.6vw, 140px);
+          }
+
+          .L {
+            font-size: clamp(30px, 5.4vw, 58px);
+          }
+
+          .boardFlat {
+            height: calc(var(--card-w));
+          }
+
+          .handRow {
+            gap: 10px;
+          }
+        }
+
+        @media (orientation: portrait) {
+          .pile .count{
+            display: none;
+          }
+          .boardGrid {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto 1fr;
+          }
+          .rightCol {
+            grid-row: 1;
+            grid-column: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--gap);
+          }
+          .rightCol .logPanel {
+            display: none;
+          }
+          .leftCol {
+            grid-row: 2;
+            width: 100%;
+          }
+        }
+
+        .mini-card-btn:hover .card,
+        .mini-card-btn:focus .card {
+          transform: scale(1.12);
+          box-shadow: 0 0 0 4px var(--ring), 0 2px 8px #0006;
+          z-index: 2;
+        }
+        .mini-card-btn:active .card {
+          transform: scale(1.09);
+          box-shadow: 0 0 0 4px var(--ring), 0 2px 8px #0006;
+          z-index: 2;
+        }
+    </style>
 </head>
 
 <body>
-  <div class="wrap">
+<div class="wrap">
     <header>
-      <div class="center">
-        <div class="titlebar">
-          <span class="pill"><span id="turnKey">Turn</span>: <b id="turnLbl">—</b></span>
-          <span class="pill"><span id="yourHandKey">Your hand</span>: <b id="youHandCount">0</b>/7</span>
-          <span class="pill"><span id="aiHandKey">AI hand</span>: <b id="aiHandCount">0</b></span>
-          <span class="pill" id="timerPill">00:00</span>
+        <div class="center">
+            <div class="titlebar">
+                <span class="pill"><span id="turnKey">Turn</span>: <b id="turnLbl">—</b></span>
+                <span class="pill"><span id="yourHandKey">Your hand</span>: <b id="youHandCount">0</b>/7</span>
+                <span class="pill"><span id="aiHandKey">AI hand</span>: <b id="aiHandCount">0</b></span>
+                <span class="pill" id="timerPill">00:00</span>
+            </div>
+            <div class="controls">
+                <button class="btn" id="langBtn" title="Language">🇬🇧 EN</button>
+                <button class="btn" id="toMenuBtn">Menu</button>
+                <button class="btn" id="helpBtn">Rules</button>
+                <button class="btn" id="restartBtn">New Game</button>
+                <button class="btn" id="hamburger">☰</button>
+            </div>
         </div>
-        <div class="controls">
-          <button class="btn" id="langBtn" title="Language">🇬🇧 EN</button>
-          <button class="btn" id="toMenuBtn">Menu</button>
-          <button class="btn" id="helpBtn">Rules</button>
-          <button class="btn" id="restartBtn">New Game</button>
-          <button class="btn" id="hamburger">☰</button>
+        <div class="quickMenu" id="quickMenu">
+            <button class="btn" id="qmLang">🇬🇧 EN</button>
+            <button class="btn" id="qmMenu">Menu</button>
+            <button class="btn" id="qmHelp">Rules</button>
+            <button class="btn" id="qmNew">New Game</button>
         </div>
-      </div>
-      <div class="quickMenu" id="quickMenu">
-        <button class="btn" id="qmLang">🇬🇧 EN</button>
-        <button class="btn" id="qmMenu">Menu</button>
-        <button class="btn" id="qmHelp">Rules</button>
-        <button class="btn" id="qmNew">New Game</button>
-      </div>
     </header>
 
     <div class="boardShell">
-      <div class="center" style="height:100%">
-        <div id="boardGrid" class="boardGrid">
-          <div class="leftCol">
-            <div id="panelAiSpace" class="panel">
-              <div class="title"><span id="aiSpaceTitle">SPACE — AI</span><span class="chip" id="aiDeckInfo">Deck: 50</span></div>
-              <div class="boardFlat">
-                <div id="aiSpace" class="zone"></div>
-              </div>
-            </div>
-            <div id="panelYouSpace" class="panel">
-              <div class="title"><span id="youSpaceTitle">SPACE — You</span><span class="chip" id="youDeckInfo">Deck: 50</span></div>
-              <div class="boardFlat">
-                <div id="youSpace" class="zone"></div>
-              </div>
-            </div>
-            <div class="panel handPanel">
-              <div class="title" id="yourHandTitle">Your hand <span class="note" id="handNote" style="display:none">(tap
+        <div class="center" style="height:100%">
+            <div id="boardGrid" class="boardGrid">
+                <div class="leftCol">
+                    <div id="panelAiSpace" class="panel">
+                        <div class="title"><span id="aiSpaceTitle">SPACE — AI</span><span class="chip" id="aiDeckInfo">Deck: 50</span>
+                        </div>
+                        <div class="boardFlat">
+                            <div id="aiSpace" class="zone"></div>
+                        </div>
+                    </div>
+                    <div id="panelYouSpace" class="panel">
+                        <div class="title"><span id="youSpaceTitle">SPACE — You</span><span class="chip"
+                                                                                            id="youDeckInfo">Deck: 50</span>
+                        </div>
+                        <div class="boardFlat">
+                            <div id="youSpace" class="zone"></div>
+                        </div>
+                    </div>
+                    <div class="panel handPanel">
+                        <div class="title" id="yourHandTitle">Your hand <span class="note" id="handNote"
+                                                                              style="display:none">(tap
                   a card to play; turn ends automatically)</span></div>
-              <div id="youHand" class="handRow"></div>
+                        <div id="youHand" class="handRow"></div>
+                    </div>
+                </div>
+                <div class="rightCol">
+                    <div class="panel" id="panelAiDiscard">
+                        <div class="title" id="aiDiscardTitle">DISCARD — AI</div>
+                        <div id="aiDiscard" class="stackPiles" style="flex:1 1 auto"></div>
+                        <div id="aiHandHidden" style="display:none"></div>
+                    </div>
+                    <div class="panel" id="panelYouDiscard">
+                        <div class="title" id="youDiscardTitle">DISCARD — You</div>
+                        <div id="youDiscard" class="stackPiles" style="flex:1 1 auto"></div>
+                    </div>
+                    <div class="panel logPanel" id="logPanel" style="flex:1 1 auto">
+                        <div class="logHeader">
+                            <div class="title" id="logTitle" style="margin:0">Game log</div>
+                            <button id="toggleLog" class="btn" style="padding:4px 10px">Hide</button>
+                        </div>
+                        <div id="log" class="log" style="flex:1 1 auto"></div>
+                    </div>
+                </div>
             </div>
-          </div>
-          <div class="rightCol">
-            <div class="panel" id="panelAiDiscard">
-              <div class="title" id="aiDiscardTitle">DISCARD — AI</div>
-              <div id="aiDiscard" class="stackPiles" style="flex:1 1 auto"></div>
-              <div id="aiHandHidden" style="display:none"></div>
-            </div>
-            <div class="panel" id="panelYouDiscard">
-              <div class="title" id="youDiscardTitle">DISCARD — You</div>
-              <div id="youDiscard" class="stackPiles" style="flex:1 1 auto"></div>
-            </div>
-            <div class="panel logPanel" id="logPanel" style="flex:1 1 auto">
-              <div class="logHeader">
-                <div class="title" id="logTitle" style="margin:0">Game log</div>
-                <button id="toggleLog" class="btn" style="padding:4px 10px">Hide</button>
-              </div>
-              <div id="log" class="log" style="flex:1 1 auto"></div>
-            </div>
-          </div>
         </div>
-      </div>
     </div>
-  </div>
+</div>
 
-  <!-- Menus and modals -->
-  <div id="menu" class="menu" style="display:flex">
+<!-- Menus and modals -->
+<div id="menu" class="menu" style="display:flex">
     <div class="cardmenu main-menu">
-      <div class="menu-cards">
-        <div class="menu-card card-f">F</div>
-        <div class="menu-card card-i">I</div>
-        <div class="menu-card card-r">R</div>
-        <div class="menu-card card-s">S</div>
-        <div class="menu-card card-t">T</div>
-      </div>
-      <div class="items">
-        <button class="btn big modern" id="menuNewGame">New Game</button>
-        <button class="btn big modern" id="menuRules">Rules</button>
-        <button class="btn big modern" id="menuLangBtn">🇬🇧 EN</button>
-      </div>
+        <div class="menu-cards">
+            <div class="menu-card card-f">F</div>
+            <div class="menu-card card-i">I</div>
+            <div class="menu-card card-r">R</div>
+            <div class="menu-card card-s">S</div>
+            <div class="menu-card card-t">T</div>
+        </div>
+        <div class="items">
+            <button class="btn big modern" id="menuNewGame">New Game</button>
+            <button class="btn big modern" id="menuRules">Rules</button>
+            <button class="btn big modern" id="menuLangBtn">🇬🇧 EN</button>
+        </div>
     </div>
-  </div>
+</div>
 
-  <div id="rulesMenu" class="menu" style="display:none">
+<div id="rulesMenu" class="menu" style="display:none">
     <div class="cardmenu rules-container">
-      <div class="rules-header">
-        <h2 id="rulesMenuTitle">F!RST — Rules & Cards</h2>
-        <button class="btn rules-lang-btn" id="rulesLangBtn">🇬🇧 EN</button>
-      </div>
-      <div class="rules-content">
-        <div class="rules-text" id="rulesMenuBody"></div>
-      </div>
-      <div class="rules-footer">
-        <button class="btn big" id="backToMenu">Back to Menu</button>
-      </div>
+        <div class="rules-header">
+            <h2 id="rulesMenuTitle">F!RST — Rules & Cards</h2>
+            <button class="btn rules-lang-btn" id="rulesLangBtn">🇬🇧 EN</button>
+        </div>
+        <div class="rules-content">
+            <div class="rules-text" id="rulesMenuBody"></div>
+        </div>
+        <div class="rules-footer">
+            <button class="btn big" id="backToMenu">Back to Menu</button>
+        </div>
     </div>
-  </div>
+</div>
 
-  <div id="diceOverlay" class="diceOverlay">
+<div id="diceOverlay" class="diceOverlay">
     <div class="diceArea">
-      <div>
-        <div class="diceTxt" style="margin-bottom:6px;text-align:center" id="youTxt">You</div>
-        <div id="dieYou" class="die">
-          <div class="face">1</div>
-          <div class="face">2</div>
-          <div class="face">3</div>
-          <div class="face">4</div>
-          <div class="face">5</div>
-          <div class="face">6</div>
+        <div>
+            <div class="diceTxt" style="margin-bottom:6px;text-align:center" id="youTxt">You</div>
+            <div id="dieYou" class="die">
+                <div class="face">1</div>
+                <div class="face">2</div>
+                <div class="face">3</div>
+                <div class="face">4</div>
+                <div class="face">5</div>
+                <div class="face">6</div>
+            </div>
         </div>
-      </div>
-      <div>
-        <div class="diceTxt" style="margin-bottom:6px;text-align:center" id="aiTxt">AI</div>
-        <div id="dieAI" class="die">
-          <div class="face">1</div>
-          <div class="face">2</div>
-          <div class="face">3</div>
-          <div class="face">4</div>
-          <div class="face">5</div>
-          <div class="face">6</div>
+        <div>
+            <div class="diceTxt" style="margin-bottom:6px;text-align:center" id="aiTxt">AI</div>
+            <div id="dieAI" class="die">
+                <div class="face">1</div>
+                <div class="face">2</div>
+                <div class="face">3</div>
+                <div class="face">4</div>
+                <div class="face">5</div>
+                <div class="face">6</div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
+</div>
 
-  <div class="modal" id="choiceModal">
+<div class="modal" id="choiceModal">
     <div class="box">
-      <div class="head">
-        <div id="choiceTitle">Choose</div>
-        <div></div>
-      </div>
-      <div class="body">
-        <div id="choiceArea" class="choices"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal" id="helpModal">
-    <div class="box">
-      <div class="head">
-        <div style="font-weight:800" id="rulesTitle">F!RST — rules & cards</div><button class="btn"
-          id="closeHelp">Close</button>
-      </div>
-      <div class="body">
-        <div class="note" style="font-size:13px;color:#dfe7ff" id="rulesBody"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal" id="winModal">
-    <div class="box">
-      <div class="head" style="justify-content:center;gap:10px">
-        <div style="font-weight:800" id="gameOverKey">Game Over</div>
-      </div>
-      <div class="body">
-        <h3 id="winTitle">Victory!</h3>
-        <div id="winMsg" class="msg">You completed a combo.</div>
-        <div class="okbar" style="display:flex;justify-content:center;gap:8px;margin-top:8px">
-          <button class="btn" id="winNew">New Game</button>
-          <button class="btn" id="winMenu">Menu</button>
+        <div class="head">
+            <div id="choiceTitle">Choose</div>
+            <div></div>
         </div>
-      </div>
+        <div class="body">
+            <div id="choiceArea" class="choices"></div>
+        </div>
     </div>
-  </div>
+</div>
 
-  <script>
+<div class="modal" id="helpModal">
+    <div class="box">
+        <div class="head">
+            <div style="font-weight:800" id="rulesTitle">F!RST — rules & cards</div>
+            <button class="btn"
+                    id="closeHelp">Close
+            </button>
+        </div>
+        <div class="body">
+            <div class="note" style="font-size:13px;color:#dfe7ff" id="rulesBody"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="winModal">
+    <div class="box">
+        <div class="head" style="justify-content:center;gap:10px">
+            <div style="font-weight:800" id="gameOverKey">Game Over</div>
+        </div>
+        <div class="body">
+            <h3 id="winTitle">Victory!</h3>
+            <div id="winMsg" class="msg">You completed a combo.</div>
+            <div class="okbar" style="display:flex;justify-content:center;gap:8px;margin-top:8px">
+                <button class="btn" id="winNew">New Game</button>
+                <button class="btn" id="winMenu">Menu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
     /* ===== i18n ===== */
     const I18N = {
       en: {
@@ -1299,31 +1329,31 @@
         rulesTitle: "F!RST — rules & cards", gameOver: "Game Over",
         deckLabel: (n) => `Deck: ${n}`,
         rulesBody: `<strong>GAME OBJECTIVE:</strong><br/>
-Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area to win.<br/><br/>
+  Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area to win.<br/><br/>
 
-<strong>SETUP:</strong><br/>
-• Each player draws 5 cards to hand<br/>
-• Dice roll determines who goes first<br/>
-• First player does NOT draw a card on their first turn<br/><br/>
+  <strong>SETUP:</strong><br/>
+  • Each player draws 5 cards to hand<br/>
+  • Dice roll determines who goes first<br/>
+  • First player does NOT draw a card on their first turn<br/><br/>
 
-<strong>PLAYER TURN:</strong><br/>
-1. Draw 1 card from deck (except first turn)<br/>
-2. Play 1 card from hand to SPACE area<br/>
-3. Execute card effect<br/>
-4. Turn passes to opponent<br/><br/>
+  <strong>PLAYER TURN:</strong><br/>
+  1. Draw 1 card from deck (except first turn)<br/>
+  2. Play 1 card from hand to SPACE area<br/>
+  3. Execute card effect<br/>
+  4. Turn passes to opponent<br/><br/>
 
-<strong>CARDS AND EFFECTS:</strong><br/>
-<span style="color:#9cc8ff"><strong>F (FORBID)</strong></span> — Choose a letter. If opponent tries to play that letter, it goes to their DISCARD instead of SPACE<br/>
-<span style="color:#a9ffcf"><strong>I (INCREASE)</strong></span> — Draw +1 card from deck<br/>
-<span style="color:#ffd195"><strong>R (RECOVER)</strong></span> — Choose a card from your DISCARD and return it to hand<br/>
-<span style="color:#ff9aa4"><strong>S (STEAL)</strong></span> — Choose a card from opponent's SPACE and move it to their DISCARD<br/>
-<span style="color:#c6b3ff"><strong>T (TRAP)</strong></span> — Next turn, opponent must discard 1 card from hand<br/><br/>
+  <strong>CARDS AND EFFECTS:</strong><br/>
+  <span style="color:#9cc8ff"><strong>F (FORBID)</strong></span> — Choose a letter. If opponent tries to play that letter, it goes to their DISCARD instead of SPACE<br/>
+  <span style="color:#a9ffcf"><strong>I (INCREASE)</strong></span> — Draw +1 card from deck<br/>
+  <span style="color:#ffd195"><strong>R (RECOVER)</strong></span> — Choose a card from your DISCARD and return it to hand<br/>
+  <span style="color:#ff9aa4"><strong>S (STEAL)</strong></span> — Choose a card from opponent's SPACE and move it to their DISCARD<br/>
+  <span style="color:#c6b3ff"><strong>T (TRAP)</strong></span> — Next turn, opponent must discard 1 card from hand<br/><br/>
 
-<strong>IMPORTANT RULES:</strong><br/>
-• Maximum 7 cards in hand. Excess cards are automatically discarded<br/>
-• If deck is empty when required to draw — you lose<br/>
-• Forbidden cards (F effect) go to DISCARD, not SPACE<br/>
-• Traps (T effect) trigger at start of opponent's next turn`,
+  <strong>IMPORTANT RULES:</strong><br/>
+  • Maximum 7 cards in hand. Excess cards are automatically discarded<br/>
+  • If deck is empty when required to draw — you lose<br/>
+  • Forbidden cards (F effect) go to DISCARD, not SPACE<br/>
+  • Traps (T effect) trigger at start of opponent's next turn`,
         choose: "Choose", pickForbid: "Choose a letter to forbid", pickRecover: "Recover: choose a letter from your DISCARD",
         pickSteal: "Steal: choose a card from opponent SPACE", pickTrapDiscard: "Trap (T): choose a card to discard",
         drewYou: "You drew a card.", drewAI: "AI drew a card.",
@@ -1350,31 +1380,31 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
         rulesTitle: "F!RST — правила и карты", gameOver: "Конец игры",
         deckLabel: (n) => `Колода: ${n}`,
         rulesBody: `<strong>ЦЕЛЬ ИГРЫ:</strong><br/>
-Соберите последовательность F-I-R-S-T или 5 одинаковых карт в области SPACE для победы.<br/><br/>
+  Соберите последовательность F-I-R-S-T или 5 одинаковых карт в области SPACE для победы.<br/><br/>
 
-<strong>ПОДГОТОВКА:</strong><br/>
-• Каждый игрок получает 5 карт в руку<br/>
-• Бросок кубиков определяет, кто ходит первым<br/>
-• Первый игрок НЕ берет карту в свой первый ход<br/><br/>
+  <strong>ПОДГОТОВКА:</strong><br/>
+  • Каждый игрок получает 5 карт в руку<br/>
+  • Бросок кубиков определяет, кто ходит первым<br/>
+  • Первый игрок НЕ берет карту в свой первый ход<br/><br/>
 
-<strong>ХОД ИГРОКА:</strong><br/>
-1. Взять 1 карту из колоды (кроме первого хода)<br/>
-2. Сыграть 1 карту из руки в область SPACE<br/>
-3. Выполнить эффект карты<br/>
-4. Ход переходит к сопернику<br/><br/>
+  <strong>ХОД ИГРОКА:</strong><br/>
+  1. Взять 1 карту из колоды (кроме первого хода)<br/>
+  2. Сыграть 1 карту из руки в область SPACE<br/>
+  3. Выполнить эффект карты<br/>
+  4. Ход переходит к сопернику<br/><br/>
 
-<strong>КАРТЫ И ИХ ЭФФЕКТЫ:</strong><br/>
-<span style="color:#9cc8ff"><strong>F (FORBID)</strong></span> — Выберите букву. Если противник попытается сыграть эту букву, она отправится в его DISCARD вместо SPACE<br/>
-<span style="color:#a9ffcf"><strong>I (INCREASE)</strong></span> — Возьмите +1 карту из колоды<br/>
-<span style="color:#ffd195"><strong>R (RECOVER)</strong></span> — Выберите карту из своего DISCARD и верните в руку<br/>
-<span style="color:#ff9aa4"><strong>S (STEAL)</strong></span> — Выберите карту из SPACE противника и переместите в его DISCARD<br/>
-<span style="color:#c6b3ff"><strong>T (TRAP)</strong></span> — В следующий ход противник должен сбросить 1 карту из руки<br/><br/>
+  <strong>КАРТЫ И ИХ ЭФФЕКТЫ:</strong><br/>
+  <span style="color:#9cc8ff"><strong>F (FORBID)</strong></span> — Выберите букву. Если противник попытается сыграть эту букву, она отправится в его DISCARD вместо SPACE<br/>
+  <span style="color:#a9ffcf"><strong>I (INCREASE)</strong></span> — Возьмите +1 карту из колоды<br/>
+  <span style="color:#ffd195"><strong>R (RECOVER)</strong></span> — Выберите карту из своего DISCARD и верните в руку<br/>
+  <span style="color:#ff9aa4"><strong>S (STEAL)</strong></span> — Выберите карту из SPACE противника и переместите в его DISCARD<br/>
+  <span style="color:#c6b3ff"><strong>T (TRAP)</strong></span> — В следующий ход противник должен сбросить 1 карту из руки<br/><br/>
 
-<strong>ВАЖНЫЕ ПРАВИЛА:</strong><br/>
-• Максимум 7 карт в руке. Лишние карты автоматически сбрасываются<br/>
-• Если колода закончилась при необходимом взятии карты — поражение<br/>
-• Запрещенные карты (эффект F) идут в DISCARD, а не в SPACE<br/>
-• Ловушки (эффект T) срабатывают в начале следующего хода противника`,
+  <strong>ВАЖНЫЕ ПРАВИЛА:</strong><br/>
+  • Максимум 7 карт в руке. Лишние карты автоматически сбрасываются<br/>
+  • Если колода закончилась при необходимом взятии карты — поражение<br/>
+  • Запрещенные карты (эффект F) идут в DISCARD, а не в SPACE<br/>
+  • Ловушки (эффект T) срабатывают в начале следующего хода противника`,
         choose: "Выбор", pickForbid: "Выбери букву для блока", pickRecover: "Recover: выбери букву из DISCARD",
         pickSteal: "Укажи карту на столе противника", pickTrapDiscard: "Ловушка (T): выбери карту для сброса",
         drewYou: "Ты взял карту.", drewAI: "ИИ взял карту.",
@@ -2033,15 +2063,15 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
     function on(id, ev, fn) { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); }
     function setupEvents() {
       on('menuNewGame', 'click', () => { const m = document.getElementById('menu'); if (m) m.style.display = 'none'; newGame(); });
-      on('menuRules', 'click', () => { 
-        const m = document.getElementById('menu'); if (m) m.style.display = 'none'; 
+      on('menuRules', 'click', () => {
+        const m = document.getElementById('menu'); if (m) m.style.display = 'none';
         const r = document.getElementById('rulesMenu'); if (r) r.style.display = 'flex';
         // Принудительно обновляем содержимое правил
         updateRulesContent();
       });
       on('backToMenu', 'click', () => { const r = document.getElementById('rulesMenu'); if (r) r.style.display = 'none'; const m = document.getElementById('menu'); if (m) m.style.display = 'flex'; });
-      on('rulesLangBtn', 'click', () => { 
-        LANG = (LANG === 'en') ? 'ru' : 'en'; 
+      on('rulesLangBtn', 'click', () => {
+        LANG = (LANG === 'en') ? 'ru' : 'en';
         updateRulesContent();
         applyTexts();
       });
@@ -2068,14 +2098,14 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
     }
     // boot after DOM ready
     (function () {
-      const boot = () => { 
-        try { 
-          computeAdaptiveCardWidth(); 
-          fitHandToSeven(); 
-          fitMobileScale(); 
-          setupEvents(); 
+      const boot = () => {
+        try {
+          computeAdaptiveCardWidth();
+          fitHandToSeven();
+          fitMobileScale();
+          setupEvents();
           applyTexts(); // Инициализируем тексты при загрузке
-          render(); 
+          render();
           // Toggle active state for menu circles on tap/click (mobile friendly)
           document.querySelectorAll('.menu-card').forEach((el) => {
             el.addEventListener('click', (ev) => {
@@ -2083,7 +2113,7 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
               el.classList.toggle('menu-card-active');
             });
           });
-        } catch (e) { console.error(e); } 
+        } catch (e) { console.error(e); }
       };
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
       else boot();
@@ -2100,7 +2130,7 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
     });
     updateMenuLangBtn();
 
-  </script>
+</script>
 </body>
 
 </html>
