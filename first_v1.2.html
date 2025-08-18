@@ -2216,15 +2216,15 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
     function on(id, ev, fn) { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); }
     function setupEvents() {
       on('menuNewGame', 'click', () => { const m = document.getElementById('menu'); if (m) m.style.display = 'none'; newGame(); });
-      on('menuRules', 'click', () => {
-        const m = document.getElementById('menu'); if (m) m.style.display = 'none';
+      on('menuRules', 'click', () => { 
+        const m = document.getElementById('menu'); if (m) m.style.display = 'none'; 
         const r = document.getElementById('rulesMenu'); if (r) r.style.display = 'flex';
         // Принудительно обновляем содержимое правил
         updateRulesContent();
       });
       on('backToMenu', 'click', () => { const r = document.getElementById('rulesMenu'); if (r) r.style.display = 'none'; const m = document.getElementById('menu'); if (m) m.style.display = 'flex'; });
-      on('rulesLangBtn', 'click', () => {
-        LANG = (LANG === 'en') ? 'ru' : 'en';
+      on('rulesLangBtn', 'click', () => { 
+        LANG = (LANG === 'en') ? 'ru' : 'en'; 
         updateRulesContent();
         applyTexts();
       });
@@ -2251,14 +2251,14 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
     }
     // boot after DOM ready
     (function () {
-      const boot = () => {
-        try {
-          computeAdaptiveCardWidth();
-          fitHandToSeven();
-          fitMobileScale();
-          setupEvents();
+      const boot = () => { 
+        try { 
+          computeAdaptiveCardWidth(); 
+          fitHandToSeven(); 
+          fitMobileScale(); 
+          setupEvents(); 
           applyTexts(); // Инициализируем тексты при загрузке
-          render();
+          render(); 
           // Toggle active state for menu circles on tap/click (mobile friendly)
           document.querySelectorAll('.menu-card').forEach((el) => {
             el.addEventListener('click', (ev) => {
@@ -2266,7 +2266,7 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
               el.classList.toggle('menu-card-active');
             });
           });
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error(e); } 
       };
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
       else boot();

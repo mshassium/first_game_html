@@ -281,7 +281,8 @@
       justify-content: center;
       position: relative;
       box-shadow: 0 8px 14px rgba(0, 0, 0, .35), inset 0 0 0 2px #c8d2ee22;
-      transition: transform .3s ease-out, box-shadow .3s ease-out
+      transition: transform .3s ease-out, box-shadow .3s ease-out, opacity .3s ease-out;
+      will-change: transform, box-shadow, opacity;
     }
 
     /* Neon per-letter fills (match main menu chips) */
@@ -1709,30 +1710,148 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
       if (G.over || G.turn !== 'you') return;
       const letter = G.you.hand[index]; if (!letter) return;
       if (G.traps.forbidYou === letter) {
-        G.traps.forbidYou = null;
         const handEl = pickHandCardEl(index);
-        animateFly(handEl, document.getElementById('youDiscard'), () => {
-          G.you.hand.splice(index, 1);
-          G.you.discard.push(letter);
-          logAdd(`Forbid triggered: your ${letter} went to DISCARD.`);
-          render(); if (!checkWin()) setTimeout(endTurn, 650);
-        }, 500);
+        const opponentFCard = document.querySelector('#aiSpace .forbidFx');
+
+        // Disable clicks during animation
+        document.getElementById('youHand').style.pointerEvents = 'none';
+
+        // Create a ghost of the player's card to animate
+        const rectFrom = handEl.getBoundingClientRect();
+        const ghost = handEl.cloneNode(true);
+        gsap.set(ghost, {
+          position: 'fixed', left: rectFrom.left, top: rectFrom.top,
+          width: rectFrom.width, height: rectFrom.height,
+          margin: 0, zIndex: 250, pointerEvents: 'none'
+        });
+        document.body.appendChild(ghost);
+        gsap.set(handEl, { opacity: 0 }); // Hide original card
+
+        const tl = gsap.timeline({
+          onComplete: () => {
+            if (ghost.parentNode) document.body.removeChild(ghost);
+            G.traps.forbidYou = null;
+            G.you.hand.splice(index, 1);
+            G.you.discard.push(letter);
+            logAdd(`Forbid triggered: your ${letter} went to DISCARD.`);
+            render(); // This will redraw the hand, removing the original element
+            document.getElementById('youHand').style.pointerEvents = 'auto'; // Re-enable clicks
+            if (!checkWin()) setTimeout(endTurn, 650);
+          }
+        });
+
+        // 1. Opponent's F card flashes
+        if (opponentFCard) {
+          tl.to(opponentFCard, {
+            borderColor: '#ff4444',
+            boxShadow: '0 0 0 3px #ff4444 inset, 0 0 8px #ff4444',
+            duration: 0.2,
+            repeat: 1,
+            yoyo: true,
+            ease: 'power1.inOut'
+          }, 0);
+        }
+
+        // 2. Player's card shakes
+        tl.to(ghost, { x: '+=5', duration: 0.08, repeat: 5, yoyo: true, ease: 'power1.inOut', clearProps: 'x' }, '>');
+
+        // 3. Player's card moves to discard
+        const discardEl = document.getElementById('youDiscard');
+        const rectTo = discardEl.getBoundingClientRect();
+        tl.to(ghost, {
+          left: rectTo.left + (rectTo.width / 2) - (rectFrom.width / 2), top: rectTo.top + (rectTo.height / 2) - (rectFrom.height / 2),
+          scale: 0.3, opacity: 0.5, duration: 0.6, ease: 'power2.in'
+        }, '>');
         return;
       }
       const src = pickHandCardEl(index);
-      G.you.hand.splice(index, 1);
       animateFly(src, document.getElementById('youSpace'), () => {
+        G.you.hand.splice(index, 1);
         G.you.space.push(letter);
-        logAdd(`You played ${letter}.`); render();
+        logAdd(`You played ${letter}.`);
+        render();
         resolveEffect('you', letter, () => { if (!checkWin()) endTurn(); });
-      });
+      }, { duration: 0.5, scale: 1.0 });
     }
 
     function resolveEffect(side, letter, done) {
+      const playerSpace = document.getElementById(side === 'you' ? 'youSpace' : 'aiSpace');
+      const playedCardEl = findLastPlayedCard(playerSpace, letter);
+
+      const proceed = () => {
+        if (letter === 'F') {
+          chooseType(tt('pickForbid'), TYPES, (tChosen) => {
+            if (side === 'you') { G.traps.forbidAI = tChosen; logAdd("You forbade a letter for AI."); }
+            else { G.traps.forbidYou = tChosen; logAdd("AI forbade a letter for you."); }
+            render(); done();
+          });
+          return;
+        }
+        if (letter === 'I') { draw(side, 1); done(); return; }
+        if (letter === 'R') {
+          const S = side === 'you' ? G.you : G.ai;
+          if (S.discard.length === 0) { done(); return; }
+          chooseType(tt('pickRecover'), uniqueLetters(S.discard), (pick) => {
+            const idx = S.discard.lastIndexOf(pick);
+            if (idx >= 0) {
+              const c = S.discard.splice(idx, 1)[0];
+              S.hand.push(c);
+              animateFromDiscardTo(side, 'hand', c);
+              logAdd(side === 'you' ? tt('recoverYou', c) : tt('recoverAI')); enforceHandLimit(side);
+            }
+            render(); done();
+          });
+          return;
+        }
+        if (letter === 'S') {
+          const O = side === 'you' ? G.ai : G.you;
+          if (O.space.length === 0) { done(); return; }
+          chooseIndex(tt('pickSteal'), O.space, (i) => {
+            animateFromSpaceOrHand(side === 'you' ? 'ai' : 'you', 'space', i, side === 'you' ? document.getElementById('aiDiscard') : document.getElementById('youDiscard'), () => {
+              const removed = O.space.splice(i, 1)[0]; O.discard.push(removed);
+              logAdd(side === 'you' ? `You moved opponent ${removed} to DISCARD.` : `AI stole your ${removed} to your DISCARD.`);
+              render(); done();
+            });
+          });
+          return;
+        }
+        if (letter === 'T') {
+          // Immediate discard from opponent, turn passes to opponent after done()
+          if (side === 'you') {
+            if (G.ai.hand.length > 0) {
+              const i = Math.floor(Math.random() * G.ai.hand.length);
+              animateFromSpaceOrHand('ai', 'hand', i, document.getElementById('aiDiscard'), () => {
+                const dumped = G.ai.hand.splice(i, 1)[0];
+                G.ai.discard.push(dumped);
+                logAdd(tt('tYou'));
+                render(); done();
+              });
+              return;
+            }
+            logAdd(tt('tYou'));
+          } else {
+            if (G.you.hand.length > 0) {
+              chooseIndex(tt('pickTrapDiscard'), G.you.hand, (idx) => {
+                animateFromSpaceOrHand('you', 'hand', idx, document.getElementById('youDiscard'), () => {
+                  const dumped = G.you.hand.splice(idx, 1)[0];
+                  G.you.discard.push(dumped);
+                  logAdd(tt('tAI'));
+                  render(); done();
+                });
+              });
+              return;
+            } else {
+              logAdd(tt('tAI'));
+            }
+          }
+          render(); done(); return;
+        }
+        done();
+      }
+
       if (letter === 'F') {
         chooseType(tt('pickForbid'), TYPES, (tChosen) => {
           if (side === 'you') { G.traps.forbidAI = tChosen; logAdd("You forbade a letter for AI."); }
-          else { G.traps.forbidYou = tChosen; logAdd("AI forbade a letter for you."); }
           render(); done();
         });
         return;
@@ -1807,28 +1926,38 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
       if (idx < 0) idx = 0;
       const letter = hand[idx];
       if (G.traps.forbidAI === letter) {
-        G.traps.forbidAI = null;
-        const handEl = null; // AI hand не отображается, но для анимации создаём карту
-        const fake = document.createElement('div'); fake.className = 'card'; fake.appendChild(Object.assign(document.createElement('div'), { className: 'L ' + letter, textContent: letter }));
-        const aiHand = document.getElementById('aiHandHidden') || document.body;
-        const discard = document.getElementById('aiDiscard');
-        // Позиционируем карту примерно из центра руки AI
-        const rectFrom = aiHand.getBoundingClientRect ? aiHand.getBoundingClientRect() : {left:window.innerWidth/2,top:window.innerHeight/2,width:40,height:40};
-        fake.style.position = 'fixed'; fake.style.left = (rectFrom.left + rectFrom.width/2 - 20) + 'px'; fake.style.top = (rectFrom.top + rectFrom.height/2 - 30) + 'px'; fake.style.margin = '0'; fake.style.zIndex = '250'; fake.style.pointerEvents = 'none';
-        document.body.appendChild(fake);
-        animateFly(fake, discard, () => {
-          if (fake.parentNode) fake.parentNode.removeChild(fake);
+        animateFly(null, document.getElementById('aiDiscard'), () => {
+          G.traps.forbidAI = null;
           G.ai.hand.splice(idx, 1);
           G.ai.discard.push(letter);
           logAdd(`Forbid: AI's ${letter} went to DISCARD.`);
           render(); if (!checkWin()) setTimeout(endTurn, 650);
-        }, 500);
+        }, { duration: 0.5, scale: 0.3, letter: letter });
         return;
       }
-      G.ai.hand.splice(idx, 1);
       animateFly(null, document.getElementById('aiSpace'), () => {
+        G.ai.hand.splice(idx, 1);
         G.ai.space.push(letter);
-        logAdd(`AI played ${letter}.`); render();
+        logAdd(`AI played ${letter}.`);
+        render();
+
+        const playedCardEl = findLastPlayedCard(document.getElementById('aiSpace'), letter);
+        if (playedCardEl) {
+          const letterEl = playedCardEl.querySelector('.L');
+          gsap.set(playedCardEl, { autoAlpha: 0, rotationY: -90 });
+          gsap.to(playedCardEl, {
+            autoAlpha: 1,
+            rotationY: 0,
+            duration: 0.4,
+            ease: 'power2.out',
+            onComplete: runEffect
+          });
+        } else {
+          runEffect();
+        }
+      }, { isOpponentPlay: true, letter: letter, scale: 1.0 });
+
+      function runEffect() {
         if (letter === 'F') {
           const tChosen = pickMostType(G.you.space) || TYPES[Math.floor(Math.random() * 5)];
           G.traps.forbidYou = tChosen; logAdd("AI forbade a letter for you."); render(); finalize(); return;
@@ -1844,16 +1973,19 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
         }
         if (letter === 'S') {
           if (G.you.space.length > 0) {
-            const i = G.you.space.length - 1;
-            animateFromSpaceOrHand('you', 'space', i, document.getElementById('youDiscard'));
-            const removed = G.you.space.pop(); G.you.discard.push(removed);
-            logAdd(`AI stole your ${removed} to your DISCARD.`); render();
+            const i = G.you.space.length - 1; // Steal last card for simplicity
+            animateFromSpaceOrHand('you', 'space', i, document.getElementById('youDiscard'), () => {
+              const removed = G.you.space.splice(i, 1)[0]; G.you.discard.push(removed);
+              logAdd(`AI stole your ${removed} to your DISCARD.`);
+              render();
+              finalize();
+            });
+            return;
           }
-          finalize(); return;
         }
         if (letter === 'T') { G.traps.tNextYou++; logAdd(tt('tAI')); finalize(); return; }
         finalize();
-      });
+      }
       function finalize() { if (!checkWin()) endTurn(); }
     }
 
@@ -1879,46 +2011,70 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
 
     /* ===== Anim & helpers ===== */
     function pickHandCardEl(index) { const hand = document.getElementById('youHand'); return hand.children[index]; }
-    function animateFly(fromEl, toContainer, cb, duration) {
+
+    function animateFly(fromEl, toContainer, cb, options = {}) {
+      if (!window.gsap) { if (cb) cb(); return; }
+      const { duration = 0.6, scale = 1.0, letter = null, isOpponentPlay = false } = options;
       const rectTo = toContainer.getBoundingClientRect();
       let rectFrom;
       let ghost;
+
       if (fromEl) {
         rectFrom = fromEl.getBoundingClientRect();
         ghost = fromEl.cloneNode(true);
+        gsap.set(fromEl, { opacity: 0 });
       } else {
-        rectFrom = { left: rectTo.left, top: rectTo.top, width: 20, height: 20 };
-        ghost = document.createElement('div'); ghost.className = 'card'; const s = document.createElement('div'); s.className = 'L'; s.textContent = ''; ghost.appendChild(s);
+        const rectParent = toContainer.parentElement.getBoundingClientRect();
+        rectFrom = { left: rectParent.left + rectParent.width / 2, top: rectParent.top, width: 80, height: 60 };
+        ghost = cardEl(letter || '?', { hand: false });
       }
-      const targetX = rectTo.left + rectTo.width / 2 - (rectFrom.left + rectFrom.width / 2);
-      const targetY = rectTo.top + rectTo.height / 2 - (rectFrom.top + rectFrom.height / 2);
-      ghost.style.position = 'fixed'; ghost.style.left = (rectFrom.left) + 'px'; ghost.style.top = (rectFrom.top) + 'px'; ghost.style.margin = '0'; ghost.style.zIndex = '250'; ghost.style.pointerEvents = 'none';
+
+      if (isOpponentPlay) {
+        ghost.querySelector('.L').textContent = '?';
+        ghost.classList.remove(...TYPES.map(t => `card-${t}`));
+      }
+
+      gsap.set(ghost, {
+        position: 'fixed', left: rectFrom.left, top: rectFrom.top,
+        width: rectFrom.width, height: rectFrom.height,
+        margin: 0, zIndex: 250, pointerEvents: 'none'
+      });
       document.body.appendChild(ghost);
-      const t0 = performance.now(), dur = duration || 300; function step(now) { const p = Math.min(1, (now - t0) / dur); const x = targetX * p, y = targetY * p, s = 1 - 0.12 * p; ghost.style.transform = `translate(${x}px, ${y}px) scale(${s})`; if (p < 1) requestAnimationFrame(step); else { document.body.removeChild(ghost); if (cb) cb(); } } requestAnimationFrame(step);
+
+      gsap.to(ghost, {
+        left: rectTo.left + (rectTo.width / 2) - (rectFrom.width / 2),
+        top: rectTo.top + (rectTo.height / 2) - (rectFrom.height / 2),
+        scale: scale,
+        duration: duration,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          document.body.removeChild(ghost);
+          if (fromEl) gsap.set(fromEl, { opacity: 1 });
+          if (cb) cb();
+        }
+      });
     }
-    function animateForbidden(fromEl, spaceContainer, discardContainer, letter) {
-      animateFly(fromEl, spaceContainer);
-      setTimeout(() => {
-        const fake = document.createElement('div'); fake.className = 'card'; const L = document.createElement('div'); L.className = 'L ' + letter; L.textContent = letter; fake.appendChild(L);
-        const rectSpace = spaceContainer.getBoundingClientRect();
-        fake.style.position = 'fixed'; fake.style.left = (rectSpace.left + 24) + 'px'; fake.style.top = (rectSpace.top + 24) + 'px'; fake.style.margin = '0'; fake.style.zIndex = '250'; fake.style.pointerEvents = 'none';
-        document.body.appendChild(fake);
-        animateFly(fake, discardContainer, undefined, 700);
-        setTimeout(() => { if (fake.parentNode) fake.parentNode.removeChild(fake); }, 520);
-      }, 250);
+
+    function findLastPlayedCard(container, letter) {
+      if (!container) return null;
+      const stacks = Array.from(container.querySelectorAll('.stack'));
+      for (let i = stacks.length - 1; i >= 0; i--) {
+        const top = stacks[i].querySelector('.card-top .L');
+        if (top && top.textContent === letter) {
+          return stacks[i].querySelector('.card-top');
+        }
+      }
+      return null;
     }
-    // (removed runForbidSequence animations)
-    function animateFromSpaceOrHand(side, area, index, targetContainer) {
+
+    function animateFromSpaceOrHand(side, area, index, targetContainer, cb) {
       const zoneId = side === 'you' ? (area === 'space' ? 'youSpace' : 'youHand') : (area === 'space' ? 'aiSpace' : 'aiHandHidden');
       const zone = document.getElementById(zoneId);
-      if (!zone) { return; }
-      // in stacked layout, find the last stack with this index if space area
+      if (!zone) { if (cb) cb(); return; }
       let fromEl = null;
       if (area === 'space') {
-        // flatten logical index into visual: map letters
         const letters = side === 'you' ? G.you.space : G.ai.space;
         const letter = letters[index];
-        // find a stack with top card having same letter
         const stacks = Array.from(zone.querySelectorAll('.stack'));
         for (let i = stacks.length - 1; i >= 0; i--) {
           const top = stacks[i].querySelector('.card-top .L');
@@ -1927,8 +2083,10 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
       } else {
         if (zone.children && zone.children[index]) fromEl = zone.children[index];
       }
-      if (!fromEl) return; animateFly(fromEl, targetContainer);
+      if (!fromEl) { if (cb) cb(); return; }
+      animateFly(fromEl, targetContainer, cb, { duration: 0.6, scale: 0.3 });
     }
+
     function animateFromDiscardTo(side, dest, letter) {
       const from = document.getElementById(side === 'you' ? 'youDiscard' : 'aiDiscard');
       const to = document.getElementById(side === 'you' ? 'youHand' : 'aiSpace');
@@ -1937,8 +2095,9 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
       const rectFrom = from.getBoundingClientRect();
       ghost.style.position = 'fixed'; ghost.style.left = (rectFrom.left + rectFrom.width * 0.3) + 'px'; ghost.style.top = (rectFrom.top + rectFrom.height * 0.3) + 'px'; ghost.style.zIndex = '250';
       document.body.appendChild(ghost);
-      animateFly(ghost, to);
-      setTimeout(() => { if (ghost.parentNode) ghost.parentNode.removeChild(ghost); }, 600);
+      animateFly(ghost, to, () => {
+        if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
+      }, { scale: 1.0 });
     }
 
     /* ===== Layout helpers ===== */
