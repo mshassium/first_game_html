@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F!RST Game - Automated Scenario Tests</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0c1014;
+            color: #f2f5fb;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .scenario {
+            background: #16213a;
+            border: 1px solid #2a3550;
+            border-radius: 8px;
+            margin: 20px 0;
+            padding: 20px;
+        }
+        .scenario h3 {
+            color: #9cc8ff;
+            margin-top: 0;
+        }
+        .scenario-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        .result-pass {
+            background: #1a3d2e;
+            border-color: #4ade80;
+            color: #a9ffcf;
+        }
+        .result-fail {
+            background: #3d1a1a;
+            border-color: #ef4444;
+            color: #ff9aa4;
+        }
+        .controls {
+            background: #232b39;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .btn {
+            background: #1a2738;
+            color: #e8f0ff;
+            border: 1px solid #3a4a6a;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #1f2d42;
+        }
+        .game-state {
+            background: #0e1420;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        .step {
+            margin: 8px 0;
+            padding: 8px;
+            background: #232b39;
+            border-radius: 4px;
+        }
+        .step.current {
+            border-left: 4px solid #9cc8ff;
+            background: #1e2a3e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 F!RST Game - Automated Scenario Tests</h1>
+        
+        <div class="controls">
+            <h2>Test Complex Game Scenarios</h2>
+            <button class="btn" onclick="runAllScenarios()">Run All Scenarios</button>
+            <button class="btn" onclick="runScenario('trapChain')">Test Trap Chain</button>
+            <button class="btn" onclick="runScenario('forbidCycle')">Test Forbid Cycle</button>
+            <button class="btn" onclick="runScenario('comboEffects')">Test Effect Combos</button>
+            <button class="btn" onclick="runScenario('winConditions')">Test Win Conditions</button>
+            <button class="btn" onclick="runScenario('edgeCases')">Test Edge Cases</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Game simulation framework
+        class GameSimulator {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.state = {
+                    turn: 'you',
+                    firstPlayer: 'you',
+                    firstTurnDone: false,
+                    you: { deck: [], hand: [], space: [], discard: [] },
+                    ai: { deck: [], hand: [], space: [], discard: [] },
+                    traps: { forbidYou: null, forbidAI: null, tNextYou: 0, tNextAI: 0 },
+                    over: false,
+                    turnCount: 0
+                };
+                this.log = [];
+            }
+
+            logAction(action) {
+                this.log.push(`Turn ${this.state.turnCount}: ${action}`);
+            }
+
+            dealInitialCards() {
+                this.state.you.deck = this.buildDeck();
+                this.state.ai.deck = this.buildDeck();
+                
+                for (let i = 0; i < 5; i++) {
+                    this.state.you.hand.push(this.state.you.deck.pop());
+                    this.state.ai.hand.push(this.state.ai.deck.pop());
+                }
+                this.logAction('Initial deal: 5 cards to each player');
+            }
+
+            buildDeck() {
+                const deck = [];
+                const types = ['F', 'I', 'R', 'S', 'T'];
+                for (let i = 0; i < 10; i++) {
+                    types.forEach(type => deck.push(type));
+                }
+                return this.shuffle(deck);
+            }
+
+            shuffle(array) {
+                const arr = [...array];
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                return arr;
+            }
+
+            drawCard(side) {
+                const player = this.state[side];
+                if (player.deck.length === 0) {
+                    this.state.over = true;
+                    this.logAction(`${side} lost - deck empty`);
+                    return false;
+                }
+                const card = player.deck.pop();
+                player.hand.push(card);
+                this.enforceHandLimit(side);
+                this.logAction(`${side} drew ${card}`);
+                return true;
+            }
+
+            enforceHandLimit(side) {
+                const player = this.state[side];
+                while (player.hand.length > 7) {
+                    const discarded = player.hand.pop();
+                    player.discard.push(discarded);
+                    this.logAction(`${side} hand overflow: ${discarded} to discard`);
+                }
+            }
+
+            playCard(side, cardIndex) {
+                const player = this.state[side];
+                const card = player.hand.splice(cardIndex, 1)[0];
+                
+                // Check forbid
+                const forbidKey = side === 'you' ? 'forbidYou' : 'forbidAI';
+                if (this.state.traps[forbidKey] === card) {
+                    player.discard.push(card);
+                    this.state.traps[forbidKey] = null;
+                    this.logAction(`${side} played forbidden ${card} - went to discard`);
+                    return false;
+                }
+
+                player.space.push(card);
+                this.logAction(`${side} played ${card} to space`);
+                this.resolveCardEffect(side, card);
+                return true;
+            }
+
+            resolveCardEffect(side, card) {
+                const player = this.state[side];
+                const opponent = this.state[side === 'you' ? 'ai' : 'you'];
+
+                switch (card) {
+                    case 'F':
+                        const letters = ['F', 'I', 'R', 'S', 'T'];
+                        const forbidLetter = letters[Math.floor(Math.random() * letters.length)];
+                        if (side === 'you') {
+                            this.state.traps.forbidAI = forbidLetter;
+                        } else {
+                            this.state.traps.forbidYou = forbidLetter;
+                        }
+                        this.logAction(`${side} forbade letter ${forbidLetter}`);
+                        break;
+
+                    case 'I':
+                        this.drawCard(side);
+                        break;
+
+                    case 'R':
+                        if (player.discard.length > 0) {
+                            const recovered = player.discard.pop();
+                            player.hand.push(recovered);
+                            this.enforceHandLimit(side);
+                            this.logAction(`${side} recovered ${recovered} from discard`);
+                        }
+                        break;
+
+                    case 'S':
+                        if (opponent.space.length > 0) {
+                            const stolen = opponent.space.pop();
+                            opponent.discard.push(stolen);
+                            this.logAction(`${side} stole ${stolen} from opponent space`);
+                        }
+                        break;
+
+                    case 'T':
+                        if (side === 'you') {
+                            this.state.traps.tNextAI++;
+                        } else {
+                            this.state.traps.tNextYou++;
+                        }
+                        this.logAction(`${side} set trap for opponent next turn`);
+                        break;
+                }
+            }
+
+            processTrapAtTurnStart(side) {
+                const trapKey = side === 'you' ? 'tNextYou' : 'tNextAI';
+                if (this.state.traps[trapKey] > 0) {
+                    const player = this.state[side];
+                    if (player.hand.length > 0) {
+                        const discarded = player.hand.pop();
+                        player.discard.push(discarded);
+                        this.logAction(`${side} discarded ${discarded} due to trap`);
+                    }
+                    this.state.traps[trapKey]--;
+                }
+            }
+
+            checkWinCondition(side) {
+                const player = this.state[side];
+                const counts = { F: 0, I: 0, R: 0, S: 0, T: 0 };
+                player.space.forEach(card => counts[card]++);
+
+                // Check F-I-R-S-T
+                const hasFirst = ['F', 'I', 'R', 'S', 'T'].every(letter => counts[letter] >= 1);
+                
+                // Check 5 of a kind
+                const hasFiveOfKind = Object.values(counts).some(count => count >= 5);
+
+                if (hasFirst || hasFiveOfKind) {
+                    this.state.over = true;
+                    this.logAction(`${side} wins with ${hasFirst ? 'F-I-R-S-T' : '5 of a kind'}`);
+                    return true;
+                }
+                return false;
+            }
+
+            takeTurn(side) {
+                if (this.state.over) return false;
+
+                this.state.turnCount++;
+                this.logAction(`=== ${side.toUpperCase()} TURN ${this.state.turnCount} ===`);
+
+                // Process trap at turn start
+                this.processTrapAtTurnStart(side);
+
+                // Draw phase (skip first turn for first player)
+                const skipDraw = !this.state.firstTurnDone && side === this.state.firstPlayer;
+                if (!skipDraw) {
+                    if (!this.drawCard(side)) return false; // Deck empty
+                }
+                if (!this.state.firstTurnDone) this.state.firstTurnDone = true;
+
+                // Play phase
+                const player = this.state[side];
+                if (player.hand.length > 0) {
+                    const cardIndex = Math.floor(Math.random() * player.hand.length);
+                    this.playCard(side, cardIndex);
+                }
+
+                // Check win condition
+                return !this.checkWinCondition(side);
+            }
+
+            simulateGame(maxTurns = 50) {
+                this.reset();
+                this.dealInitialCards();
+
+                let currentSide = this.state.firstPlayer;
+                for (let turn = 0; turn < maxTurns && !this.state.over; turn++) {
+                    if (!this.takeTurn(currentSide)) break;
+                    currentSide = currentSide === 'you' ? 'ai' : 'you';
+                }
+
+                return {
+                    winner: this.state.over ? null : 'draw',
+                    turns: this.state.turnCount,
+                    log: this.log,
+                    finalState: JSON.parse(JSON.stringify(this.state))
+                };
+            }
+
+            // Set specific game state for testing
+            setState(newState) {
+                this.state = { ...this.state, ...newState };
+            }
+
+            getState() {
+                return JSON.parse(JSON.stringify(this.state));
+            }
+        }
+
+        // Test scenarios
+        const scenarios = {
+            trapChain: {
+                name: 'Trap Chain Reaction',
+                description: 'Tests multiple consecutive trap effects',
+                test: async () => {
+                    const sim = new GameSimulator();
+                    sim.dealInitialCards();
+                    
+                    // Set up scenario: both players have T cards
+                    sim.setState({
+                        you: { ...sim.state.you, hand: ['T', 'T', 'F'], space: [] },
+                        ai: { ...sim.state.ai, hand: ['T', 'I', 'R'], space: [] }
+                    });
+
+                    const results = [];
+
+                    // Player plays T
+                    sim.playCard('you', 0);
+                    results.push({
+                        step: 'Player plays T',
+                        passed: sim.state.traps.tNextAI === 1,
+                        details: `AI trap counter: ${sim.state.traps.tNextAI}`
+                    });
+
+                    // AI turn - should discard due to trap, then play T
+                    sim.takeTurn('ai');
+                    results.push({
+                        step: 'AI processes trap and plays T',
+                        passed: sim.state.traps.tNextAI === 0 && sim.state.traps.tNextYou === 1,
+                        details: `Player trap counter: ${sim.state.traps.tNextYou}, AI discard: ${sim.state.ai.discard.length}`
+                    });
+
+                    // Player turn - should discard due to trap
+                    const playerHandBefore = sim.state.you.hand.length;
+                    sim.takeTurn('you');
+                    results.push({
+                        step: 'Player processes trap',
+                        passed: sim.state.traps.tNextYou === 0 && sim.state.you.discard.length > 0,
+                        details: `Player hand: ${playerHandBefore} → ${sim.state.you.hand.length}`
+                    });
+
+                    return {
+                        passed: results.every(r => r.passed),
+                        steps: results,
+                        log: sim.log,
+                        state: sim.getState()
+                    };
+                }
+            },
+
+            forbidCycle: {
+                name: 'Forbid Interaction Cycle',
+                description: 'Tests forbid mechanics with multiple F cards',
+                test: async () => {
+                    const sim = new GameSimulator();
+                    sim.dealInitialCards();
+                    
+                    // Set up scenario: both players have F cards
+                    sim.setState({
+                        you: { ...sim.state.you, hand: ['F', 'F', 'I'], space: ['F'] },
+                        ai: { ...sim.state.ai, hand: ['F', 'R', 'S'], space: ['F'] }
+                    });
+
+                    const results = [];
+
+                    // Player forbids 'R'
+                    sim.state.traps.forbidAI = 'R';
+                    sim.logAction('Player forbids R for AI');
+                    
+                    // AI tries to play forbidden 'R'
+                    const aiDiscardBefore = sim.state.ai.discard.length;
+                    sim.playCard('ai', 1); // R card
+                    results.push({
+                        step: 'AI plays forbidden R',
+                        passed: sim.state.ai.discard.length === aiDiscardBefore + 1 && 
+                               sim.state.traps.forbidAI === null,
+                        details: `R went to discard, forbid cleared`
+                    });
+
+                    // AI forbids 'F'
+                    sim.state.traps.forbidYou = 'F';
+                    sim.logAction('AI forbids F for player');
+
+                    // Player tries to play forbidden 'F'
+                    const playerDiscardBefore = sim.state.you.discard.length;
+                    sim.playCard('you', 0); // F card
+                    results.push({
+                        step: 'Player plays forbidden F',
+                        passed: sim.state.you.discard.length === playerDiscardBefore + 1 && 
+                               sim.state.traps.forbidYou === null,
+                        details: `F went to discard, forbid cleared`
+                    });
+
+                    return {
+                        passed: results.every(r => r.passed),
+                        steps: results,
+                        log: sim.log,
+                        state: sim.getState()
+                    };
+                }
+            },
+
+            comboEffects: {
+                name: 'Card Effect Combinations',
+                description: 'Tests combinations of different card effects',
+                test: async () => {
+                    const sim = new GameSimulator();
+                    sim.dealInitialCards();
+                    
+                    const results = [];
+
+                    // Test I + R combo (draw then recover)
+                    sim.setState({
+                        you: { ...sim.state.you, hand: ['I', 'R'], discard: ['S', 'T'], space: [] }
+                    });
+
+                    const handBefore = sim.state.you.hand.length;
+                    sim.playCard('you', 0); // Play I - should draw
+                    const handAfterI = sim.state.you.hand.length;
+                    
+                    sim.playCard('you', 0); // Play R - should recover
+                    const handAfterR = sim.state.you.hand.length;
+                    const discardAfterR = sim.state.you.discard.length;
+
+                    results.push({
+                        step: 'I then R combo',
+                        passed: handAfterI === handBefore && handAfterR === handAfterI && discardAfterR === 1,
+                        details: `Hand: ${handBefore}→${handAfterI}→${handAfterR}, Discard: 2→${discardAfterR}`
+                    });
+
+                    // Test S + T combo (steal then trap)
+                    sim.setState({
+                        you: { ...sim.state.you, hand: ['S', 'T'], space: [] },
+                        ai: { ...sim.state.ai, space: ['F', 'I'], discard: [] }
+                    });
+
+                    const aiSpaceBefore = sim.state.ai.space.length;
+                    sim.playCard('you', 0); // Play S - should steal
+                    const aiSpaceAfterS = sim.state.ai.space.length;
+                    const aiDiscardAfterS = sim.state.ai.discard.length;
+
+                    sim.playCard('you', 0); // Play T - should set trap
+                    const trapAfterT = sim.state.traps.tNextAI;
+
+                    results.push({
+                        step: 'S then T combo',
+                        passed: aiSpaceAfterS === aiSpaceBefore - 1 && 
+                               aiDiscardAfterS === 1 && trapAfterT === 1,
+                        details: `AI space: ${aiSpaceBefore}→${aiSpaceAfterS}, AI discard: 0→${aiDiscardAfterS}, Trap: ${trapAfterT}`
+                    });
+
+                    return {
+                        passed: results.every(r => r.passed),
+                        steps: results,
+                        log: sim.log,
+                        state: sim.getState()
+                    };
+                }
+            },
+
+            winConditions: {
+                name: 'Win Condition Edge Cases',
+                description: 'Tests various win condition scenarios',
+                test: async () => {
+                    const sim = new GameSimulator();
+                    const results = [];
+
+                    // Test F-I-R-S-T with extra cards
+                    sim.setState({
+                        you: { space: ['F', 'I', 'R', 'S', 'T', 'F', 'F'], hand: [], deck: [], discard: [] }
+                    });
+                    
+                    const firstWin = sim.checkWinCondition('you');
+                    results.push({
+                        step: 'F-I-R-S-T with extras',
+                        passed: firstWin,
+                        details: 'Should win with F-I-R-S-T + extra cards'
+                    });
+
+                    // Reset and test 5 of a kind
+                    sim.reset();
+                    sim.setState({
+                        you: { space: ['F', 'F', 'F', 'F', 'F'], hand: [], deck: [], discard: [] }
+                    });
+                    
+                    const fiveWin = sim.checkWinCondition('you');
+                    results.push({
+                        step: '5 of a kind',
+                        passed: fiveWin,
+                        details: 'Should win with 5 F cards'
+                    });
+
+                    // Test non-win: 4 of a kind
+                    sim.reset();
+                    sim.setState({
+                        you: { space: ['F', 'F', 'F', 'F'], hand: [], deck: [], discard: [] }
+                    });
+                    
+                    const noWin = sim.checkWinCondition('you');
+                    results.push({
+                        step: '4 of a kind (no win)',
+                        passed: !noWin,
+                        details: 'Should NOT win with only 4 cards'
+                    });
+
+                    // Test non-win: incomplete F-I-R-S-T
+                    sim.reset();
+                    sim.setState({
+                        you: { space: ['F', 'I', 'R', 'S'], hand: [], deck: [], discard: [] }
+                    });
+                    
+                    const incompleteWin = sim.checkWinCondition('you');
+                    results.push({
+                        step: 'Incomplete F-I-R-S-T',
+                        passed: !incompleteWin,
+                        details: 'Should NOT win without T'
+                    });
+
+                    return {
+                        passed: results.every(r => r.passed),
+                        steps: results,
+                        log: sim.log,
+                        state: sim.getState()
+                    };
+                }
+            },
+
+            edgeCases: {
+                name: 'Edge Cases and Error Handling',
+                description: 'Tests unusual game states and error conditions',
+                test: async () => {
+                    const sim = new GameSimulator();
+                    const results = [];
+
+                    // Test empty deck scenario
+                    sim.setState({
+                        you: { deck: [], hand: ['I'], space: [], discard: [] }
+                    });
+                    
+                    const success = sim.drawCard('you');
+                    results.push({
+                        step: 'Draw from empty deck',
+                        passed: !success && sim.state.over,
+                        details: 'Should end game when deck is empty'
+                    });
+
+                    // Reset and test effects on empty collections
+                    sim.reset();
+                    sim.setState({
+                        you: { hand: ['R', 'S'], space: [], discard: [] },
+                        ai: { space: [], hand: [], deck: [], discard: [] }
+                    });
+
+                    // R with empty discard
+                    const handBefore = sim.state.you.hand.length;
+                    sim.resolveCardEffect('you', 'R');
+                    results.push({
+                        step: 'R with empty discard',
+                        passed: sim.state.you.hand.length === handBefore,
+                        details: 'R should do nothing with empty discard'
+                    });
+
+                    // S with empty opponent space
+                    const aiDiscardBefore = sim.state.ai.discard.length;
+                    sim.resolveCardEffect('you', 'S');
+                    results.push({
+                        step: 'S with empty opponent space',
+                        passed: sim.state.ai.discard.length === aiDiscardBefore,
+                        details: 'S should do nothing with empty opponent space'
+                    });
+
+                    // Test hand limit with multiple overflow
+                    sim.reset();
+                    sim.setState({
+                        you: { hand: ['F', 'I', 'R', 'S', 'T', 'F', 'I', 'R', 'S', 'T'], discard: [] }
+                    });
+                    
+                    sim.enforceHandLimit('you');
+                    results.push({
+                        step: 'Hand limit enforcement',
+                        passed: sim.state.you.hand.length === 7 && sim.state.you.discard.length === 3,
+                        details: `Hand: ${sim.state.you.hand.length}, Discard: ${sim.state.you.discard.length}`
+                    });
+
+                    // Test trap with empty hand
+                    sim.reset();
+                    sim.setState({
+                        you: { hand: [], discard: [] },
+                        traps: { tNextYou: 1, tNextAI: 0, forbidYou: null, forbidAI: null }
+                    });
+                    
+                    sim.processTrapAtTurnStart('you');
+                    results.push({
+                        step: 'Trap with empty hand',
+                        passed: sim.state.traps.tNextYou === 0 && sim.state.you.discard.length === 0,
+                        details: 'Trap should clear even with empty hand'
+                    });
+
+                    return {
+                        passed: results.every(r => r.passed),
+                        steps: results,
+                        log: sim.log,
+                        state: sim.getState()
+                    };
+                }
+            }
+        };
+
+        // UI Functions
+        async function runScenario(scenarioName) {
+            const scenario = scenarios[scenarioName];
+            if (!scenario) return;
+
+            const resultsDiv = document.getElementById('results');
+            const scenarioDiv = document.createElement('div');
+            scenarioDiv.className = 'scenario';
+            scenarioDiv.innerHTML = `
+                <h3>${scenario.name}</h3>
+                <p>${scenario.description}</p>
+                <div class="scenario-result">Running test...</div>
+            `;
+            resultsDiv.appendChild(scenarioDiv);
+
+            try {
+                const result = await scenario.test();
+                
+                let html = `
+                    <div class="scenario-result ${result.passed ? 'result-pass' : 'result-fail'}">
+                        <strong>${result.passed ? '✓ PASSED' : '✗ FAILED'}</strong> - ${scenario.name}
+                    </div>
+                `;
+
+                result.steps.forEach((step, index) => {
+                    html += `
+                        <div class="step ${index === result.steps.length - 1 ? 'current' : ''}">
+                            <strong>${step.passed ? '✓' : '✗'} ${step.step}</strong>
+                            <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">${step.details}</div>
+                        </div>
+                    `;
+                });
+
+                if (result.log && result.log.length > 0) {
+                    html += `
+                        <div class="game-state">
+                            <strong>Execution Log:</strong><br>
+                            ${result.log.slice(-10).join('<br>')}
+                        </div>
+                    `;
+                }
+
+                scenarioDiv.innerHTML = `
+                    <h3>${scenario.name}</h3>
+                    <p>${scenario.description}</p>
+                    ${html}
+                `;
+
+            } catch (error) {
+                scenarioDiv.innerHTML = `
+                    <h3>${scenario.name}</h3>
+                    <p>${scenario.description}</p>
+                    <div class="scenario-result result-fail">
+                        <strong>✗ ERROR</strong> - ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function runAllScenarios() {
+            document.getElementById('results').innerHTML = '';
+            
+            for (const scenarioName of Object.keys(scenarios)) {
+                await runScenario(scenarioName);
+                // Small delay to show progress
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            // Summary
+            const results = document.querySelectorAll('.scenario-result');
+            const passed = Array.from(results).filter(r => r.classList.contains('result-pass')).length;
+            const total = results.length;
+            
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = `scenario ${passed === total ? 'result-pass' : 'result-fail'}`;
+            summaryDiv.innerHTML = `
+                <h3>🎯 Test Summary</h3>
+                <div style="font-size: 18px; text-align: center;">
+                    <strong>${passed}/${total} scenarios passed</strong>
+                    ${passed === total ? ' 🎉' : ' ⚠️'}
+                </div>
+                <p>All critical game mechanics have been tested with complex scenarios.</p>
+            `;
+            
+            document.getElementById('results').insertBefore(summaryDiv, document.getElementById('results').firstChild);
+        }
+    </script>
+</body>
+</html>

@@ -1356,7 +1356,7 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
         playedYou: (c) => `You played ${c}.`, playedAI: (c) => `AI played ${c}.`,
         recoverYou: (c) => `You recovered ${c} to hand.`, recoverAI: "AI recovered a card to hand.",
         stealYou: (c) => `You moved opponent ${c} to DISCARD.`, stealAI: (c) => `AI stole your ${c} to your DISCARD.`,
-        tYou: "You used T: AI discarded 1 card.", tAI: "AI used T: you must discard 1 card.",
+        tYou: "You used T: AI will discard 1 card next turn.", tAI: "AI used T: you must discard 1 card next turn.",
         winVictory: "🎉 Victory!", winDefeat: "😞 Defeat", winDraw: "Draw",
         loseByFirst: "Opponent assembled F I R S T.",
         loseByFive: "Opponent made 5 of a kind.",
@@ -1407,7 +1407,7 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
         playedYou: (c) => `Ты сыграл ${c}.`, playedAI: (c) => `ИИ сыграл ${c}.`,
         recoverYou: (c) => `Ты вернул ${c} в руку.`, recoverAI: "ИИ вернул карту в руку.",
         stealYou: (c) => `Ты отправил карту противника ${c} в DISCARD.`, stealAI: (c) => `ИИ отправил твою ${c} в DISCARD.`,
-        tYou: "Ты применил T: ИИ сбросил 1 карту.", tAI: "ИИ применил T: сбрось 1 карту.",
+        tYou: "Ты применил T: ИИ сбросит 1 карту в следующий ход.", tAI: "ИИ применил T: ты должен сбросить 1 карту в следующий ход.",
         winVictory: "🎉 Победа!", winDefeat: "😞 Поражение", winDraw: "Ничья",
         loseByFirst: "Противник собрал F I R S T.",
         loseByFive: "Противник собрал 5 одинаковых карт.",
@@ -1775,83 +1775,10 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
     }
 
     function resolveEffect(side, letter, done) {
-      const playerSpace = document.getElementById(side === 'you' ? 'youSpace' : 'aiSpace');
-      const playedCardEl = findLastPlayedCard(playerSpace, letter);
-
-      const proceed = () => {
-        if (letter === 'F') {
-          chooseType(tt('pickForbid'), TYPES, (tChosen) => {
-            if (side === 'you') { G.traps.forbidAI = tChosen; logAdd("You forbade a letter for AI."); }
-            else { G.traps.forbidYou = tChosen; logAdd("AI forbade a letter for you."); }
-            render(); done();
-          });
-          return;
-        }
-        if (letter === 'I') { draw(side, 1); done(); return; }
-        if (letter === 'R') {
-          const S = side === 'you' ? G.you : G.ai;
-          if (S.discard.length === 0) { done(); return; }
-          chooseType(tt('pickRecover'), uniqueLetters(S.discard), (pick) => {
-            const idx = S.discard.lastIndexOf(pick);
-            if (idx >= 0) {
-              const c = S.discard.splice(idx, 1)[0];
-              S.hand.push(c);
-              animateFromDiscardTo(side, 'hand', c);
-              logAdd(side === 'you' ? tt('recoverYou', c) : tt('recoverAI')); enforceHandLimit(side);
-            }
-            render(); done();
-          });
-          return;
-        }
-        if (letter === 'S') {
-          const O = side === 'you' ? G.ai : G.you;
-          if (O.space.length === 0) { done(); return; }
-          chooseIndex(tt('pickSteal'), O.space, (i) => {
-            animateFromSpaceOrHand(side === 'you' ? 'ai' : 'you', 'space', i, side === 'you' ? document.getElementById('aiDiscard') : document.getElementById('youDiscard'), () => {
-              const removed = O.space.splice(i, 1)[0]; O.discard.push(removed);
-              logAdd(side === 'you' ? `You moved opponent ${removed} to DISCARD.` : `AI stole your ${removed} to your DISCARD.`);
-              render(); done();
-            });
-          });
-          return;
-        }
-        if (letter === 'T') {
-          // Immediate discard from opponent, turn passes to opponent after done()
-          if (side === 'you') {
-            if (G.ai.hand.length > 0) {
-              const i = Math.floor(Math.random() * G.ai.hand.length);
-              animateFromSpaceOrHand('ai', 'hand', i, document.getElementById('aiDiscard'), () => {
-                const dumped = G.ai.hand.splice(i, 1)[0];
-                G.ai.discard.push(dumped);
-                logAdd(tt('tYou'));
-                render(); done();
-              });
-              return;
-            }
-            logAdd(tt('tYou'));
-          } else {
-            if (G.you.hand.length > 0) {
-              chooseIndex(tt('pickTrapDiscard'), G.you.hand, (idx) => {
-                animateFromSpaceOrHand('you', 'hand', idx, document.getElementById('youDiscard'), () => {
-                  const dumped = G.you.hand.splice(idx, 1)[0];
-                  G.you.discard.push(dumped);
-                  logAdd(tt('tAI'));
-                  render(); done();
-                });
-              });
-              return;
-            } else {
-              logAdd(tt('tAI'));
-            }
-          }
-          render(); done(); return;
-        }
-        done();
-      }
-
       if (letter === 'F') {
         chooseType(tt('pickForbid'), TYPES, (tChosen) => {
           if (side === 'you') { G.traps.forbidAI = tChosen; logAdd("You forbade a letter for AI."); }
+          else { G.traps.forbidYou = tChosen; logAdd("AI forbade a letter for you."); }
           render(); done();
         });
         return;
@@ -1876,36 +1803,22 @@ Assemble the sequence F-I-R-S-T or 5 cards of the same type in your SPACE area t
         const O = side === 'you' ? G.ai : G.you;
         if (O.space.length === 0) { done(); return; }
         chooseIndex(tt('pickSteal'), O.space, (i) => {
-          animateFromSpaceOrHand(side === 'you' ? 'ai' : 'you', 'space', i, side === 'you' ? document.getElementById('aiDiscard') : document.getElementById('youDiscard'));
-          const removed = O.space.splice(i, 1)[0]; O.discard.push(removed);
-          logAdd(side === 'you' ? `You moved opponent ${removed} to DISCARD.` : `AI stole your ${removed} to your DISCARD.`);
-          render(); done();
+          animateFromSpaceOrHand(side === 'you' ? 'ai' : 'you', 'space', i, side === 'you' ? document.getElementById('aiDiscard') : document.getElementById('youDiscard'), () => {
+            const removed = O.space.splice(i, 1)[0]; O.discard.push(removed);
+            logAdd(side === 'you' ? `You moved opponent ${removed} to DISCARD.` : `AI stole your ${removed} to your DISCARD.`);
+            render(); done();
+          });
         });
         return;
       }
       if (letter === 'T') {
-        // Immediate discard from opponent, turn passes to opponent after done()
+        // Set trap for opponent's next turn - they must discard at start of their turn
         if (side === 'you') {
-          if (G.ai.hand.length > 0) {
-            const i = Math.floor(Math.random() * G.ai.hand.length);
-            const dumped = G.ai.hand.splice(i, 1)[0];
-            G.ai.discard.push(dumped);
-            animateFromSpaceOrHand('ai', 'hand', i, document.getElementById('aiDiscard'));
-          }
+          G.traps.tNextAI++;
           logAdd(tt('tYou'));
         } else {
-          if (G.you.hand.length > 0) {
-            chooseIndex(tt('pickTrapDiscard'), G.you.hand, (idx) => {
-              const dumped = G.you.hand.splice(idx, 1)[0];
-              G.you.discard.push(dumped);
-              animateFromSpaceOrHand('you', 'hand', idx, document.getElementById('youDiscard'));
-              logAdd(tt('tAI'));
-              render(); done();
-            });
-            return;
-          } else {
-            logAdd(tt('tAI'));
-          }
+          G.traps.tNextYou++;
+          logAdd(tt('tAI'));
         }
         render(); done(); return;
       }

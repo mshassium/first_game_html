@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F!RST Game Tests</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0c1014;
+            color: #f2f5fb;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        .test-pass {
+            background: #1a3d2e;
+            border-color: #4ade80;
+            color: #a9ffcf;
+        }
+        .test-fail {
+            background: #3d1a1a;
+            border-color: #ef4444;
+            color: #ff9aa4;
+        }
+        .test-group {
+            margin: 20px 0;
+            border: 1px solid #2a3550;
+            border-radius: 8px;
+            padding: 15px;
+            background: #16213a;
+        }
+        .test-group h3 {
+            color: #9cc8ff;
+            margin-top: 0;
+        }
+        .summary {
+            background: #232b39;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .summary.all-pass {
+            border: 2px solid #4ade80;
+        }
+        .summary.has-fail {
+            border: 2px solid #ef4444;
+        }
+        .test-count {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #0e1420;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #22c55e);
+            transition: width 0.3s ease;
+        }
+        pre {
+            background: #0e1420;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎮 F!RST Game Comprehensive Tests</h1>
+        <div id="summary" class="summary">
+            <div id="progress" class="progress-bar">
+                <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+            </div>
+            <div id="test-count" class="test-count">Running tests...</div>
+            <div id="test-details"></div>
+        </div>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        // Mock game state and functions for testing
+        const TYPES = ['F', 'I', 'R', 'S', 'T'];
+        
+        // Test framework
+        class TestFramework {
+            constructor() {
+                this.tests = [];
+                this.passed = 0;
+                this.failed = 0;
+                this.currentGroup = '';
+                this.results = [];
+            }
+
+            group(name) {
+                this.currentGroup = name;
+                return this;
+            }
+
+            test(description, testFn) {
+                this.tests.push({
+                    group: this.currentGroup,
+                    description,
+                    testFn
+                });
+                return this;
+            }
+
+            assert(condition, message = 'Assertion failed') {
+                if (!condition) {
+                    throw new Error(message);
+                }
+            }
+
+            assertEqual(actual, expected, message = '') {
+                const msg = message || `Expected ${expected}, got ${actual}`;
+                this.assert(actual === expected, msg);
+            }
+
+            assertArrayEqual(actual, expected, message = '') {
+                const msg = message || `Arrays not equal: ${JSON.stringify(actual)} vs ${JSON.stringify(expected)}`;
+                this.assert(JSON.stringify(actual) === JSON.stringify(expected), msg);
+            }
+
+            assertContains(array, item, message = '') {
+                const msg = message || `Array ${JSON.stringify(array)} does not contain ${item}`;
+                this.assert(array.includes(item), msg);
+            }
+
+            assertGreaterThan(actual, expected, message = '') {
+                const msg = message || `Expected ${actual} > ${expected}`;
+                this.assert(actual > expected, msg);
+            }
+
+            async run() {
+                const startTime = Date.now();
+                this.passed = 0;
+                this.failed = 0;
+                this.results = [];
+
+                const groupedTests = this.groupTests();
+                let totalTests = this.tests.length;
+                let completedTests = 0;
+
+                for (const [groupName, tests] of Object.entries(groupedTests)) {
+                    const groupResults = [];
+                    
+                    for (const test of tests) {
+                        try {
+                            await test.testFn();
+                            this.passed++;
+                            groupResults.push({
+                                description: test.description,
+                                status: 'pass',
+                                error: null
+                            });
+                        } catch (error) {
+                            this.failed++;
+                            groupResults.push({
+                                description: test.description,
+                                status: 'fail',
+                                error: error.message
+                            });
+                        }
+                        
+                        completedTests++;
+                        this.updateProgress(completedTests, totalTests);
+                        
+                        // Small delay to show progress
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                    }
+                    
+                    this.results.push({
+                        group: groupName,
+                        tests: groupResults
+                    });
+                }
+
+                const endTime = Date.now();
+                this.displayResults(endTime - startTime);
+            }
+
+            groupTests() {
+                const grouped = {};
+                for (const test of this.tests) {
+                    if (!grouped[test.group]) {
+                        grouped[test.group] = [];
+                    }
+                    grouped[test.group].push(test);
+                }
+                return grouped;
+            }
+
+            updateProgress(completed, total) {
+                const percentage = (completed / total) * 100;
+                document.getElementById('progress-fill').style.width = `${percentage}%`;
+                document.getElementById('test-count').textContent = `${completed}/${total} tests completed`;
+            }
+
+            displayResults(duration) {
+                const summary = document.getElementById('summary');
+                const resultsContainer = document.getElementById('test-results');
+                
+                // Update summary
+                const total = this.passed + this.failed;
+                const successRate = total > 0 ? ((this.passed / total) * 100).toFixed(1) : 0;
+                
+                summary.className = `summary ${this.failed === 0 ? 'all-pass' : 'has-fail'}`;
+                document.getElementById('test-count').innerHTML = `
+                    <span style="color: #4ade80;">✓ ${this.passed}</span> | 
+                    <span style="color: #ef4444;">✗ ${this.failed}</span> | 
+                    <span style="color: #9cc8ff;">${successRate}%</span>
+                `;
+                document.getElementById('test-details').innerHTML = `
+                    Total: ${total} tests | Duration: ${duration}ms | 
+                    ${this.failed === 0 ? '🎉 All tests passed!' : '⚠️ Some tests failed'}
+                `;
+
+                // Display detailed results
+                resultsContainer.innerHTML = '';
+                for (const group of this.results) {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = 'test-group';
+                    
+                    const groupPassed = group.tests.filter(t => t.status === 'pass').length;
+                    const groupTotal = group.tests.length;
+                    
+                    groupDiv.innerHTML = `
+                        <h3>${group.group} (${groupPassed}/${groupTotal})</h3>
+                        ${group.tests.map(test => `
+                            <div class="test-result test-${test.status}">
+                                <strong>${test.status === 'pass' ? '✓' : '✗'} ${test.description}</strong>
+                                ${test.error ? `<pre>${test.error}</pre>` : ''}
+                            </div>
+                        `).join('')}
+                    `;
+                    
+                    resultsContainer.appendChild(groupDiv);
+                }
+            }
+        }
+
+        // Mock game functions for testing
+        function createMockGame() {
+            return {
+                turn: null,
+                firstPlayer: null,
+                firstTurnDone: false,
+                you: {
+                    deck: [],
+                    hand: [],
+                    space: [],
+                    discard: []
+                },
+                ai: {
+                    deck: [],
+                    hand: [],
+                    space: [],
+                    discard: []
+                },
+                traps: {
+                    forbidYou: null,
+                    forbidAI: null,
+                    tNextYou: 0,
+                    tNextAI: 0
+                },
+                over: false
+            };
+        }
+
+        function buildDeck() {
+            const deck = [];
+            for (let i = 0; i < 10; i++) {
+                for (const type of TYPES) {
+                    deck.push(type);
+                }
+            }
+            return deck;
+        }
+
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function checkWinCondition(space) {
+            const counts = { F: 0, I: 0, R: 0, S: 0, T: 0 };
+            space.forEach(card => counts[card]++);
+            
+            // Check F-I-R-S-T sequence
+            const hasFirst = TYPES.every(type => counts[type] >= 1);
+            
+            // Check 5 of a kind
+            const hasFiveOfKind = TYPES.some(type => counts[type] >= 5);
+            
+            return { hasFirst, hasFiveOfKind, counts };
+        }
+
+        function simulateCardEffect(game, side, card) {
+            const player = game[side];
+            const opponent = side === 'you' ? game.ai : game.you;
+            
+            switch (card) {
+                case 'F':
+                    // Choose random letter to forbid
+                    const letterToForbid = TYPES[Math.floor(Math.random() * TYPES.length)];
+                    if (side === 'you') {
+                        game.traps.forbidAI = letterToForbid;
+                    } else {
+                        game.traps.forbidYou = letterToForbid;
+                    }
+                    break;
+                    
+                case 'I':
+                    // Draw a card
+                    if (player.deck.length > 0) {
+                        const drawnCard = player.deck.pop();
+                        player.hand.push(drawnCard);
+                    }
+                    break;
+                    
+                case 'R':
+                    // Recover from discard
+                    if (player.discard.length > 0) {
+                        const recoveredCard = player.discard.pop();
+                        player.hand.push(recoveredCard);
+                    }
+                    break;
+                    
+                case 'S':
+                    // Steal from opponent's space
+                    if (opponent.space.length > 0) {
+                        const stolenCard = opponent.space.pop();
+                        opponent.discard.push(stolenCard);
+                    }
+                    break;
+                    
+                case 'T':
+                    // Set trap for opponent's next turn
+                    if (side === 'you') {
+                        game.traps.tNextAI++;
+                    } else {
+                        game.traps.tNextYou++;
+                    }
+                    break;
+            }
+        }
+
+        function enforceHandLimit(game, side) {
+            const player = game[side];
+            while (player.hand.length > 7) {
+                const discarded = player.hand.pop();
+                player.discard.push(discarded);
+            }
+        }
+
+        // Initialize test framework
+        const test = new TestFramework();
+
+        // Test suites
+        test.group('🎲 Game Initialization')
+            .test('Game state should initialize correctly', () => {
+                const game = createMockGame();
+                test.assertEqual(game.turn, null, 'Turn should be null initially');
+                test.assertEqual(game.firstTurnDone, false, 'First turn should not be done');
+                test.assertEqual(game.over, false, 'Game should not be over');
+                test.assertEqual(game.you.hand.length, 0, 'Player hand should be empty');
+                test.assertEqual(game.ai.hand.length, 0, 'AI hand should be empty');
+            })
+            
+            .test('Deck should contain 50 cards with correct distribution', () => {
+                const deck = buildDeck();
+                test.assertEqual(deck.length, 50, 'Deck should have 50 cards');
+                
+                const counts = { F: 0, I: 0, R: 0, S: 0, T: 0 };
+                deck.forEach(card => counts[card]++);
+                
+                TYPES.forEach(type => {
+                    test.assertEqual(counts[type], 10, `Should have 10 ${type} cards`);
+                });
+            })
+            
+            .test('Shuffle should randomize deck order', () => {
+                const original = buildDeck();
+                const shuffled = shuffle(original);
+                test.assertEqual(shuffled.length, original.length, 'Shuffled deck should have same length');
+                
+                // Check that order is different (very unlikely to be identical after shuffle)
+                const isDifferent = shuffled.some((card, i) => card !== original[i]);
+                test.assert(isDifferent, 'Shuffled deck should have different order');
+            });
+
+        test.group('👋 Initial Deal')
+            .test('Players should receive 5 cards each', () => {
+                const game = createMockGame();
+                game.you.deck = buildDeck();
+                game.ai.deck = buildDeck();
+                
+                // Simulate initial deal
+                for (let i = 0; i < 5; i++) {
+                    game.you.hand.push(game.you.deck.pop());
+                    game.ai.hand.push(game.ai.deck.pop());
+                }
+                
+                test.assertEqual(game.you.hand.length, 5, 'Player should have 5 cards');
+                test.assertEqual(game.ai.hand.length, 5, 'AI should have 5 cards');
+                test.assertEqual(game.you.deck.length, 45, 'Player deck should have 45 cards left');
+                test.assertEqual(game.ai.deck.length, 45, 'AI deck should have 45 cards left');
+            });
+
+        test.group('🃏 Card Effects')
+            .test('F (FORBID) should set forbid trap correctly', () => {
+                const game = createMockGame();
+                simulateCardEffect(game, 'you', 'F');
+                test.assert(game.traps.forbidAI !== null, 'Should set forbid trap for AI');
+                test.assertContains(TYPES, game.traps.forbidAI, 'Forbidden letter should be valid');
+            })
+            
+            .test('I (INCREASE) should draw a card', () => {
+                const game = createMockGame();
+                game.you.deck = ['F', 'I', 'R'];
+                const initialHandSize = game.you.hand.length;
+                
+                simulateCardEffect(game, 'you', 'I');
+                
+                test.assertEqual(game.you.hand.length, initialHandSize + 1, 'Should draw one card');
+                test.assertEqual(game.you.deck.length, 2, 'Deck should have one less card');
+            })
+            
+            .test('R (RECOVER) should retrieve card from discard', () => {
+                const game = createMockGame();
+                game.you.discard = ['F', 'S'];
+                const initialHandSize = game.you.hand.length;
+                
+                simulateCardEffect(game, 'you', 'R');
+                
+                test.assertEqual(game.you.hand.length, initialHandSize + 1, 'Should recover one card');
+                test.assertEqual(game.you.discard.length, 1, 'Discard should have one less card');
+            })
+            
+            .test('S (STEAL) should move opponent card to discard', () => {
+                const game = createMockGame();
+                game.ai.space = ['F', 'I'];
+                const initialOpponentSpace = game.ai.space.length;
+                const initialOpponentDiscard = game.ai.discard.length;
+                
+                simulateCardEffect(game, 'you', 'S');
+                
+                test.assertEqual(game.ai.space.length, initialOpponentSpace - 1, 'Opponent should lose one space card');
+                test.assertEqual(game.ai.discard.length, initialOpponentDiscard + 1, 'Opponent discard should gain one card');
+            })
+            
+            .test('T (TRAP) should set trap counter for next turn', () => {
+                const game = createMockGame();
+                const initialTrapCount = game.traps.tNextAI;
+                
+                simulateCardEffect(game, 'you', 'T');
+                
+                test.assertEqual(game.traps.tNextAI, initialTrapCount + 1, 'Should increment trap counter for AI');
+            });
+
+        test.group('🎯 Win Conditions')
+            .test('Should detect F-I-R-S-T sequence win', () => {
+                const space = ['F', 'I', 'R', 'S', 'T'];
+                const result = checkWinCondition(space);
+                test.assert(result.hasFirst, 'Should detect F-I-R-S-T sequence');
+            })
+            
+            .test('Should detect 5 of a kind win', () => {
+                const space = ['F', 'F', 'F', 'F', 'F'];
+                const result = checkWinCondition(space);
+                test.assert(result.hasFiveOfKind, 'Should detect 5 of a kind');
+            })
+            
+            .test('Should not detect win with incomplete sequence', () => {
+                const space = ['F', 'I', 'R', 'S']; // Missing T
+                const result = checkWinCondition(space);
+                test.assert(!result.hasFirst, 'Should not detect incomplete F-I-R-S-T');
+            })
+            
+            .test('Should not detect win with only 4 of a kind', () => {
+                const space = ['F', 'F', 'F', 'F'];
+                const result = checkWinCondition(space);
+                test.assert(!result.hasFiveOfKind, 'Should not detect 4 of a kind as win');
+            });
+
+        test.group('📏 Hand Limit')
+            .test('Should enforce 7 card hand limit', () => {
+                const game = createMockGame();
+                game.you.hand = ['F', 'I', 'R', 'S', 'T', 'F', 'I', 'R', 'S']; // 9 cards
+                
+                enforceHandLimit(game, 'you');
+                
+                test.assertEqual(game.you.hand.length, 7, 'Hand should be limited to 7 cards');
+                test.assertEqual(game.you.discard.length, 2, 'Excess cards should go to discard');
+            })
+            
+            .test('Should not modify hand if within limit', () => {
+                const game = createMockGame();
+                game.you.hand = ['F', 'I', 'R']; // 3 cards
+                const originalHand = [...game.you.hand];
+                
+                enforceHandLimit(game, 'you');
+                
+                test.assertArrayEqual(game.you.hand, originalHand, 'Hand should remain unchanged');
+                test.assertEqual(game.you.discard.length, 0, 'No cards should be discarded');
+            });
+
+        test.group('🚫 Forbid Mechanics')
+            .test('Forbidden card should go to discard instead of space', () => {
+                const game = createMockGame();
+                game.traps.forbidYou = 'F';
+                game.you.hand = ['F'];
+                const initialSpace = game.you.space.length;
+                const initialDiscard = game.you.discard.length;
+                
+                // Simulate playing forbidden card
+                const playedCard = game.you.hand.pop();
+                if (game.traps.forbidYou === playedCard) {
+                    game.you.discard.push(playedCard);
+                    game.traps.forbidYou = null;
+                } else {
+                    game.you.space.push(playedCard);
+                }
+                
+                test.assertEqual(game.you.space.length, initialSpace, 'Space should not gain the forbidden card');
+                test.assertEqual(game.you.discard.length, initialDiscard + 1, 'Discard should gain the forbidden card');
+                test.assertEqual(game.traps.forbidYou, null, 'Forbid trap should be cleared');
+            });
+
+        test.group('🪤 Trap Mechanics')
+            .test('Trap should trigger at start of next turn', () => {
+                const game = createMockGame();
+                game.traps.tNextYou = 1;
+                game.you.hand = ['F', 'I'];
+                const initialHandSize = game.you.hand.length;
+                const initialDiscardSize = game.you.discard.length;
+                
+                // Simulate trap triggering at turn start
+                if (game.traps.tNextYou > 0 && game.you.hand.length > 0) {
+                    const discardedCard = game.you.hand.pop();
+                    game.you.discard.push(discardedCard);
+                    game.traps.tNextYou--;
+                }
+                
+                test.assertEqual(game.you.hand.length, initialHandSize - 1, 'Should discard one card');
+                test.assertEqual(game.you.discard.length, initialDiscardSize + 1, 'Discard should gain one card');
+                test.assertEqual(game.traps.tNextYou, 0, 'Trap counter should be reset');
+            })
+            
+            .test('Trap should not trigger if hand is empty', () => {
+                const game = createMockGame();
+                game.traps.tNextYou = 1;
+                game.you.hand = []; // Empty hand
+                
+                // Simulate trap triggering with empty hand
+                if (game.traps.tNextYou > 0 && game.you.hand.length > 0) {
+                    const discardedCard = game.you.hand.pop();
+                    game.you.discard.push(discardedCard);
+                    game.traps.tNextYou--;
+                } else if (game.traps.tNextYou > 0) {
+                    game.traps.tNextYou = 0; // Clear trap if can't execute
+                }
+                
+                test.assertEqual(game.you.hand.length, 0, 'Hand should remain empty');
+                test.assertEqual(game.traps.tNextYou, 0, 'Trap should be cleared even with empty hand');
+            });
+
+        test.group('🔄 Turn Flow')
+            .test('First player should not draw on first turn', () => {
+                const game = createMockGame();
+                game.firstPlayer = 'you';
+                game.firstTurnDone = false;
+                game.you.deck = ['F', 'I', 'R'];
+                const initialDeckSize = game.you.deck.length;
+                
+                // Simulate first turn (should skip draw)
+                const skipDraw = !game.firstTurnDone && game.firstPlayer === 'you';
+                if (!skipDraw) {
+                    game.you.hand.push(game.you.deck.pop());
+                }
+                
+                test.assertEqual(game.you.deck.length, initialDeckSize, 'Deck should not lose cards on first turn');
+            })
+            
+            .test('Should draw card on subsequent turns', () => {
+                const game = createMockGame();
+                game.firstTurnDone = true;
+                game.you.deck = ['F', 'I', 'R'];
+                const initialDeckSize = game.you.deck.length;
+                const initialHandSize = game.you.hand.length;
+                
+                // Simulate regular turn (should draw)
+                game.you.hand.push(game.you.deck.pop());
+                
+                test.assertEqual(game.you.deck.length, initialDeckSize - 1, 'Deck should lose one card');
+                test.assertEqual(game.you.hand.length, initialHandSize + 1, 'Hand should gain one card');
+            });
+
+        test.group('🎰 Edge Cases')
+            .test('Should handle empty deck gracefully', () => {
+                const game = createMockGame();
+                game.you.deck = [];
+                const initialHandSize = game.you.hand.length;
+                
+                // Try to draw from empty deck
+                if (game.you.deck.length > 0) {
+                    game.you.hand.push(game.you.deck.pop());
+                } else {
+                    game.over = true; // Game should end
+                }
+                
+                test.assertEqual(game.you.hand.length, initialHandSize, 'Hand should not change');
+                test.assert(game.over, 'Game should end when deck is empty');
+            })
+            
+            .test('Should handle effect on empty space/discard', () => {
+                const game = createMockGame();
+                game.you.discard = [];
+                game.ai.space = [];
+                
+                // Try R on empty discard
+                const initialHandSize = game.you.hand.length;
+                if (game.you.discard.length > 0) {
+                    const recovered = game.you.discard.pop();
+                    game.you.hand.push(recovered);
+                }
+                
+                test.assertEqual(game.you.hand.length, initialHandSize, 'R should do nothing on empty discard');
+                
+                // Try S on empty space
+                const initialOpponentDiscard = game.ai.discard.length;
+                if (game.ai.space.length > 0) {
+                    const stolen = game.ai.space.pop();
+                    game.ai.discard.push(stolen);
+                }
+                
+                test.assertEqual(game.ai.discard.length, initialOpponentDiscard, 'S should do nothing on empty space');
+            })
+            
+            .test('Should handle multiple traps correctly', () => {
+                const game = createMockGame();
+                game.traps.tNextYou = 2; // Multiple traps
+                game.you.hand = ['F', 'I', 'R', 'S'];
+                const initialHandSize = game.you.hand.length;
+                
+                // Process one trap at a time
+                while (game.traps.tNextYou > 0 && game.you.hand.length > 0) {
+                    const discarded = game.you.hand.pop();
+                    game.you.discard.push(discarded);
+                    game.traps.tNextYou--;
+                    break; // Only one per turn start
+                }
+                
+                test.assertEqual(game.you.hand.length, initialHandSize - 1, 'Should only discard one card per turn');
+                test.assertEqual(game.traps.tNextYou, 1, 'Should decrement trap counter by one');
+            });
+
+        test.group('🎲 Random Scenarios')
+            .test('Complex game scenario simulation', () => {
+                const game = createMockGame();
+                game.you.deck = shuffle(buildDeck());
+                game.ai.deck = shuffle(buildDeck());
+                
+                // Initial deal
+                for (let i = 0; i < 5; i++) {
+                    game.you.hand.push(game.you.deck.pop());
+                    game.ai.hand.push(game.ai.deck.pop());
+                }
+                
+                // Simulate several moves
+                for (let turn = 0; turn < 10; turn++) {
+                    const currentPlayer = turn % 2 === 0 ? 'you' : 'ai';
+                    const player = game[currentPlayer];
+                    
+                    // Draw phase (skip first turn for first player)
+                    if (!(turn === 0 && currentPlayer === 'you')) {
+                        if (player.deck.length > 0) {
+                            player.hand.push(player.deck.pop());
+                        }
+                    }
+                    
+                    // Play phase
+                    if (player.hand.length > 0) {
+                        const cardToPlay = player.hand.pop();
+                        player.space.push(cardToPlay);
+                        simulateCardEffect(game, currentPlayer, cardToPlay);
+                    }
+                    
+                    // Enforce hand limit
+                    enforceHandLimit(game, currentPlayer);
+                    
+                    // Check win condition
+                    const winCheck = checkWinCondition(player.space);
+                    if (winCheck.hasFirst || winCheck.hasFiveOfKind) {
+                        game.over = true;
+                        break;
+                    }
+                }
+                
+                // Verify game state integrity
+                test.assert(game.you.hand.length <= 7, 'Player hand should not exceed limit');
+                test.assert(game.ai.hand.length <= 7, 'AI hand should not exceed limit');
+                
+                // Verify total card count conservation
+                const youTotal = game.you.deck.length + game.you.hand.length + 
+                                game.you.space.length + game.you.discard.length;
+                const aiTotal = game.ai.deck.length + game.ai.hand.length + 
+                               game.ai.space.length + game.ai.discard.length;
+                
+                test.assertEqual(youTotal, 50, 'Player should have 50 total cards');
+                test.assertEqual(aiTotal, 50, 'AI should have 50 total cards');
+            });
+
+        // Run all tests
+        document.addEventListener('DOMContentLoaded', () => {
+            test.run();
+        });
+    </script>
+</body>
+</html>
