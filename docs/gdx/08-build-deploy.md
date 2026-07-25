@@ -1,5 +1,10 @@
 # 08 — Сборка, платформы, деплой
 
+> **Статус:** всё в этом документе проверено на практике. Фактические версии,
+> подтверждённые сборкой: Gradle 8.14.3, Kotlin 2.2.21, libGDX 1.14.2, KTX 1.13.1-rc1,
+> AGP 8.11.2, gdx-teavm 1.6.0, RoboVM 2.3.25. Отличия от первоначального плана и
+> найденные грабли перечислены в [gdx/README.md](../../gdx/README.md).
+
 ## 1. Требования к окружению
 
 | Инструмент | Версия | Для чего |
@@ -44,14 +49,17 @@ cd gdx
 ./gradlew android:bundleRelease
 
 # Web — сборка
-./gradlew teavm:build
-# → teavm/build/dist/    (index.html + .js + assets)
+./gradlew :teavm:gdx_teavm_web_js_build
+# → teavm/build/dist/js/webapp/    (index.html + app.js + assets)
 
-# Web — локальный запуск с автообновлением
-./gradlew teavm:run
+# Web — отладочная сборка с читаемыми стек-трейсами
+./gradlew :teavm:gdx_teavm_web_js_build -PwebDebug
+
+# Web — локальный запуск со встроенным сервером
+./gradlew :teavm:gdx_teavm_web_js_run
 
 # iOS — симулятор
-./gradlew ios:launchIPhoneSimulator
+./gradlew :ios:launchIPhoneSimulator
 
 # iOS — сборка ipa (нужен профиль подписи)
 ./gradlew ios:createIPA
