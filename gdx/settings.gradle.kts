@@ -17,3 +17,5 @@ dependencyResolutionManagement {
 rootProject.name = "first-game"
 
 include("core")
+include("tools")
+include("lwjgl3")
