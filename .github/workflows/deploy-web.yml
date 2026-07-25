@@ -1,0 +1,71 @@
+name: Deploy web to /v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "gdx/**"
+      - ".github/workflows/deploy-web.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Собрать веб-версию
+        working-directory: gdx
+        run: ./gradlew :teavm:gdx_teavm_web_js_build
+
+      - name: Выложить в gh-pages/v2
+        run: |
+          set -euo pipefail
+          BUILD_DIR="gdx/teavm/build/dist/js/webapp"
+          test -f "$BUILD_DIR/index.html"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Ветку gh-pages создаём от текущего main, если её ещё нет:
+          # так старая HTML-версия и CNAME остаются в корне нетронутыми.
+          if git ls-remote --exit-code --heads origin gh-pages > /dev/null; then
+            git fetch origin gh-pages
+            git worktree add ../pages origin/gh-pages
+          else
+            git worktree add --detach ../pages
+            git -C ../pages checkout --orphan gh-pages
+            git -C ../pages rm -rf . > /dev/null 2>&1 || true
+            cp index.html first_v*.html CNAME ../pages/ 2>/dev/null || true
+            cp -r images ../pages/ 2>/dev/null || true
+          fi
+
+          rm -rf ../pages/v2
+          mkdir -p ../pages/v2
+          cp -r "$BUILD_DIR"/. ../pages/v2/
+
+          # CNAME обязателен в раздаваемой ветке, иначе кастомный домен отвалится.
+          cp CNAME ../pages/CNAME 2>/dev/null || true
+
+          cd ../pages
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Изменений нет"
+          else
+            git commit -m "deploy: веб-версия v2 из ${GITHUB_SHA::7}"
+            git push origin gh-pages
+          fi

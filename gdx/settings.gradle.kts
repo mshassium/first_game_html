@@ -1,7 +1,4 @@
 pluginManagement {
-    plugins {
-        id("com.github.xpenatan.gdx-teavm") version providers.gradleProperty("gdxTeaVMPluginVersion").get()
-    }
     repositories {
         gradlePluginPortal()
         google()
@@ -23,3 +20,5 @@ include("core")
 include("tools")
 include("lwjgl3")
 include("teavm")
+include("android")
+include("ios")

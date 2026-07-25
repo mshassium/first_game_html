@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Полноэкранная тема без заголовка: игра рисует всё сама. -->
+    <style name="GameTheme" parent="android:Theme.Black.NoTitleBar.Fullscreen">
+        <!-- Разрешаем рисовать под вырезом экрана; на API<27 просто игнорируется. -->
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="27">shortEdges</item>
+    </style>
+</resources>

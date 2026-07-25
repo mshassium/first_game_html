@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: gdx
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Тесты
+        run: ./gradlew core:test
+
+      - name: Сборка десктопа, веба и Android
+        run: ./gradlew lwjgl3:jar :teavm:gdx_teavm_web_js_build :android:assembleDebug
+
+      - name: Упаковать веб-версию
+        run: |
+          cd teavm/build/dist/js
+          zip -qr "${GITHUB_WORKSPACE}/first-game-web.zip" webapp
+
+      - name: Создать релиз
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          generate_release_notes: true
+          files: |
+            gdx/lwjgl3/build/libs/*.jar
+            gdx/android/build/outputs/apk/debug/*.apk
+            first-game-web.zip
+          body: |
+            Веб-версия: https://first-game.com/v2/
+
+            iOS собирается отдельно на macOS с профилем подписи:
+            `./gradlew :ios:createIPA`

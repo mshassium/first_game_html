@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "gdx/**"
+      - "assets_src/**"
+      - ".github/workflows/**"
+  pull_request:
+    paths:
+      - "gdx/**"
+      - "assets_src/**"
+      - ".github/workflows/**"
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: gdx
+
+jobs:
+  tests:
+    name: Тесты домена
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew core:test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-report
+          path: gdx/core/build/reports/tests/test
+
+  desktop:
+    name: Десктоп (jar)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew lwjgl3:jar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-jar
+          path: gdx/lwjgl3/build/libs/*.jar
+
+  web:
+    name: Веб (TeaVM)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew :teavm:gdx_teavm_web_js_build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: gdx/teavm/build/dist/js/webapp
+
+  android:
+    name: Android (APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew :android:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk
+          path: gdx/android/build/outputs/apk/debug/*.apk
+
+  ios:
+    name: iOS (компиляция)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      # Полная линковка требует профиля подписи, поэтому в CI проверяем
+      # только то, что модуль компилируется и зависимости на месте.
+      - run: ./gradlew :ios:compileJava
