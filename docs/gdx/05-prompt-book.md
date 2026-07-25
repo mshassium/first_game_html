@@ -1,215 +1,604 @@
-# 05 — Промпт-бук для nano banana (Gemini Image)
+# 05 — Промпт-бук: готовые промпты на все ассеты
 
-Практическое руководство: как получить 60+ ассетов в одном стиле, генерируя вручную в чате.
+Каждый промпт ниже — **цельный блок, который копируется целиком и вставляется как есть**.
+Ничего дописывать, склеивать и подставлять не нужно: стиль, технические требования и
+запреты уже вшиты в каждый промпт.
 
-Промпты — на английском: image-модели заметно точнее понимают английские описания материалов и света. Русские комментарии — для вас, в промпт их не копируем.
+Промпты на английском: image-модели точнее понимают английские описания материалов и света.
+Русский текст вокруг блоков — инструкции для вас, в промпт он не идёт.
 
 ---
 
-## 1. Метод
+## 0. Как этим пользоваться
 
-### 1.1 Три правила, без которых стиль расползётся
+**Модель.** Эталонная карта F сгенерирована моделью OpenAI и принята без замечаний —
+дальше работаем ею же. Промпты не привязаны к конкретной модели, но менять её посреди
+набора не стоит: у каждой свой характер мазка и свой рендер металла.
 
-1. **Style Anchor.** Первый утверждённый ассет (карта F) становится эталоном. Во **все** последующие запросы прикладываем его как reference-изображение и пишем `Match the art style, lighting, material treatment and colour grading of the attached reference exactly.`
-2. **Групповая генерация.** Связанные ассеты просим одним изображением-листом (5 карт, 16 иконок, 6 граней кубика). Внутри одной картинки стиль совпадает почти идеально — резать потом дешевле, чем бороться с дрейфом.
-3. **Один чат = одна группа ассетов.** Модель удерживает контекст стиля внутри диалога. Как только начинается новая группа — новый чат, и в него снова кладём Anchor.
+**Вложение.** К каждому промпту из раздела 2 прикладывайте файл
+`assets_src/anchor/card_F_anchor.png`. Это единственный способ удержать один стиль на
+всём наборе. В промптах уже написано, что делать с приложенной картинкой.
 
-### 1.2 Формула промпта
+**Размеры.** Модель работает с тремя формами кадра, и все промпты рассчитаны только на них:
 
-```
-[STYLE BLOCK]  — дословно из 03-art-style-bible.md §10, никогда не перефразировать
-[SUBJECT]      — что изображено, конкретно и по слоям
-[COMPOSITION]  — раскладка, ракурс, поля, что в центре
-[TECH]         — фон, прозрачность, соотношение сторон, отсутствие текста
-[NEGATIVE]     — что запрещено
-```
+| Форма | Размер | Что генерируем |
+|---|---|---|
+| Портрет 2:3 | 1024×1536 | Карты, рубашка, портретный фон |
+| Квадрат 1:1 | 1024×1024 | Иконки, портреты, эмблема, панели, VFX-листы |
+| Ландшафт 3:2 | 1536×1024 | Фоны стола и меню, кубики, слот с урной |
 
-### 1.3 Технические хвосты (копировать в конец промпта)
+Просить 16:9 бесполезно — модель такого кадра не выдаёт. Ландшафтные фоны генерируем
+в 3:2 и обрезаем до 16:9 при постобработке: композиция во всех промптах построена так,
+что запас сверху и снизу не жалко.
 
-**Для элементов с прозрачностью:**
-```
+**Фон и тень.** Модель почти всегда рисует не идеально белый фон, а светло-серый с мягкой
+тенью под объектом — как на эталоне. Это нормально и ожидаемо: фон всё равно удаляется
+при постобработке (см. [04-asset-list.md](04-asset-list.md) §7). Требование «pure white»
+в промпте оставлено намеренно — оно удерживает модель от рисования сцены вокруг объекта.
+
+**Один чат — одна группа.** Внутри диалога модель держит стиль лучше. Начали новую группу
+ассетов — новый чат, и в него снова прикладываем эталон.
+
+**Учёт.** Каждый принятый ассет записывайте в [assets_src/GENERATION-LOG.md](../../assets_src/GENERATION-LOG.md) —
+файл уже создан, эталон в нём отмечен.
+
+---
+
+## 1. Эталон — готов
+
+`assets_src/anchor/card_F_anchor.png`, 1024×1536, принят без замечаний.
+
+Промпт, которым он получен, сохранён в логе генерации. Повторно его запускать не нужно —
+он приведён там только для того, чтобы можно было догенерировать карту в том же стиле
+через полгода.
+
+Что этот эталон зафиксировал для всего набора:
+
+- тёплая дубовая рамка с четырьмя бронзово-золотыми угловыми накладками;
+- верхняя гранитная плашка-картуш с тонкой светящейся окантовкой цвета школы — **пустая**;
+- арочный медальон: главный объект парит над низким каменным постаментом, вокруг —
+  свечение цвета школы и частицы в воздухе;
+- пергаментная лента под медальоном — **пустая**;
+- нижняя тёмная гранитная плашка описания — **пустая**;
+- самоцвет цвета школы в центре нижней части рамки;
+- свет сверху-слева, холодная подсветка снизу, живописный мазок.
+
+Все промпты ниже написаны так, чтобы это воспроизводилось.
+
+---
+
+## 2. Карты
+
+Четыре карты генерируем **по одной**, а не листом: портретный кадр 2:3 — родной для модели,
+поэтому каждая карта выходит в полном разрешении и её не нужно резать.
+
+К каждому промпту прикладываем `card_F_anchor.png`.
+
+### 2.1 Карта I — Родник Изобилия
+
+```text
+A reference image of the "F" card from the same fantasy card set is attached. Match its art style, framing, proportions, wood tone, bronze corner fittings, lighting direction, colour grading, brushwork and level of detail exactly. This new card must look like it came from the same printed deck. Only the artwork inside the arched medallion window, the accent glow colour and the bottom gemstone colour change.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, rich warm lighting from the upper left, cool blue fill light from below, narrow warm rim light along top edges. Heavy ornate carved dark-oak wood and tarnished bronze framing with deep bevels and soft drop shadows. Materials: aged oak with visible grain, patinated bronze, warm polished gold accents, grey-blue granite with faintly glowing rune veins, smooth glowing gemstones. Muted rich palette, deep shadows, subtle bloom only on magical glows. Slightly stylised exaggerated proportions, bold readable silhouette, physical tabletop-object feel with worn edges and small chips. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: a single vertical fantasy spell card, portrait orientation, seen perfectly flat and straight on with no perspective. The card is a physical object with a thick carved dark-oak border and tarnished bronze corner fittings.
+
+Layout from top to bottom, occupying the full card:
+— top 6% is the outer wooden frame;
+— from 6% to 30% of the height there is a large EMPTY carved rectangular cartouche plate, recessed into the frame, made of grey-blue granite with a faint jade-green inner glow around its inner edge. This plate must be completely blank and empty — no symbol, no engraving, no ornament inside it;
+— from 30% to 72% there is an arched medallion window containing the artwork: a carved stone basin overflowing with glowing emerald water, a young green sprout breaking through the cracked stone rim, the basin floating above a low round stone pedestal exactly like in the reference, emerald light radiating outward, glowing leaves and water droplets floating in the air;
+— from 72% to 82% there is an EMPTY horizontal parchment ribbon banner stretched across the card, blank, with no writing;
+— from 82% to 95% there is an EMPTY recessed dark granite plate for description, blank, with no writing;
+— at the bottom centre, embedded in the frame, a smooth glowing jade-green gemstone cabochon.
+
+A thin glowing jade-green line runs along the inner perimeter of the wooden frame. The dominant accent colour of this card is jade green (#A9FFCF); the wood and bronze stay neutral warm brown, exactly as in the reference, and must not be tinted green.
+
 Isolated object centred on a plain flat pure-white background with no shadow touching the canvas edges, so the background can be removed cleanly. Leave 5% empty margin on all sides. No text, no letters, no numbers, no digits, no words, no captions, no watermark, no signature, no logo, no UI mockup, no border frame around the whole image.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, gore, blood, text of any kind, letters, numerals, watermarks, duplicated frames, cluttered micro-detail, filled cartouche, engraved symbols inside the empty plates.
+
+Portrait orientation, aspect ratio 2:3, size 1024x1536.
 ```
 
-**Для фонов:**
-```
-Full-bleed background illustration, no isolated object, no frame. No text, no letters, no numbers, no watermark, no characters in the centre of the composition.
+Сохранить как `assets_src/cards/card_I.png`.
+
+### 2.2 Карта R — Реликварий
+
+```text
+A reference image of the "F" card from the same fantasy card set is attached. Match its art style, framing, proportions, wood tone, bronze corner fittings, lighting direction, colour grading, brushwork and level of detail exactly. This new card must look like it came from the same printed deck. Only the artwork inside the arched medallion window, the accent glow colour and the bottom gemstone colour change.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, rich warm lighting from the upper left, cool blue fill light from below, narrow warm rim light along top edges. Heavy ornate carved dark-oak wood and tarnished bronze framing with deep bevels and soft drop shadows. Materials: aged oak with visible grain, patinated bronze, warm polished gold accents, grey-blue granite with faintly glowing rune veins, smooth glowing gemstones. Muted rich palette, deep shadows, subtle bloom only on magical glows. Slightly stylised exaggerated proportions, bold readable silhouette, physical tabletop-object feel with worn edges and small chips. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: a single vertical fantasy spell card, portrait orientation, seen perfectly flat and straight on with no perspective. The card is a physical object with a thick carved dark-oak border and tarnished bronze corner fittings.
+
+Layout from top to bottom, occupying the full card:
+— top 6% is the outer wooden frame;
+— from 6% to 30% of the height there is a large EMPTY carved rectangular cartouche plate, recessed into the frame, made of grey-blue granite with a faint amber-gold inner glow around its inner edge. This plate must be completely blank and empty — no symbol, no engraving, no ornament inside it;
+— from 30% to 72% there is an arched medallion window containing the artwork: an open bronze reliquary casket with its lid raised, floating above a low round stone pedestal exactly like in the reference, warm amber light and glowing embers pouring upward out of the casket, drifting ash gathering into the shape of a single rising phoenix feather above it;
+— from 72% to 82% there is an EMPTY horizontal parchment ribbon banner stretched across the card, blank, with no writing;
+— from 82% to 95% there is an EMPTY recessed dark granite plate for description, blank, with no writing;
+— at the bottom centre, embedded in the frame, a smooth glowing amber gemstone cabochon.
+
+A thin glowing amber line runs along the inner perimeter of the wooden frame. The dominant accent colour of this card is amber gold (#FFD195); the wood and bronze stay neutral warm brown, exactly as in the reference, and the accent must stay clearly brighter and more saturated than the wood so it reads as magical light and not as more wood.
+
+Isolated object centred on a plain flat pure-white background with no shadow touching the canvas edges, so the background can be removed cleanly. Leave 5% empty margin on all sides. No text, no letters, no numbers, no digits, no words, no captions, no watermark, no signature, no logo, no UI mockup, no border frame around the whole image.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, gore, blood, text of any kind, letters, numerals, watermarks, duplicated frames, cluttered micro-detail, filled cartouche, engraved symbols inside the empty plates.
+
+Portrait orientation, aspect ratio 2:3, size 1024x1536.
 ```
 
-**Универсальный negative:**
-```
-Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, gore, blood, text of any kind, letters, numerals, watermarks, duplicated frames, cluttered micro-detail.
+Сохранить как `assets_src/cards/card_R.png`.
+
+> У этой карты акцент близок к цвету дерева. Если янтарное свечение сливается с рамкой —
+> повторите запрос, добавив в конец: `Increase the contrast between the amber magical glow and the brown wooden frame: the glow must be luminous and clearly separated from the wood.`
+
+### 2.3 Карта S — Тень Похитителя
+
+```text
+A reference image of the "F" card from the same fantasy card set is attached. Match its art style, framing, proportions, wood tone, bronze corner fittings, lighting direction, colour grading, brushwork and level of detail exactly. This new card must look like it came from the same printed deck. Only the artwork inside the arched medallion window, the accent glow colour and the bottom gemstone colour change.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, rich warm lighting from the upper left, cool blue fill light from below, narrow warm rim light along top edges. Heavy ornate carved dark-oak wood and tarnished bronze framing with deep bevels and soft drop shadows. Materials: aged oak with visible grain, patinated bronze, warm polished gold accents, grey-blue granite with faintly glowing rune veins, smooth glowing gemstones. Muted rich palette, deep shadows, subtle bloom only on magical glows. Slightly stylised exaggerated proportions, bold readable silhouette, physical tabletop-object feel with worn edges and small chips. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: a single vertical fantasy spell card, portrait orientation, seen perfectly flat and straight on with no perspective. The card is a physical object with a thick carved dark-oak border and tarnished bronze corner fittings.
+
+Layout from top to bottom, occupying the full card:
+— top 6% is the outer wooden frame;
+— from 6% to 30% of the height there is a large EMPTY carved rectangular cartouche plate, recessed into the frame, made of grey-blue granite with a faint crimson-rose inner glow around its inner edge. This plate must be completely blank and empty — no symbol, no engraving, no ornament inside it;
+— from 30% to 72% there is an arched medallion window containing the artwork: a ghostly clawed hand made of crimson smoke reaching out of the darkness and snatching a golden amulet whose chain has just snapped, the amulet hanging above a low round stone pedestal exactly like in the reference, crimson light and swirling dark smoke around them, broken chain links scattering in the air;
+— from 72% to 82% there is an EMPTY horizontal parchment ribbon banner stretched across the card, blank, with no writing;
+— from 82% to 95% there is an EMPTY recessed dark granite plate for description, blank, with no writing;
+— at the bottom centre, embedded in the frame, a smooth glowing crimson gemstone cabochon.
+
+A thin glowing crimson line runs along the inner perimeter of the wooden frame. The dominant accent colour of this card is crimson rose (#FF9AA4); the wood and bronze stay neutral warm brown, exactly as in the reference, and must not be tinted red. The hand is a spectral silhouette of smoke, not a realistic anatomical hand, and there is no blood and no gore anywhere.
+
+Isolated object centred on a plain flat pure-white background with no shadow touching the canvas edges, so the background can be removed cleanly. Leave 5% empty margin on all sides. No text, no letters, no numbers, no digits, no words, no captions, no watermark, no signature, no logo, no UI mockup, no border frame around the whole image.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, gore, blood, text of any kind, letters, numerals, watermarks, duplicated frames, cluttered micro-detail, filled cartouche, engraved symbols inside the empty plates.
+
+Portrait orientation, aspect ratio 2:3, size 1024x1536.
 ```
 
-### 1.4 Соотношения сторон
+Сохранить как `assets_src/cards/card_S.png`.
 
-| Ассет | Aspect ratio |
+### 2.4 Карта T — Капкан Чародея
+
+```text
+A reference image of the "F" card from the same fantasy card set is attached. Match its art style, framing, proportions, wood tone, bronze corner fittings, lighting direction, colour grading, brushwork and level of detail exactly. This new card must look like it came from the same printed deck. Only the artwork inside the arched medallion window, the accent glow colour and the bottom gemstone colour change.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, rich warm lighting from the upper left, cool blue fill light from below, narrow warm rim light along top edges. Heavy ornate carved dark-oak wood and tarnished bronze framing with deep bevels and soft drop shadows. Materials: aged oak with visible grain, patinated bronze, warm polished gold accents, grey-blue granite with faintly glowing rune veins, smooth glowing gemstones. Muted rich palette, deep shadows, subtle bloom only on magical glows. Slightly stylised exaggerated proportions, bold readable silhouette, physical tabletop-object feel with worn edges and small chips. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: a single vertical fantasy spell card, portrait orientation, seen perfectly flat and straight on with no perspective. The card is a physical object with a thick carved dark-oak border and tarnished bronze corner fittings.
+
+Layout from top to bottom, occupying the full card:
+— top 6% is the outer wooden frame;
+— from 6% to 30% of the height there is a large EMPTY carved rectangular cartouche plate, recessed into the frame, made of grey-blue granite with a faint amethyst-violet inner glow around its inner edge. This plate must be completely blank and empty — no symbol, no engraving, no ornament inside it;
+— from 30% to 72% there is an arched medallion window containing the artwork: a circular rune-etched steel snare trap with open toothed jaws, tilted towards the viewer so its ring shape reads clearly, hovering above a low round stone pedestal exactly like in the reference, violet magical light glowing between the teeth, thin spectral threads stretched across the open ring like a web, violet sparks in the air;
+— from 72% to 82% there is an EMPTY horizontal parchment ribbon banner stretched across the card, blank, with no writing;
+— from 82% to 95% there is an EMPTY recessed dark granite plate for description, blank, with no writing;
+— at the bottom centre, embedded in the frame, a smooth glowing amethyst gemstone cabochon.
+
+A thin glowing amethyst line runs along the inner perimeter of the wooden frame. The dominant accent colour of this card is amethyst violet (#C6B3FF); the wood and bronze stay neutral warm brown, exactly as in the reference, and must not be tinted violet. The runes on the trap ring are abstract invented glyphs, not letters of any real alphabet.
+
+Isolated object centred on a plain flat pure-white background with no shadow touching the canvas edges, so the background can be removed cleanly. Leave 5% empty margin on all sides. No text, no letters, no numbers, no digits, no words, no captions, no watermark, no signature, no logo, no UI mockup, no border frame around the whole image.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, gore, blood, text of any kind, letters, numerals, watermarks, duplicated frames, cluttered micro-detail, filled cartouche, engraved symbols inside the empty plates.
+
+Portrait orientation, aspect ratio 2:3, size 1024x1536.
+```
+
+Сохранить как `assets_src/cards/card_T.png`.
+
+### 2.5 Рубашка карты
+
+```text
+A reference image of the "F" card from the same fantasy card set is attached. Match its outer shape, size, proportions, wooden border, bronze corner fittings, lighting direction, colour grading and brushwork exactly. This is the BACK of the same card, so the outer frame must be identical to the reference.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, rich warm lighting from the upper left, cool blue fill light from below, narrow warm rim light along top edges. Heavy ornate carved dark-oak wood and tarnished bronze framing with deep bevels and soft drop shadows. Materials: aged oak with visible grain, patinated bronze, warm polished gold accents, dark navy tooled leather, smooth glowing gemstones. Muted rich palette, deep shadows, subtle bloom only on magical glows. Slightly stylised exaggerated proportions, bold readable silhouette, physical tabletop-object feel with worn edges and small chips. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: the back of a vertical fantasy spell card, portrait orientation, seen perfectly flat and straight on with no perspective. The outer carved dark-oak border and bronze corner fittings are identical to the reference card. There are no windows, no plates and no banners on this side: the whole inner area is filled with dark navy blue tooled leather with subtle embossed ornament.
+
+In the exact centre of the leather field there is a raised heraldic seal: a circular tarnished bronze ring with a polished gold inner rim and an ornate abstract arcane sigil in the middle. Five small glowing gemstone cabochons are set evenly around the ring, in clockwise order starting from the top: azure blue, jade green, amber gold, crimson rose, amethyst violet. Each gem glows softly and casts a faint coloured light onto the leather around it.
+
+The design is perfectly symmetrical from left to right, calm and ornamental, with no focal scene and no illustration — it must read as the reverse side of a card and give away nothing about the card's identity.
+
+Isolated object centred on a plain flat pure-white background with no shadow touching the canvas edges, so the background can be removed cleanly. Leave 5% empty margin on all sides. No text, no letters, no numbers, no digits, no words, no captions, no watermark, no signature, no logo, no UI mockup, no border frame around the whole image.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, gore, blood, text of any kind, letters, numerals, watermarks, duplicated frames, cluttered micro-detail, asymmetry.
+
+Portrait orientation, aspect ratio 2:3, size 1024x1536.
+```
+
+Сохранить как `assets_src/cards/card_back.png`.
+
+---
+
+## 3. Интерфейс
+
+### 3.1 Панели и кнопки (один лист)
+
+```text
+A reference image of a fantasy spell card is attached. Match its art style, material treatment, wood tone, bronze patina, gold accents, lighting direction from the upper left, colour grading and brushwork exactly. These are user-interface elements for the same game.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, rich warm lighting from the upper left, cool blue fill light from below, narrow warm rim light along top edges. Heavy ornate carved dark-oak wood and tarnished bronze framing with deep bevels and soft drop shadows. Materials: aged oak with visible grain, patinated bronze, warm polished gold accents, grey-blue granite, aged parchment. Muted rich palette, deep shadows. Slightly stylised exaggerated proportions, bold readable silhouette, physical tabletop-object feel with worn edges and small chips. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: a sheet of nine separate user-interface elements arranged in three rows on a plain flat pure-white background, evenly spaced, seen perfectly flat and straight on with no perspective, all sharing identical material treatment and lighting. Elements must not overlap and must not touch each other.
+
+Row 1, three wide horizontal rectangular panels with rounded corners, each with a completely empty flat interior:
+— a panel of dark carved oak with a tarnished bronze border and small bronze corner fittings;
+— a panel of grey-blue granite with a recessed centre and a thin bronze edge;
+— a panel of aged parchment held at the corners by bronze clips.
+
+Row 2, three wide horizontal buttons with rounded corners and completely empty faces:
+— a raised button with a dark oak body and a polished gold rim, lit from the upper left;
+— the same button in a pressed-in state, darker, with the highlight moved to the lower edge;
+— the same button desaturated, dull and greyed out, as a disabled state.
+
+Row 3, four smaller elements:
+— a raised wide button with a bronze rim and no gold, empty face;
+— the same bronze button pressed in;
+— a small round bronze button, raised, empty face;
+— the same round button pressed in.
+
+Every element is completely empty: no text, no icons, no symbols, no ornament in the middle of the faces.
+
+Plain flat pure-white background, elements do not touch the canvas edges, no shadows reaching the canvas edges, so the background can be removed cleanly. No text, no letters, no numbers, no digits, no words, no captions, no watermark, no signature, no logo, no UI mockup screenshot, no border frame around the whole image.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, cluttered micro-detail.
+
+Square image, aspect ratio 1:1, size 1024x1024.
+```
+
+Нарезать на `panel_wood`, `panel_stone`, `panel_parchment`, `btn_primary_up/down/disabled`,
+`btn_secondary_up/down`, `btn_round_up/down` — имена из [04-asset-list.md](04-asset-list.md) §3.
+
+### 3.2 Слот, урна сброса и стопка колоды
+
+```text
+A reference image of a fantasy spell card is attached. Match its art style, material treatment, stone and bronze rendering, lighting direction from the upper left, colour grading and brushwork exactly. These are game-board objects for the same game.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, rich warm lighting from the upper left, cool blue fill light from below, narrow warm rim light along top edges. Materials: grey-blue granite with faintly glowing rune veins, patinated bronze, aged dark oak, dark navy tooled leather. Muted rich palette, deep shadows, subtle bloom only on magical glows. Slightly stylised exaggerated proportions, bold readable silhouette, physical tabletop-object feel with worn edges and small chips. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: three separate objects standing side by side on a plain flat pure-white background, evenly spaced, not touching each other, all lit identically:
+
+1. A vertical empty card-shaped niche carved into a slab of grey-blue granite, seen straight on with no perspective, recessed inward with a soft inner shadow, a thin faintly glowing rune outline running around its inner edge. It is a slot where a card will later be placed, so its interior is empty and flat.
+
+2. A squat carved stone urn with a wide round opening and two bronze bands around its body, standing upright, empty, seen from slightly above so the opening reads as an oval. It is used as a discard container.
+
+3. A neat stack of about ten face-down cards seen from slightly above at a shallow angle, the top card showing dark navy tooled leather with a small bronze heraldic seal in its centre, the edges of the cards below visible as thin worn layers. The stack is a deck waiting to be drawn from.
+
+Plain flat pure-white background, objects do not touch the canvas edges, no shadows reaching the canvas edges, so the background can be removed cleanly. No text, no letters, no numbers, no digits, no words, no captions, no watermark, no signature, no logo, no border frame around the whole image.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, cluttered micro-detail.
+
+Landscape orientation, aspect ratio 3:2, size 1536x1024.
+```
+
+Нарезать на `slot_card`, `discard_urn`, `deck_stack`.
+
+### 3.3 Иконки — лист 4×4
+
+```text
+A reference image of a fantasy spell card is attached. Match its bronze and gold material treatment, lighting direction from the upper left, colour grading and painterly brushwork exactly. These are interface icons for the same game.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, warm light from the upper left, cool fill light from below, narrow warm rim light along top edges. Materials: tarnished patinated bronze with a warm polished gold rim, deeply engraved recesses with soft inner shadow. Muted rich palette, deep shadows. Bold readable silhouettes, physical tabletop-object feel with worn edges. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: a strict grid of 16 game interface icons, 4 rows by 4 columns, on a plain flat pure-white background, evenly spaced with equal gaps, all exactly the same size and all seen perfectly flat and straight on. Each icon is a single symbol engraved and embossed into a small round tarnished bronze medallion with a warm polished gold rim, lit from the upper left, with a soft shadow inside the engraving.
+
+The 16 symbols in reading order, left to right and top to bottom:
+row 1 — a cogwheel; a horn with three curved sound waves; the same horn with a diagonal slash across it; a small harp;
+row 2 — the same harp with a diagonal slash across it; an open book; three stacked horizontal bars; a diagonal cross;
+row 3 — a circular arrow bent into a loop; an arrow pointing left; an hourglass; a neat stack of cards seen from the side;
+row 4 — a fan of three cards; a lightning bolt; two small crossed pennant flags on poles; a teardrop-shaped arcane sigil.
+
+Every symbol is a pictogram only. There must be absolutely no written characters anywhere: no alphabet letters, no digits, no runes that resemble letters, no inscriptions on the medallions.
+
+Plain flat pure-white background, icons do not touch the canvas edges, no shadows reaching the canvas edges, so the background can be removed cleanly. No text, no captions, no watermark, no signature, no logo, no border frame around the whole image.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, cluttered micro-detail, icons of different sizes.
+
+Square image, aspect ratio 1:1, size 1024x1024.
+```
+
+Нарезать по сетке, имена — `icon_settings`, `icon_sound_on`, `icon_sound_off`, `icon_music_on`,
+`icon_music_off`, `icon_rules`, `icon_menu`, `icon_close`, `icon_restart`, `icon_back`,
+`icon_hourglass`, `icon_deck`, `icon_hand`, `icon_speed`, `icon_lang`, `icon_info`.
+
+### 3.4 Кубики — лист из шести граней
+
+```text
+A reference image of a fantasy spell card is attached. Match its stone and bronze material treatment, lighting direction from the upper left, colour grading and painterly brushwork exactly. These are dice for the same game.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, warm light from the upper left, cool blue fill light from below, narrow warm rim light along top edges. Materials: carved grey-blue granite with worn chipped edges, small bronze caps on the corners, recessed pips filled with glowing warm amber light. Muted rich palette, deep shadows, subtle bloom only on the glowing pips. Bold readable silhouette, physical tabletop-object feel. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: six identical carved granite dice arranged in two rows of three on a plain flat pure-white background, evenly spaced, not touching each other. Every die is the same cube seen from exactly the same slightly-elevated three-quarter angle, at exactly the same size, with exactly the same lighting — the six images differ only in the number of pips on the visible top face.
+
+Reading order: the first die shows one pip, the second two pips, the third three pips, the fourth four pips, the fifth five pips, the sixth six pips. The pips are round recesses filled with glowing warm amber light, arranged in the standard dice layout. The side faces of the dice are left plain and unmarked so the top face reads clearly.
+
+There are no numerals anywhere — quantity is shown only by round pips.
+
+Plain flat pure-white background, dice do not touch the canvas edges, no shadows reaching the canvas edges, so the background can be removed cleanly. No text, no letters, no numbers, no digits, no words, no captions, no watermark, no signature, no logo, no border frame around the whole image.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, cluttered micro-detail, dice of different sizes or angles.
+
+Landscape orientation, aspect ratio 3:2, size 1536x1024.
+```
+
+Нарезать на `die_1` … `die_6`.
+
+### 3.5 Портрет игрока
+
+```text
+A reference image of a fantasy spell card is attached. Match its painterly style, warm lighting from the upper left, cool fill light from below, colour grading and brushwork exactly. This is a character portrait for the same game.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, rich warm lighting from the upper left, cool blue fill light from below, narrow warm rim light along the top edges of the figure. Muted rich palette, deep shadows, subtle bloom only on magical glows. Slightly stylised exaggerated proportions, bold readable silhouette, heroic and friendly. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: a chest-up portrait of a young human sorcerer, the player's hero. Deep blue robes with tarnished bronze clasps and a high collar, short dark hair, a calm confident friendly expression, a faint azure glow in the eyes, a thin azure rune-light tracing along the collar. Three-quarter view, body turned slightly to the viewer's right, face looking towards the viewer.
+
+The figure is lit warmly from the upper left with a cool blue rim light on the right shoulder. Behind the figure there is a plain dark neutral background with a soft radial falloff, no scenery, no props and no other characters.
+
+The portrait is composed to be cropped into a circle later, so the head is centred in the upper half of the frame and nothing important touches the edges of the canvas. Leave 8% empty margin on all sides. No text, no letters, no numbers, no words, no captions, no watermark, no signature, no logo, no frame or border drawn around the portrait.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, gore, blood, weapons, text of any kind, letters, numerals, watermarks.
+
+Square image, aspect ratio 1:1, size 1024x1024.
+```
+
+Сохранить как `assets_src/ui/portrait_player.png`.
+
+### 3.6 Портрет оппонента
+
+```text
+A reference image of a fantasy spell card is attached. Match its painterly style, warm lighting, cool fill light, colour grading and brushwork exactly. This is a character portrait for the same game and it must sit next to a portrait of a young sorcerer as its counterpart.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, rich warm lighting from the upper right, cool blue fill light from below, narrow warm rim light along the top edges of the figure. Muted rich palette, deep shadows, subtle bloom only on magical glows. Slightly stylised exaggerated proportions, bold readable silhouette, imposing but not horrifying. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: a chest-up portrait of an old human archmage, the opponent. Deep crimson robes with tarnished gold trim, a deep hood pulled over the head leaving the face visible, a long grey beard, narrowed cunning eyes with a faint crimson glow, a knowing half-smile. Three-quarter view, body turned slightly to the viewer's left so that he faces the opposite direction from the young sorcerer, face looking towards the viewer.
+
+The figure is lit warmly from the upper right with a cool blue rim light on the left shoulder. Behind the figure there is a plain dark neutral background with a soft radial falloff, no scenery, no props and no other characters.
+
+The portrait is composed to be cropped into a circle later, so the head is centred in the upper half of the frame and nothing important touches the edges of the canvas. Leave 8% empty margin on all sides. No text, no letters, no numbers, no words, no captions, no watermark, no signature, no logo, no frame or border drawn around the portrait.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, gore, blood, skulls, weapons, text of any kind, letters, numerals, watermarks.
+
+Square image, aspect ratio 1:1, size 1024x1024.
+```
+
+Сохранить как `assets_src/ui/portrait_ai.png`.
+
+### 3.7 Рама портрета
+
+```text
+A reference image of a fantasy spell card is attached. Match its bronze and gold material treatment, lighting direction from the upper left, colour grading and painterly brushwork exactly. This is a portrait frame for the same game.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, warm light from the upper left, cool blue fill light from below, narrow warm rim light along the top edge. Materials: tarnished patinated bronze with a polished warm gold inner rim, worn edges and small chips. Muted rich palette, deep shadows. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: a single empty circular portrait frame, seen perfectly flat and straight on, centred in the canvas. The ring is made of tarnished bronze with a polished gold inner rim and carries four small ornamental studs at the top, bottom, left and right positions. The ring is thick and clearly three-dimensional, with bevels catching the light.
+
+The centre of the ring is completely empty — nothing is drawn inside it, no portrait, no glass, no fill, no colour, because a character portrait will be placed under it later. Only the ring itself is painted.
+
+Plain flat pure-white background, the frame does not touch the canvas edges, no shadow reaching the canvas edges, so the background can be removed cleanly. Leave 6% empty margin on all sides. No text, no letters, no numbers, no words, no captions, no watermark, no signature, no logo.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, anything drawn inside the ring.
+
+Square image, aspect ratio 1:1, size 1024x1024.
+```
+
+Сохранить как `assets_src/ui/frame_portrait.png`.
+
+### 3.8 Эмблема Ордена
+
+```text
+A reference image of a fantasy spell card is attached. Match its bronze and gold material treatment, lighting direction from the upper left, colour grading and painterly brushwork exactly. This is the heraldic emblem of the wizard order that the game is about.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, warm light from the upper left, cool blue fill light from below, narrow warm rim light along the top edges. Materials: tarnished patinated bronze, warm polished gold, five smooth glowing gemstone cabochons. Muted rich palette, deep shadows, subtle bloom only on the gem glows. Bold readable silhouette that stays recognisable at small size. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: a single heraldic seal, seen perfectly flat and straight on, centred in the canvas, shaped like a pointed shield with ornamental scrollwork along its left and right edges. Its face is tarnished bronze with a polished gold border. In the centre of the shield there is an ornate abstract arcane sigil made of interlaced curved lines.
+
+Five glowing gemstone cabochons are set into the shield around the sigil, evenly spaced, in clockwise order starting from the top: azure blue, jade green, amber gold, crimson rose, amethyst violet. Each gem glows softly and lights the metal around it.
+
+At the bottom of the shield there is a small blank banner shape, completely empty and smooth, with no writing and no engraving on it.
+
+The emblem is perfectly symmetrical from left to right, mirrored around the vertical centre line.
+
+Plain flat pure-white background, the emblem does not touch the canvas edges, no shadow reaching the canvas edges, so the background can be removed cleanly. Leave 6% empty margin on all sides. No text, no letters, no numbers, no words, no captions, no watermark, no signature, no logo.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, asymmetry, cluttered micro-detail.
+
+Square image, aspect ratio 1:1, size 1024x1024.
+```
+
+Сохранить как `assets_src/ui/emblem_first.png`. Название игры пишется поверх шрифтом,
+в самой эмблеме текста быть не должно.
+
+---
+
+## 4. Фоны
+
+Ландшафтные фоны генерируются в 3:2 и обрезаются до 16:9 — композиция это учитывает.
+
+### 4.1 Стол, горизонтальная раскладка
+
+```text
+A reference image of a fantasy spell card is attached. Match its painterly style, stone and bronze material treatment, warm-versus-cool lighting, colour grading and brushwork exactly. This is the game board background of the same game.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, warm candlelight from the left and right edges, cool blue ambient light from above, deep shadows. Materials: grey-blue granite with faintly glowing rune veins, worn brass inlays, dark carved oak, dripping wax candles with warm flames. Muted rich palette, subtle bloom only on the candle flames and rune glow. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: an ancient stone duelling altar table filling the whole frame, seen from a slightly elevated angle so its surface reads as a wide flat playing field. The surface is grey-blue granite with faint glowing rune veins running through it and worn brass inlays along the edges. The table is bordered by dark carved oak with bronze fittings.
+
+Several burning candles on iron stands stand at the far left and far right edges of the frame, throwing warm light inward across the stone. Behind and around the table there is deep darkness falling off into a heavy natural vignette.
+
+Composition requirement: the central two thirds of the image are open, empty and uncluttered table surface with absolutely nothing standing on it, because game cards and panels will be drawn on top of this background. All detail and interest is pushed to the outer edges. The top and bottom sixths of the image are dark and quiet, because they will be cropped away.
+
+Full-bleed background illustration filling the entire canvas, no isolated object, no drawn frame or border around the image. No text, no letters, no numbers, no words, no watermark, no signature, no logo, no characters, no creatures, no cards, no dice and no objects lying on the table.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, busy central area.
+
+Landscape orientation, aspect ratio 3:2, size 1536x1024.
+```
+
+Сохранить как `assets_src/bg/bg_table_landscape.png`, затем обрезать до 16:9.
+
+### 4.2 Стол, вертикальная раскладка
+
+```text
+A reference image of a fantasy spell card is attached. Match its painterly style, stone and bronze material treatment, warm-versus-cool lighting, colour grading and brushwork exactly. This is the vertical version of the game board background of the same game.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, warm candlelight from the top and bottom edges, cool blue ambient light, deep shadows. Materials: grey-blue granite with faintly glowing rune veins, worn brass inlays, dark carved oak, dripping wax candles with warm flames. Muted rich palette, subtle bloom only on the candle flames and rune glow. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: the same ancient stone duelling altar table as in a landscape version, but recomposed for a tall vertical frame. The granite surface with glowing rune veins and brass inlays runs from top to bottom and fills the whole frame. Burning candles on iron stands stand near the top edge and near the bottom edge, throwing warm light towards the centre. Deep darkness and a heavy natural vignette surround the table.
+
+Composition requirement: the tall central area of the image is open, empty and uncluttered table surface with absolutely nothing standing on it, because game cards and panels will be drawn on top of this background. All detail is pushed to the top and bottom edges.
+
+Full-bleed background illustration filling the entire canvas, no isolated object, no drawn frame or border around the image. No text, no letters, no numbers, no words, no watermark, no signature, no logo, no characters, no creatures, no cards, no dice and no objects lying on the table.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, busy central area.
+
+Portrait orientation, aspect ratio 2:3, size 1024x1536.
+```
+
+Сохранить как `assets_src/bg/bg_table_portrait.png`.
+
+### 4.3 Фон меню
+
+```text
+A reference image of a fantasy spell card is attached. Match its painterly style, stone material treatment, warm-versus-cool lighting, colour grading and brushwork exactly. This is the main menu background of the same game.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, warm candlelight, cool blue ambient light in the depths, deep shadows, dust motes floating in the light beams. Materials: massive carved grey-blue stone with glowing rune veins, iron candle stands, warm wax candles, distant gold light. Muted rich palette, subtle bloom only on flames and rune glow. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: the interior of an underground arcane sanctum. Massive carved stone arches recede into darkness towards a distant altar that is lit by a soft golden glow. Glowing rune veins run through the stone walls and floor. Dozens of candles on iron stands line the walls, their light falling in warm pools. Dust motes drift through the beams of light. The mood is deep, mysterious and inviting rather than threatening.
+
+Composition requirement: the left third of the image is noticeably darker, simpler and less detailed than the rest, because a menu with buttons will be placed over it. The distant altar and the brightest light sit in the right half of the frame. There are no characters and no creatures anywhere.
+
+Full-bleed background illustration filling the entire canvas, no isolated object, no drawn frame or border around the image. No text, no letters, no numbers, no words, no watermark, no signature, no logo.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, gore, skulls, text of any kind, letters, numerals, watermarks.
+
+Landscape orientation, aspect ratio 3:2, size 1536x1024.
+```
+
+Сохранить как `assets_src/bg/bg_menu.png`, затем обрезать до 16:9.
+
+### 4.4 Фон экрана загрузки
+
+```text
+A reference image of a fantasy spell card is attached. Match its painterly style, stone material treatment, lighting and colour grading exactly. This is a very quiet loading-screen background for the same game.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted texture with visible brushwork, one small warm candle flame as the only light source, cool blue darkness everywhere else, very deep shadows and a heavy natural vignette. Materials: rough grey-blue stone wall with faint glowing rune veins. Muted rich palette, minimal detail. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: a dark stone wall seen straight on, with faint glowing rune veins running through it and a single distant candle burning at the far edge of the frame. Most of the image is quiet darkness. There is nothing else in the scene — no objects, no characters, no architecture details competing for attention — because a logo and a progress bar will be drawn over this image.
+
+Full-bleed background illustration filling the entire canvas, no isolated object, no drawn frame or border around the image. No text, no letters, no numbers, no words, no watermark, no signature, no logo.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, busy composition.
+
+Landscape orientation, aspect ratio 3:2, size 1536x1024.
+```
+
+Сохранить как `assets_src/bg/bg_loading.png`, затем обрезать до 16:9.
+
+---
+
+## 5. Визуальные эффекты
+
+Эти два листа генерируются **на чёрном фоне** и без эталона — стиль тут не нужен, нужна
+чистая светящаяся форма. Чёрный убирается аддитивным блендингом прямо в движке, поэтому
+вырезать альфу вручную не придётся.
+
+### 5.1 Нейтральные элементы
+
+```text
+Subject: a sheet of eight separate magical visual-effect elements on a plain flat pure-black background, arranged in two rows of four, evenly spaced, each element isolated with nothing touching it and nothing overlapping.
+
+Reading order, left to right and top to bottom:
+1. a soft round radial glow, pure white in the centre, fading smoothly and evenly to nothing at its edges;
+2. a multi-rayed star burst flare, white, symmetrical, with four long rays and several short ones;
+3. a thin circular ring of glowing arcane runes seen flat from directly above, the runes being abstract invented glyphs and not letters of any real alphabet;
+4. a thin expanding shockwave ring, dark in the middle and brightest along its outer edge;
+5. a single small bright spark with a soft halo;
+6. a small soft ash mote with blurred edges;
+7. a soft translucent puff of smoke, wispy and uneven;
+8. a vertical beam of light, brightest and widest at the top, fading to nothing at the bottom.
+
+All eight elements are painted in white and very light grey only, with no colour of their own, because they will be tinted inside a game engine. They glow additively against the pure black background, which stays absolutely uniform and pure black everywhere else.
+
+No text, no letters, no numbers, no words, no captions, no watermark, no signature, no logo, no frame or border around the image, no grid lines, no labels under the elements.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, pixel art, vector art, coloured tints, dark elements, elements touching each other, background gradients, vignettes.
+
+Square image, aspect ratio 1:1, size 1024x1024.
+```
+
+Нарезать на `fx_glow_soft`, `fx_burst_star`, `fx_ring_rune`, `fx_shockwave`, `fx_spark`,
+`fx_dust`, `fx_smoke_puff`, `fx_lightray`.
+
+### 5.2 Тематические элементы школ
+
+```text
+Subject: a sheet of six separate magical visual-effect elements on a plain flat pure-black background, arranged in two rows of three, evenly spaced, each element isolated with nothing touching it and nothing overlapping.
+
+Reading order, left to right and top to bottom:
+1. a single heavy link of a glowing pale-azure ice chain, thick and crystalline, seen at a slight angle;
+2. a small glowing emerald-green leaf with luminous veins;
+3. a single glowing amber ember with a faint upward trail of sparks;
+4. a diagonal triple claw slash mark made of crimson light and smoke, three parallel tapering gashes;
+5. a circular rune-etched steel snare trap with open toothed jaws seen from directly above, violet light glowing between the teeth, the runes being abstract invented glyphs and not letters of any real alphabet;
+6. a jagged crack spreading across dark stone with warm light shining out from inside the crack.
+
+Every element glows against the pure black background, which stays absolutely uniform and pure black everywhere else. Each element keeps its own colour as described, painted with visible brushwork rather than flat gradients.
+
+No text, no letters, no numbers, no words, no captions, no watermark, no signature, no logo, no frame or border around the image, no grid lines, no labels under the elements.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, pixel art, vector art, elements touching each other, background gradients, vignettes, gore, blood.
+
+Landscape orientation, aspect ratio 3:2, size 1536x1024.
+```
+
+Нарезать на `fx_chain_link`, `fx_leaf`, `fx_ember`, `fx_claw_slash`, `fx_snare_jaws`, `fx_crack`.
+
+---
+
+## 6. Порядок работы
+
+1. ~~Эталон — карта F~~ — **сделано**.
+2. Карты I, R, S, T — четыре отдельных запроса (§2.1–2.4).
+3. Рубашка (§2.5).
+4. Панели и кнопки (§3.1) → нарезать → разметить 9-patch.
+5. Слот, урна, колода (§3.2).
+6. Иконки (§3.3) → нарезать по сетке.
+7. Кубики (§3.4) → нарезать.
+8. Портреты и рама (§3.5–3.7).
+9. Эмблема (§3.8).
+10. Фоны (§4.1–4.4).
+11. VFX (§5.1–5.2).
+
+После каждой группы — вставьте полученное в игру и посмотрите вживую. Ассет, красивый
+сам по себе, часто разваливается рядом с остальными; в отрыве от экрана это не видно.
+
+---
+
+## 7. Если получилось не то
+
+Отправляйте эти фразы **в том же чате** следующим сообщением — модель правит свою же
+картинку точнее, чем генерирует заново.
+
+| Симптом | Что написать |
 |---|---|
-| Карта | 2:3 |
-| Фон landscape | 16:9 |
-| Фон portrait | 9:16 |
-| Иконка, кубик, портрет, эмблема | 1:1 |
-| Кнопка | 16:5 |
-| Панель, лист-сетка | 1:1 |
-
----
-
-## 2. Шаг 0 — Style Anchor (карта F)
-
-Самый важный запрос проекта. Итерируем до полного удовлетворения — всё остальное будет наследовать этот результат.
-
-> Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, rich warm lighting from the upper left, cool blue fill light from below, narrow warm rim light along top edges. Heavy ornate carved dark-oak wood and tarnished bronze framing with deep bevels and soft drop shadows. Materials: aged oak with visible grain, patinated bronze, warm polished gold accents, grey-blue granite with faintly glowing rune veins, smooth glowing gemstones. Muted rich palette, deep shadows, subtle bloom only on magical glows. Slightly stylised exaggerated proportions, bold readable silhouette, physical tabletop-object feel with worn edges and small chips. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
->
-> Subject: a single vertical fantasy spell card, portrait orientation, seen perfectly flat and straight on with no perspective. The card is a physical object with a thick carved dark-oak border and tarnished bronze corner fittings.
->
-> Layout from top to bottom, occupying the full card:
-> — top 6% is the outer wooden frame;
-> — from 6% to 30% of the height there is a large EMPTY carved rectangular cartouche plate, recessed into the frame, made of grey-blue granite with a faint azure inner glow around its inner edge. This plate must be completely blank and empty — no symbol, no engraving, no ornament inside it;
-> — from 30% to 72% there is an arched medallion window containing the artwork: a heavy ancient rune-carved padlock wrapped in glowing pale-azure ice chains, floating above a frost-covered stone pedestal, cold azure light radiating outward, frost crystals in the air;
-> — from 72% to 82% there is an EMPTY horizontal parchment ribbon banner stretched across the card, blank, with no writing;
-> — from 82% to 95% there is an EMPTY recessed dark plate for description, blank, with no writing;
-> — at the bottom centre, embedded in the frame, a smooth glowing azure gemstone cabochon.
->
-> A thin glowing azure line runs along the inner perimeter of the wooden frame. The dominant accent colour of this card is azure blue (#9CC8FF); the wood and bronze are neutral warm brown.
->
-> Isolated object centred on a plain flat pure-white background with no shadow touching the canvas edges, so the background can be removed cleanly. Leave 5% empty margin on all sides. No text, no letters, no numbers, no digits, no words, no captions, no watermark, no signature, no logo.
->
-> Avoid: photorealism, 3D render, CGI, anime, pixel art, flat vector, neon, cyberpunk, modern objects, text of any kind, letters, numerals, filled cartouche, engraved symbols inside the empty plates.
->
-> Aspect ratio 2:3.
-
-**Приёмка Anchor.** Проверить по чек-листу [04-asset-list.md](04-asset-list.md) §8 и дополнительно:
-- картуш, лента и поле описания **действительно пустые** (частая ошибка модели — вписать «текст» из закорючек);
-- карта строго фронтальная, без перспективы и наклона;
-- рамка симметричная слева-направо.
-
-Если картуш заполнен — уточняющий запрос по §5.
-
-Утверждённый файл сохраняем как `assets_src/anchor/card_F_anchor.png` и прикладываем ко всем следующим запросам.
-
----
-
-## 3. Группы ассетов
-
-### 3.1 Карты I, R, S, T (лист)
-
-Новый чат. Приложить Anchor.
-
-> Using the attached reference card as the exact style, framing, layout and lighting template, generate a sheet of four more cards from the same set, arranged in one horizontal row, evenly spaced on a plain flat pure-white background, all identical in size, shape, framing, proportions and camera angle to the reference. Only the artwork inside the arched medallion, the accent glow colour and the bottom gemstone colour differ between cards. The wooden frame and bronze fittings must be pixel-identical in style across all four. Every cartouche plate, ribbon banner and description plate must remain completely EMPTY and blank.
->
-> Card 1 — accent colour jade green (#A9FFCF): a carved stone basin overflowing with glowing emerald water, a young sprout breaking through the cracked stone rim, emerald light and floating leaves.
->
-> Card 2 — accent colour amber gold (#FFD195): an open bronze reliquary casket on a pedestal, warm amber light and glowing embers rising out of it, ashes reforming into the shape of a rising phoenix feather.
->
-> Card 3 — accent colour crimson rose (#FF9AA4): a ghostly clawed hand made of crimson smoke reaching out and snatching a golden amulet, its chain snapped, swirling dark smoke around it.
->
-> Card 4 — accent colour amethyst purple (#C6B3FF): a circular rune-etched snare trap with steel jaws seen from above, violet magical light glowing between the teeth, spectral threads stretched across it like a web.
->
-> [универсальный technical tail + negative]
->
-> Aspect ratio 16:9 for the whole sheet.
-
-Затем — по одной карте на проверку в полном разрешении:
-
-> Reproduce card 3 from the previous sheet alone, at maximum detail, exactly the same design, composition and colours, portrait orientation, isolated on plain white. Aspect ratio 2:3.
-
-### 3.2 Рубашка карты
-
-> [STYLE BLOCK] Subject: the back of a fantasy spell card, same size, proportions and outer frame as the attached reference card. Instead of any window or plate, the entire inner area is dark navy blue tooled leather with a raised symmetrical heraldic emblem in the centre: a circular bronze seal with five small glowing gemstones arranged in a ring around it, one azure, one jade, one amber, one crimson, one amethyst. Perfectly symmetrical left to right, ornamental, calm, no focal artwork. [tech tail] Aspect ratio 2:3.
-
-### 3.3 Фоны
-
-**B-01 стол, landscape:**
-> [STYLE BLOCK] Subject: an ancient stone duelling altar table seen from a slightly elevated three-quarter angle, occupying the whole frame. The table surface is grey-blue granite with faintly glowing rune veins, worn brass inlays along the edges, a few burning candles with warm light at the left and right edges, dark carved wooden borders. Behind and around it, deep darkness fading into a heavy vignette. The central two thirds of the image are an open, empty, uncluttered table surface with no objects on it, because game elements will be drawn on top. Warm candlelight from the sides, cool blue ambient from above. [background tech tail + negative] Aspect ratio 16:9.
-
-**B-02 стол, portrait:** тот же промпт, но `Aspect ratio 9:16` и `recompose vertically: the empty table surface fills the tall centre of the frame, candles at top and bottom edges.`
-
-**B-03 меню:**
-> [STYLE BLOCK] Subject: the interior of an underground arcane sanctum: massive carved stone arches receding into darkness, glowing rune veins running through the stone walls, dozens of candles on iron stands, a distant altar with a soft golden light behind it, dust motes floating in light beams. Atmospheric, deep, mysterious, inviting. The left third of the image is darker and less detailed so that a menu can be placed over it. [background tech tail + negative] Aspect ratio 16:9.
-
-**B-04 загрузка:**
-> [STYLE BLOCK] Subject: a very dark, simple, atmospheric background — a stone wall with faint glowing rune veins and a single distant candle, heavy vignette, minimal detail, mostly darkness. [background tech tail] Aspect ratio 16:9.
-
-### 3.4 Панели и кнопки (лист)
-
-> [STYLE BLOCK] Using the attached reference for style and materials, generate a sheet of user-interface elements for the same fantasy game, arranged in a neat grid on a plain flat pure-white background, evenly spaced, all sharing identical material treatment and lighting:
-> Row 1: a horizontal rectangular panel of dark carved oak with a tarnished bronze border and small bronze corner fittings, empty interior; the same panel but made of grey-blue granite with a recessed centre; the same panel but made of aged parchment held by bronze clips.
-> Row 2: a wide horizontal button with a dark oak body and a polished gold rim, slightly raised, empty face; the same button pressed down and darker; the same button desaturated and dull.
-> Row 3: a wide horizontal button with a bronze rim and no gold, raised, empty face; the same button pressed down; a small round bronze button, raised, empty face; the same round button pressed down.
-> All elements are empty — no text, no icons, no symbols on them. [tech tail + negative] Aspect ratio 1:1.
-
-Отдельно — слот и урна:
-> [STYLE BLOCK] Two objects side by side on plain white: (1) a vertical recessed empty card-shaped niche carved into grey-blue granite, with a faint glowing rune outline running around the inner edge and soft inner shadow — a slot where a card will be placed; (2) a squat carved stone urn with a wide opening and bronze banding, standing upright, empty, used as a discard container. [tech tail] Aspect ratio 16:9.
-
-### 3.5 Иконки (лист 4×4)
-
-> [STYLE BLOCK] Using the attached reference for material and lighting, generate a 4 by 4 grid of 16 game interface icons on a plain flat pure-white background, evenly spaced, all exactly the same size, all in the same style: each icon is a symbol engraved and embossed on a small round tarnished bronze medallion with a warm gold rim, lit from the upper left, with soft shadow inside the engraving.
-> The 16 symbols in reading order: a cogwheel; a sound horn with wave lines; a sound horn crossed out; a lyre; a lyre crossed out; an open book; three stacked horizontal bars; a diagonal cross; a circular arrow; a left arrow; an hourglass; a stack of cards; a fan of cards held in a hand; a lightning bolt; a globe; a letter-free exclamation-style teardrop sigil.
-> Every symbol must be a pictogram only — absolutely no written characters, no alphabet letters, no digits. [tech tail + negative] Aspect ratio 1:1.
-
-> Замечание: если модель всё же нарисует буквы на «globe» или «lang» — заменить символ на два пересечённых флажка без рисунка.
-
-### 3.6 Портреты
-
-> [STYLE BLOCK] Subject: a chest-up portrait of a young human sorcerer in deep blue robes with bronze clasps, short dark hair, confident friendly expression, a faint azure glow in the eyes, painted in a heroic fantasy card-game style. Three-quarter view, looking slightly toward the viewer, lit warmly from the upper left, dark neutral background behind the figure. [tech tail] Aspect ratio 1:1.
-
-> [STYLE BLOCK] Subject: a chest-up portrait of an old human archmage in deep crimson robes with tarnished gold trim, long grey beard, hooded, cunning narrowed eyes with a faint crimson glow, painted in a heroic fantasy card-game style. Three-quarter view mirrored to face the opposite direction from a hero portrait, lit warmly from the upper right, dark neutral background. [tech tail] Aspect ratio 1:1.
-
-Рама:
-> [STYLE BLOCK] Subject: an empty circular portrait frame made of tarnished bronze with polished gold inner rim and four small ornamental studs at top, bottom, left and right. The centre is completely empty and transparent-looking, only the ring itself is drawn. [tech tail] Aspect ratio 1:1.
-
-### 3.7 Кубики (лист)
-
-> [STYLE BLOCK] Subject: a sheet of six identical carved granite dice shown in two rows of three on a plain flat pure-white background. Each die is a cube seen from exactly the same slightly-above three-quarter angle, same size, same lighting, only the number of pips on the top face differs: one pip, two pips, three pips, four pips, five pips, six pips. The pips are round recesses filled with glowing warm amber light. Worn stone edges, bronze corner caps. No numerals anywhere — only round pips. [tech tail + negative] Aspect ratio 3:2.
-
-### 3.8 Эмблема
-
-> [STYLE BLOCK] Subject: a heraldic emblem for a fantasy wizard order: a vertically symmetrical bronze and gold seal shaped like a pointed shield, with an ornate arcane sigil in the centre and five gemstones set around it — azure, jade, amber, crimson, amethyst — each glowing softly. Ornamental scrollwork on the sides, a small banner shape at the bottom that is completely empty and blank. Perfectly symmetrical, iconic, readable at small size. [tech tail] Aspect ratio 1:1.
-
-### 3.9 VFX — два листа
-
-**Лист 1 (нейтральные элементы):**
-> [STYLE BLOCK] Generate a sheet of eight separate magical visual-effect elements on a plain flat pure-black background, arranged in two rows of four, evenly spaced, each isolated with nothing touching: (1) a soft round radial glow, pure white, fading smoothly to nothing at the edges; (2) a multi-rayed star burst flare, white, symmetrical; (3) a thin circular ring of arcane runes glowing white, seen flat from above, the runes are abstract invented glyphs and not letters of any real alphabet; (4) a thin expanding shockwave ring, brightest at its outer edge; (5) a single small bright spark; (6) a small soft ash mote; (7) a soft translucent puff of smoke; (8) a vertical beam of light, brightest at the top, fading downward. All elements are white or very light grey so they can be tinted in the engine. Elements glow additively against pure black. No text, no numbers, no watermark, no frames. Aspect ratio 2:1.
-
-> На чёрном фоне — потому что аддитивные эффекты чище вырезаются: чёрный становится прозрачным при `Blend: Add` либо через «умножение на яркость» в редакторе.
-
-**Лист 2 (тематические элементы):**
-> [STYLE BLOCK] Generate a sheet of six separate magical visual-effect elements on a plain flat pure-black background, in two rows of three, evenly spaced, each isolated: (1) a single heavy link of a glowing pale-azure ice chain; (2) a small glowing emerald leaf; (3) a single glowing amber ember with a faint trail; (4) a diagonal triple claw slash mark made of crimson light and smoke; (5) a circular rune-etched steel snare trap with open jaws seen from directly above, glowing violet between the teeth; (6) a jagged crack spreading across stone with warm light shining out of the crack. All glowing against pure black. No text, no numbers, no watermark. Aspect ratio 3:2.
-
----
-
-## 4. Порядок работы
-
-1. **Anchor** (карта F) → утвердить → сохранить.
-2. **Карты** I, R, S, T листом → нарезать → допросить отдельные при недостатке качества.
-3. **Рубашка**.
-4. **Панели и кнопки** листом → нарезать → разметить 9-patch.
-5. **Иконки** листом → нарезать.
-6. **Слот, урна, колода**.
-7. **Кубики** листом.
-8. **Портреты и рама**.
-9. **Эмблема**.
-10. **Фоны** (4 шт.).
-11. **VFX** два листа.
-
-После каждой группы — вставить полученное в игру и посмотреть вживую. Оценивать ассет в отрыве от игры бессмысленно.
-
----
-
-## 5. Борьба с типовыми проблемами
-
-| Симптом | Что писать |
-|---|---|
-| В картуше/ленте появился «текст» из закорючек | `Regenerate the exact same image, but the rectangular plate at the top and the ribbon banner must be completely empty, smooth and blank — no engraving, no glyphs, no scribbles, no ornament inside them. Everything else stays identical.` |
-| Стиль уехал от Anchor | `This is off-style. Match the attached reference exactly: same wood tone, same bronze patina, same light direction from the upper left, same brush texture, same colour grading. Redo.` |
-| Карта нарисована под углом / в перспективе | `Show the card perfectly flat and straight on, orthographic, no perspective, no tilt, no rotation, no thickness visible.` |
+| В картуше, ленте или нижней плашке появились закорючки | `Regenerate the exact same image, but the rectangular plate at the top, the ribbon banner and the bottom plate must be completely empty, smooth and blank — no engraving, no glyphs, no scribbles, no ornament inside them. Everything else stays identical.` |
+| Стиль уехал от эталона | `This is off-style. Match the attached reference exactly: same wood tone, same bronze patina, same light direction from the upper left, same brush texture, same colour grading, same level of detail. Redo.` |
+| Карта под углом или в перспективе | `Show the card perfectly flat and straight on, orthographic, no perspective, no tilt, no rotation, no card thickness visible.` |
 | Рамка несимметричная | `Make the frame perfectly symmetrical left to right, mirrored around the vertical centre line.` |
-| Фон не белый / есть тень до края | `Place the object on a completely plain flat pure-white background. The object must not touch the edges and must cast no shadow onto the background.` |
-| Слишком «шумно», много мелочей | `Reduce detail density by half. Keep large readable shapes, remove micro-ornaments and clutter. The silhouette must read clearly at thumbnail size.` |
-| Цвет акцента ушёл | `The accent glow and gemstone must be exactly this colour: #FFD195. Keep the wood and bronze neutral warm brown, unaffected by the accent colour.` |
-| Разные размеры элементов на листе | `All items on the sheet must be exactly the same size and aligned on a strict grid with equal spacing.` |
-| Появилась «лишняя рамка» вокруг всего изображения | `Do not draw any border or frame around the whole image. Only the object itself.` |
+| Фон не белый или тень уходит за край | `Place the object on a completely plain flat pure-white background. The object must not touch the canvas edges and must cast no shadow that reaches the edges.` |
+| Слишком много мелких деталей | `Reduce detail density by half. Keep large readable shapes, remove micro-ornaments and clutter. The silhouette must read clearly at thumbnail size.` |
+| Акцентный цвет ушёл | `The accent glow, the inner frame line and the bottom gemstone must all be exactly this colour: #FFD195. The wood and bronze stay neutral warm brown and must not be tinted by the accent colour.` |
+| Элементы на листе разного размера | `All items on the sheet must be exactly the same size, seen from exactly the same angle, and aligned on a strict grid with equal spacing.` |
+| Появилась рамка вокруг всего изображения | `Do not draw any border or frame around the whole image. Only the objects themselves on a plain background.` |
+| Элементы на листе слиплись | `Increase the spacing between the elements so that none of them touch or overlap, and none of them touch the canvas edges.` |
 
-## 6. Учёт сгенерированного
+---
 
-Вести `assets_src/GENERATION-LOG.md`: имя ассета → дата → финальный промпт → номер попытки → замечания. Это спасает, когда через месяц нужно догенерировать одну карту в том же стиле.
+## 8. Учёт
+
+Каждый принятый ассет — строкой в [assets_src/GENERATION-LOG.md](../../assets_src/GENERATION-LOG.md):
+дата, модель, номер попытки, замечания. Через месяц, когда понадобится догенерировать
+одну карту в том же стиле, этот файл сэкономит час.
