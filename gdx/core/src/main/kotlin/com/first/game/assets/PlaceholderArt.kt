@@ -196,8 +196,10 @@ class PlaceholderArt : Disposable {
     }
 
     private fun region(pixmap: Pixmap): TextureRegion {
-        val texture = Texture(pixmap, true)
-        texture.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear)
+        // Без мипмапов: размеры заглушек не степени двойки, а WebGL1 такие текстуры
+        // с мипмапами считает неполными и рисует чёрным.
+        val texture = Texture(pixmap, false)
+        texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
         pixmap.dispose()
         textures += texture
         return TextureRegion(texture)

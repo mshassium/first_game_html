@@ -70,8 +70,12 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         root.center()
 
         val worldWidth = stage.viewport.worldWidth
-        val cardWidth = (worldWidth * 0.07f).coerceIn(48f, 110f)
-        val cardHeight = cardWidth * 1.5f
+        val worldHeight = stage.viewport.worldHeight
+        // Веер, заголовок и четыре кнопки должны помещаться по высоте целиком.
+        val cardHeight = (worldHeight * 0.17f).coerceIn(56f, 130f)
+        val cardWidth = cardHeight / 1.5f
+        val buttonHeight = (worldHeight * 0.085f).coerceIn(44f, 70f)
+        val buttonWidth = (worldWidth * 0.26f).coerceIn(200f, 380f)
 
         val fan = Table()
         Letter.ALL.forEachIndexed { index, letter ->
@@ -99,13 +103,20 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         }
         val subtitle = Label(Strings["app.subtitle"], theme.bodyMuted).apply { setAlignment(Align.center) }
 
-        root.add(fan).padBottom(worldWidth * 0.02f).row()
-        root.add(title).padBottom(4f).row()
-        root.add(subtitle).padBottom(worldWidth * 0.03f).row()
-        root.add(menuButton(Strings["menu.play"]) { game.startGame() }).row()
-        root.add(menuButton(Strings["menu.rules"]) { showRules() }).row()
-        root.add(menuButton(Strings["menu.settings"]) { showSettings() }).row()
-        root.add(menuButton("${Strings["menu.language"]}: ${Strings.language.label}") { toggleLanguage() }).row()
+        val gap = worldHeight * 0.016f
+        root.add(fan).padBottom(gap).row()
+        root.add(title).padBottom(2f).row()
+        root.add(subtitle).padBottom(gap).row()
+
+        val buttons = listOf<Pair<String, () -> Unit>>(
+            Strings["menu.play"] to { game.startGame() },
+            Strings["menu.rules"] to { showRules() },
+            Strings["menu.settings"] to { showSettings() },
+            "${Strings["menu.language"]}: ${Strings.language.label}" to { toggleLanguage() },
+        )
+        for ((text, action) in buttons) {
+            root.add(menuButton(text, action)).size(buttonWidth, buttonHeight).padBottom(gap).row()
+        }
     }
 
     private fun menuButton(text: String, action: () -> Unit): TextButton {
@@ -116,7 +127,6 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
                 action()
             }
         })
-        button.pad(10f, 28f, 10f, 28f)
         return button
     }
 

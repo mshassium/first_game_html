@@ -1,4 +1,7 @@
 pluginManagement {
+    plugins {
+        id("com.github.xpenatan.gdx-teavm") version providers.gradleProperty("gdxTeaVMPluginVersion").get()
+    }
     repositories {
         gradlePluginPortal()
         google()
@@ -19,3 +22,4 @@ rootProject.name = "first-game"
 include("core")
 include("tools")
 include("lwjgl3")
+include("teavm")
