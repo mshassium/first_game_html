@@ -19,17 +19,25 @@
 `assets_src/anchor/card_F_anchor.png`. Это единственный способ удержать один стиль на
 всём наборе. В промптах уже написано, что делать с приложенной картинкой.
 
-**Размеры.** Модель работает с тремя формами кадра, и все промпты рассчитаны только на них:
+**Формат кадра.** Задаётся двумя способами сразу — так надёжнее:
 
-| Форма | Размер | Что генерируем |
-|---|---|---|
-| Портрет 2:3 | 1024×1536 | Карты, рубашка, портретный фон |
-| Квадрат 1:1 | 1024×1024 | Иконки, портреты, эмблема, панели, VFX-листы |
-| Ландшафт 3:2 | 1536×1024 | Фоны стола и меню, кубики, слот с урной |
+1. **Селектором «Формат изображения»** в интерфейсе: доступны 1:1, 3:4, 9:16, 4:3 и 16:9.
+2. **Последней строкой промпта** — она есть в каждом блоке ниже. Текстом модель берёт и те
+   соотношения, которых нет в селекторе: эталонная карта запрошена как 2:3 и вышла ровно
+   1024×1536.
 
-Просить 16:9 бесполезно — модель такого кадра не выдаёт. Ландшафтные фоны генерируем
-в 3:2 и обрезаем до 16:9 при постобработке: композиция во всех промптах построена так,
-что запас сверху и снизу не жалко.
+Какой формат для чего:
+
+| Формат | Что генерируем |
+|---|---|
+| 2:3 (текстом), 1024×1536 | Карты и рубашка |
+| 1:1 | Иконки, панели, портреты, рама, эмблема, нейтральные VFX |
+| 4:3 | Кубики, тематические VFX |
+| 16:9 | Фоны стола и меню, фон загрузки, слот с урной и колодой |
+| 9:16 | Вертикальный фон стола |
+
+Обрезать после генерации ничего не нужно — все фоны сразу в тех пропорциях,
+в которых их ждёт игра.
 
 **Фон и тень.** Модель почти всегда рисует не идеально белый фон, а светло-серый с мягкой
 тенью под объектом — как на эталоне. Это нормально и ожидаемо: фон всё равно удаляется
@@ -271,7 +279,7 @@ Plain flat pure-white background, objects do not touch the canvas edges, no shad
 
 Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, cluttered micro-detail.
 
-Landscape orientation, aspect ratio 3:2, size 1536x1024.
+Widescreen landscape orientation, aspect ratio 16:9.
 ```
 
 Нарезать на `slot_card`, `discard_urn`, `deck_stack`.
@@ -321,7 +329,7 @@ Plain flat pure-white background, dice do not touch the canvas edges, no shadows
 
 Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, cluttered micro-detail, dice of different sizes or angles.
 
-Landscape orientation, aspect ratio 3:2, size 1536x1024.
+Landscape orientation, aspect ratio 4:3.
 ```
 
 Нарезать на `die_1` … `die_6`.
@@ -415,8 +423,6 @@ Square image, aspect ratio 1:1, size 1024x1024.
 
 ## 4. Фоны
 
-Ландшафтные фоны генерируются в 3:2 и обрезаются до 16:9 — композиция это учитывает.
-
 ### 4.1 Стол, горизонтальная раскладка
 
 ```text
@@ -428,16 +434,16 @@ Subject: an ancient stone duelling altar table filling the whole frame, seen fro
 
 Several burning candles on iron stands stand at the far left and far right edges of the frame, throwing warm light inward across the stone. Behind and around the table there is deep darkness falling off into a heavy natural vignette.
 
-Composition requirement: the central two thirds of the image are open, empty and uncluttered table surface with absolutely nothing standing on it, because game cards and panels will be drawn on top of this background. All detail and interest is pushed to the outer edges. The top and bottom sixths of the image are dark and quiet, because they will be cropped away.
+Composition requirement: the central two thirds of the image are open, empty and uncluttered table surface with absolutely nothing standing on it, because game cards and panels will be drawn on top of this background. All detail and interest is pushed to the outer edges, and the very top and very bottom of the frame stay dark and quiet so that interface panels can sit over them.
 
 Full-bleed background illustration filling the entire canvas, no isolated object, no drawn frame or border around the image. No text, no letters, no numbers, no words, no watermark, no signature, no logo, no characters, no creatures, no cards, no dice and no objects lying on the table.
 
 Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, busy central area.
 
-Landscape orientation, aspect ratio 3:2, size 1536x1024.
+Widescreen landscape orientation, aspect ratio 16:9.
 ```
 
-Сохранить как `assets_src/bg/bg_table_landscape.png`, затем обрезать до 16:9.
+Сохранить как `assets_src/bg/bg_table_landscape.jpg`.
 
 ### 4.2 Стол, вертикальная раскладка
 
@@ -454,10 +460,10 @@ Full-bleed background illustration filling the entire canvas, no isolated object
 
 Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, busy central area.
 
-Portrait orientation, aspect ratio 2:3, size 1024x1536.
+Tall portrait orientation, aspect ratio 9:16.
 ```
 
-Сохранить как `assets_src/bg/bg_table_portrait.png`.
+Сохранить как `assets_src/bg/bg_table_portrait.jpg`.
 
 ### 4.3 Фон меню
 
@@ -474,10 +480,10 @@ Full-bleed background illustration filling the entire canvas, no isolated object
 
 Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, gore, skulls, text of any kind, letters, numerals, watermarks.
 
-Landscape orientation, aspect ratio 3:2, size 1536x1024.
+Widescreen landscape orientation, aspect ratio 16:9.
 ```
 
-Сохранить как `assets_src/bg/bg_menu.png`, затем обрезать до 16:9.
+Сохранить как `assets_src/bg/bg_menu.jpg`.
 
 ### 4.4 Фон экрана загрузки
 
@@ -492,10 +498,10 @@ Full-bleed background illustration filling the entire canvas, no isolated object
 
 Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, busy composition.
 
-Landscape orientation, aspect ratio 3:2, size 1536x1024.
+Widescreen landscape orientation, aspect ratio 16:9.
 ```
 
-Сохранить как `assets_src/bg/bg_loading.png`, затем обрезать до 16:9.
+Сохранить как `assets_src/bg/bg_loading.jpg`.
 
 ---
 
@@ -551,7 +557,7 @@ No text, no letters, no numbers, no words, no captions, no watermark, no signatu
 
 Avoid: photorealism, 3D render, CGI, ray tracing, anime, pixel art, vector art, elements touching each other, background gradients, vignettes, gore, blood.
 
-Landscape orientation, aspect ratio 3:2, size 1536x1024.
+Landscape orientation, aspect ratio 4:3.
 ```
 
 Нарезать на `fx_chain_link`, `fx_leaf`, `fx_ember`, `fx_claw_slash`, `fx_snare_jaws`, `fx_crack`.
