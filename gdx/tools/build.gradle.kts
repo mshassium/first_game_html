@@ -42,6 +42,22 @@ tasks.register<JavaExec>("sliceSheet") {
     }
 }
 
+/** Тёплая цветокоррекция ассета до температуры принятого набора. */
+tasks.register<JavaExec>("warmGrade") {
+    group = "assets"
+    description = "Подтягивает холодные ассеты к тёплой гамме набора"
+    mainClass.set("com.first.game.tools.WarmGradeKt")
+    classpath = sourceSets["main"].runtimeClasspath
+    workingDir = rootProject.projectDir.parentFile
+    argumentProviders.add {
+        buildList {
+            listOf("files", "dir", "prefix", "target").forEach { key ->
+                (project.findProperty(key) as String?)?.let { add("$key=$it") }
+            }
+        }
+    }
+}
+
 /** Пакует нарезанные ассеты в атласы, которые грузит игра. */
 tasks.register<JavaExec>("packAtlases") {
     group = "assets"

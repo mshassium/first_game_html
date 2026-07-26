@@ -437,7 +437,13 @@ Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon f
 Landscape orientation, aspect ratio 4:3.
 ```
 
-Нарезать на `die_1` … `die_6`.
+Нарезать пресетом `dice` на `die_1` … `die_6`.
+
+> **Что случилось на этом промпте.** Значения и ракурс модель выдержала точно, но камень
+> нарисовала холодным (тепло R−B от −1 до +9 при диапазоне набора +21…+64). Вылечено
+> постобработкой: `./gradlew tools:warmGrade -Pdir=assets_src/ui -Pprefix=die_ -Ptarget=20`.
+> Если генерируете заново — добавьте в промпт строку
+> `The stone is warm grey-brown, not blue-grey. There is no cool blue cast anywhere.`
 
 ### 3.7 Портрет игрока
 
