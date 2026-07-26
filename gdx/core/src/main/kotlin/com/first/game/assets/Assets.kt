@@ -56,8 +56,10 @@ class Assets : Disposable {
         for (name in listOf("bg_menu", "bg_table_landscape", "bg_table_portrait", "bg_loading")) {
             val handle = Gdx.files.internal("bg/$name.jpg")
             if (!handle.exists()) continue
-            backgrounds[name] = Texture(handle, true).apply {
-                setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear)
+            // Без мипмапов: размеры фонов не степени двойки, а такие текстуры
+            // с мипмапами WebGL1 считает неполными и рисует чёрным.
+            backgrounds[name] = Texture(handle).apply {
+                setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
             }
         }
 
