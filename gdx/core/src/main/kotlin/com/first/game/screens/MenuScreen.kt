@@ -53,6 +53,16 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
     override fun render(delta: Float) {
         Gdx.gl.glClearColor(Palette.SHADOW.r, Palette.SHADOW.g, Palette.SHADOW.b, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
+
+        // Фон рисуем до сцены — он полноэкранный и ни с чем не взаимодействует.
+        game.assets.background("bg_menu")?.let { texture ->
+            game.batch.projectionMatrix = stage.viewport.camera.combined
+            game.batch.begin()
+            game.batch.setColor(1f, 1f, 1f, 1f)
+            game.batch.draw(texture, 0f, 0f, stage.viewport.worldWidth, stage.viewport.worldHeight)
+            game.batch.end()
+        }
+
         stage.act(delta)
         stage.draw()
     }
@@ -67,7 +77,9 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
     private fun buildMenu() {
         root.clear()
         root.setFillParent(true)
-        root.center()
+        // Фон нарисован так, что левая треть тёмная и пустая — меню становится там.
+        if (game.assets.background("bg_menu") != null) root.left().padLeft(stage.viewport.worldWidth * 0.06f)
+        else root.center()
 
         val worldWidth = stage.viewport.worldWidth
         val worldHeight = stage.viewport.worldHeight
@@ -76,6 +88,12 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         val cardWidth = cardHeight / 1.5f
         val buttonHeight = (worldHeight * 0.085f).coerceIn(44f, 70f)
         val buttonWidth = (worldWidth * 0.26f).coerceIn(200f, 380f)
+
+        // Эмблема Ордена над заголовком.
+        val emblem = game.assets.uiRegion("emblem_first")?.let { region ->
+            val height = worldHeight * 0.20f
+            Image(region) to (height * region.regionWidth / region.regionHeight to height)
+        }
 
         val fan = Table()
         Letter.ALL.forEachIndexed { index, letter ->
@@ -104,7 +122,12 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         val subtitle = Label(Strings["app.subtitle"], theme.bodyMuted).apply { setAlignment(Align.center) }
 
         val gap = worldHeight * 0.016f
-        root.add(fan).padBottom(gap).row()
+        if (emblem != null) {
+            val (image, size) = emblem
+            root.add(image).size(size.first, size.second).padBottom(gap * 0.5f).row()
+        } else {
+            root.add(fan).padBottom(gap).row()
+        }
         root.add(title).padBottom(2f).row()
         root.add(subtitle).padBottom(gap).row()
 

@@ -1,6 +1,7 @@
 package com.first.game.ui
 
 import com.badlogic.gdx.math.Rectangle
+import com.first.game.domain.Letter
 import com.first.game.domain.Rules
 
 /**
@@ -24,6 +25,8 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
     val log = Rectangle()
     val aiDeck = Rectangle()
     val youDeck = Rectangle()
+    val aiPortrait = Rectangle()
+    val youPortrait = Rectangle()
 
     var cardWidth: Float = 0f
         private set
@@ -50,10 +53,17 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
         cardHeight = minOf(byHeight, byWidth)
         cardWidth = cardHeight * CARD_ASPECT
 
+        // Слева от каждой зоны SPACE — круглый портрет стороны.
+        val portraitSize = minOf(rowHeight * 0.86f, boardWidth * 0.11f)
+        val zoneX = pad + portraitSize + pad
+        val zoneWidth = boardWidth - portraitSize - pad
+
         var y = worldHeight - hudHeight - pad - rowHeight
-        aiSpace.set(pad, y, boardWidth, rowHeight)
+        aiSpace.set(zoneX, y, zoneWidth, rowHeight)
+        aiPortrait.set(pad, y + (rowHeight - portraitSize) / 2f, portraitSize, portraitSize)
         y -= rowHeight + pad
-        youSpace.set(pad, y, boardWidth, rowHeight)
+        youSpace.set(zoneX, y, zoneWidth, rowHeight)
+        youPortrait.set(pad, y + (rowHeight - portraitSize) / 2f, portraitSize, portraitSize)
         y -= rowHeight + pad
         hand.set(pad, y, boardWidth, rowHeight)
 
@@ -87,10 +97,16 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
         aiDiscard.set(pad, y, discardWidth, discardHeight)
         youDiscard.set(pad * 2 + discardWidth, y, discardWidth, discardHeight)
 
+        val portraitSize = minOf(rowHeight * 0.5f, boardWidth * 0.13f)
+        val zoneX = pad + portraitSize + pad
+        val zoneWidth = boardWidth - portraitSize - pad
+
         y -= rowHeight + pad
-        aiSpace.set(pad, y, boardWidth, rowHeight)
+        aiSpace.set(zoneX, y, zoneWidth, rowHeight)
+        aiPortrait.set(pad, y + (rowHeight - portraitSize) / 2f, portraitSize, portraitSize)
         y -= rowHeight + pad
-        youSpace.set(pad, y, boardWidth, rowHeight)
+        youSpace.set(zoneX, y, zoneWidth, rowHeight)
+        youPortrait.set(pad, y + (rowHeight - portraitSize) / 2f, portraitSize, portraitSize)
         y -= rowHeight + pad
         hand.set(pad, y, boardWidth, rowHeight)
 
@@ -104,9 +120,14 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
     /** Позиции карт руки: до семи штук по центру своей зоны. */
     fun handSlots(count: Int): List<Rectangle> = rowSlots(hand, count, cardWidth, cardHeight)
 
-    /** Позиции стопок в зоне SPACE. */
-    fun spaceSlots(zone: Rectangle, count: Int): List<Rectangle> =
-        rowSlots(zone, count, cardWidth * 0.92f, cardHeight * 0.92f)
+    /**
+     * Пять постоянных гнёзд в зоне SPACE — по одному на букву.
+     *
+     * Позиция закреплена за буквой, поэтому пустое гнездо сразу показывает, чего
+     * не хватает до набора F-I-R-S-T. Это понятнее, чем сдвигающийся ряд карт.
+     */
+    fun spaceSlots(zone: Rectangle): List<Rectangle> =
+        rowSlots(zone, Letter.ALL.size, cardWidth * 0.92f, cardHeight * 0.92f)
 
     private fun rowSlots(
         zone: Rectangle,

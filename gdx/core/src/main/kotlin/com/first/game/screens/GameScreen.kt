@@ -625,25 +625,35 @@ class GameScreen(
         addSpaceCards(Side.YOU)
         addHandCards()
 
-        // Колоды рисуем рубашкой вверх — стопка справа от зоны.
+        // Колода — нарисованная стопка, если она есть; иначе рубашка одной карты.
         for (side in listOf(Side.AI, Side.YOU)) {
             if (state.side(side).deck.isEmpty()) continue
             val rect = deckRect(side)
-            val back = CardActor(assets, null, faceUp = false)
-            back.setBounds(rect.x, rect.y, rect.width, rect.height, centerOrigin = true)
-            cardGroup.addActor(back)
+            val stack = assets.uiRegion("deck_stack")
+            if (stack != null) {
+                val image = com.badlogic.gdx.scenes.scene2d.ui.Image(stack)
+                val height = rect.width * stack.regionHeight / stack.regionWidth
+                image.setBounds(rect.x, rect.y + (rect.height - height) / 2f, rect.width, height)
+                cardGroup.addActor(image)
+            } else {
+                val back = CardActor(assets, null, faceUp = false)
+                back.setBounds(rect.x, rect.y, rect.width, rect.height, centerOrigin = true)
+                cardGroup.addActor(back)
+            }
         }
     }
 
+    /**
+     * Карты ложатся в гнёзда, закреплённые за буквой: пустое гнездо сразу показывает,
+     * какой буквы не хватает до набора.
+     */
     private fun addSpaceCards(side: Side) {
         val zone = if (side == Side.AI) layout.aiSpace else layout.youSpace
         val space = state.side(side).space
-        val groups = Letter.ALL.mapNotNull { letter ->
+        val slots = layout.spaceSlots(zone)
+        Letter.ALL.forEachIndexed { index, letter ->
             val count = space.count { it == letter }
-            if (count == 0) null else letter to count
-        }
-        val slots = layout.spaceSlots(zone, groups.size)
-        groups.forEachIndexed { index, (letter, count) ->
+            if (count == 0) return@forEachIndexed
             val slot = slots[index]
             val card = CardActor(assets, letter)
             card.stackCount = count
@@ -869,8 +879,12 @@ class GameScreen(
     /** Панели зон и подписи. Отдельный актёр, чтобы не пересобирать их при ресайзе. */
     private inner class BoardBackground : Actor() {
         override fun draw(batch: Batch, parentAlpha: Float) {
+            drawTable(batch)
             drawZone(batch, layout.aiSpace, state.turn == Side.AI)
             drawZone(batch, layout.youSpace, state.turn == Side.YOU)
+
+            drawPortrait(batch, layout.aiPortrait, Side.AI)
+            drawPortrait(batch, layout.youPortrait, Side.YOU)
 
             batch.setColor(Color.WHITE)
             theme.panel.draw(batch, layout.hand.x, layout.hand.y, layout.hand.width, layout.hand.height)
@@ -888,8 +902,27 @@ class GameScreen(
             batch.setColor(Color.WHITE)
         }
 
+        /** Полноэкранный фон стола под всей раскладкой. */
+        private fun drawTable(batch: Batch) {
+            val texture = assets.background(
+                if (layout.portrait) "bg_table_portrait" else "bg_table_landscape",
+            ) ?: return
+            batch.setColor(Color.WHITE)
+            batch.draw(texture, 0f, 0f, layout.worldWidth, layout.worldHeight)
+        }
+
         private fun drawZone(batch: Batch, rect: Rectangle, active: Boolean) {
-            drawPanel(batch, rect, Palette.rgba(Color.WHITE, 0.92f))
+            // Панель полупрозрачна: под ней нарисован стол, и он должен читаться.
+            val opacity = if (assets.background("bg_table_landscape") != null) 0.62f else 0.92f
+            drawPanel(batch, rect, Palette.rgba(Color.WHITE, opacity))
+            // Пустые гнёзда под каждую букву: сразу видно, чего не хватает до набора.
+            assets.uiRegion("slot_card")?.let { slot ->
+                batch.setColor(1f, 1f, 1f, 0.5f)
+                for (position in layout.spaceSlots(rect)) {
+                    batch.draw(slot, position.x, position.y, position.width, position.height)
+                }
+                batch.setColor(Color.WHITE)
+            }
             if (active) {
                 batch.setColor(Palette.rgba(Palette.GOLD, 0.22f))
                 batch.draw(assets.glow, rect.x, rect.y, rect.width, rect.height)
@@ -897,6 +930,45 @@ class GameScreen(
         }
 
         /** Панель рисуется 9-patch'ем: резные углы держат размер, тянется только середина. */
+        /**
+         * Портрет стороны в круглой раме. Рама активной стороны подсвечивается —
+         * это второй, более заметный указатель на то, чей сейчас ход.
+         */
+        private fun drawPortrait(batch: Batch, rect: Rectangle, side: Side) {
+            val portrait = assets.uiRegion(if (side == Side.YOU) "portrait_player" else "portrait_ai")
+            val frame = assets.uiRegion("frame_portrait")
+            if (portrait == null && frame == null) return
+
+            val active = state.turn == side && !state.isOver
+            if (active) {
+                // Пульсация привязана к часам сцены, а не к состоянию — считать нечего.
+                val pulse = 0.45f + 0.25f * MathUtils.sin(elapsedSeconds * 3f)
+                batch.setColor(Palette.rgba(Palette.GOLD, pulse))
+                val halo = rect.width * 0.55f
+                batch.draw(
+                    assets.glow,
+                    rect.x - halo / 2f, rect.y - halo / 2f,
+                    rect.width + halo, rect.height + halo,
+                )
+            }
+
+            // Портрет вписан внутрь кольца, поэтому уменьшаем его на толщину рамы.
+            portrait?.let {
+                val inset = rect.width * 0.14f
+                batch.setColor(if (active) Color.WHITE else Palette.rgba(Color.WHITE, 0.72f))
+                batch.draw(
+                    it,
+                    rect.x + inset, rect.y + inset,
+                    rect.width - inset * 2f, rect.height - inset * 2f,
+                )
+            }
+            frame?.let {
+                batch.setColor(Color.WHITE)
+                batch.draw(it, rect.x, rect.y, rect.width, rect.height)
+            }
+            batch.setColor(Color.WHITE)
+        }
+
         private fun drawPanel(batch: Batch, rect: Rectangle, color: Color) {
             batch.setColor(color)
             theme.panelStone.draw(batch, rect.x, rect.y, rect.width, rect.height)
@@ -980,10 +1052,17 @@ class GameScreen(
             body.draw(batch, caption, rect.x + padX, rect.y + rect.height - padY * 1.15f)
             body.data.setScale(1f)
 
-            // Миниатюра настоящей карты на каждую букву плюс счётчик.
+            // Урна слева — в неё «падают» карты, дальше идут миниатюры по буквам.
             val height = (rect.height - padY * 3.1f).coerceAtLeast(24f)
             val width = height * (2f / 3f)
             var x = rect.x + padX
+            assets.uiRegion("discard_urn")?.let { urn ->
+                val urnHeight = height * 0.92f
+                val urnWidth = urnHeight * urn.regionWidth / urn.regionHeight
+                batch.setColor(Color.WHITE)
+                batch.draw(urn, x, rect.y + padY * 0.9f, urnWidth, urnHeight)
+                x += urnWidth * 1.1f
+            }
             val y = rect.y + padY * 0.9f
             for (letter in Letter.ALL) {
                 val count = discard.count { it == letter }

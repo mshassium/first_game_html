@@ -58,6 +58,18 @@ tasks.register<JavaExec>("warmGrade") {
     }
 }
 
+/** Уменьшает и пережимает фоны перед сборкой. */
+tasks.register<JavaExec>("prepareBackgrounds") {
+    group = "assets"
+    description = "Готовит assets_src/bg к сборке: уменьшает и пережимает JPEG"
+    mainClass.set("com.first.game.tools.BackgroundPackerKt")
+    classpath = sourceSets["main"].runtimeClasspath
+    args = listOf(
+        rootProject.projectDir.parentFile.resolve("assets_src/bg").absolutePath,
+        rootProject.projectDir.resolve("assets/bg").absolutePath,
+    )
+}
+
 /** Пакует нарезанные ассеты в атласы, которые грузит игра. */
 tasks.register<JavaExec>("packAtlases") {
     group = "assets"

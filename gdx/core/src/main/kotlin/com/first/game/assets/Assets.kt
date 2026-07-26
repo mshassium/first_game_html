@@ -21,6 +21,7 @@ class Assets : Disposable {
     private var cardsAtlas: TextureAtlas? = null
     private var uiAtlas: TextureAtlas? = null
     private var vfxAtlas: TextureAtlas? = null
+    private val backgrounds = mutableMapOf<String, Texture>()
 
     lateinit var cardLetterFont: BitmapFont private set
     lateinit var titleLargeFont: BitmapFont private set
@@ -48,8 +49,23 @@ class Assets : Disposable {
         if (Gdx.files.internal(VFX_ATLAS).exists()) {
             vfxAtlas = TextureAtlas(Gdx.files.internal(VFX_ATLAS))
         }
+        for (name in listOf("bg_menu", "bg_table_landscape", "bg_table_portrait", "bg_loading")) {
+            val handle = Gdx.files.internal("bg/$name.jpg")
+            if (!handle.exists()) continue
+            backgrounds[name] = Texture(handle, true).apply {
+                setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear)
+            }
+        }
+
         usesGeneratedArt = cardsAtlas != null
     }
+
+    /**
+     * Полноэкранный фон или null, если он ещё не нарисован.
+     * Фоны лежат отдельными JPEG вне атласов: они крупные, без прозрачности
+     * и в атласе занимали бы целую страницу каждый.
+     */
+    fun background(name: String): Texture? = backgrounds[name]
 
     /** Регион из ui.atlas или null, если атласа ещё нет или спрайт не нарисован. */
     fun uiRegion(name: String): TextureRegion? = uiAtlas?.findRegion(name)
@@ -93,6 +109,8 @@ class Assets : Disposable {
         cardsAtlas?.dispose()
         uiAtlas?.dispose()
         vfxAtlas?.dispose()
+        backgrounds.values.forEach { it.dispose() }
+        backgrounds.clear()
         if (::cardLetterFont.isInitialized) {
             cardLetterFont.dispose()
             titleLargeFont.dispose()
