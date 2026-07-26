@@ -80,12 +80,16 @@ private class SlicerOptions(
     val tolerance: Int,
     /** Минимальная доля площади листа, ниже которой область считается мусором. */
     val minAreaFraction: Double,
+    /** Порог непрозрачности, по которому пиксель считается частью элемента. */
+    val threshold: Float,
     /** Фон чёрный (листы VFX) — тогда прозрачность берётся из яркости. */
     val blackBackground: Boolean,
     /** На листе один объект: все найденные куски объединяются в один. */
     val single: Boolean,
     /** Объект сплошной: дыры внутри контура заливаются обратно. */
     val solid: Boolean,
+    /** У объекта есть замкнутые области фона — например, пустая середина кольца. */
+    val holes: Boolean,
     /** У картинки уже есть альфа — берём её, а не вырезаем фон заново. */
     val keepAlpha: Boolean?,
     val dryRun: Boolean,
@@ -108,10 +112,16 @@ fun main(args: Array<String>) {
         outputDir = File(arguments["out"] ?: "assets_src/ui"),
         names = names,
         tolerance = arguments["tolerance"]?.toIntOrNull() ?: 14,
-        minAreaFraction = arguments["minArea"]?.toDoubleOrNull() ?: 0.002,
+        minAreaFraction = arguments["minArea"]?.toDoubleOrNull()
+            ?: if (preset?.startsWith("vfx") == true) 0.0004 else 0.002,
+        // У эффектов свечение уходит в ноль плавно: с обычным порогом ореол
+        // обрезается и на месте мягкого края появляется ступенька.
+        threshold = arguments["threshold"]?.toFloatOrNull()
+            ?: if (preset?.startsWith("vfx") == true) 0.05f else 0.35f,
         blackBackground = preset?.startsWith("vfx") == true || arguments.containsKey("black"),
         single = arguments.containsKey("single") || names.size == 1,
         solid = arguments.containsKey("solid"),
+        holes = arguments.containsKey("holes"),
         keepAlpha = when {
             arguments.containsKey("keepalpha") -> true
             arguments.containsKey("cutbg") -> false
@@ -134,10 +144,10 @@ private fun slice(options: SlicerOptions) {
             alphaFromChannel(image)
         }
         options.blackBackground -> alphaFromLuminance(image)
-        else -> alphaFromBorderFlood(image, options.tolerance)
+        else -> alphaFromBorderFlood(image, options.tolerance, options.holes)
     }
 
-    var pieces = findPieces(alpha, image.width, image.height, options.minAreaFraction)
+    var pieces = findPieces(alpha, image.width, image.height, options.minAreaFraction, options.threshold)
         .sortedInReadingOrder()
 
     if (options.single && pieces.size > 1) {
@@ -190,7 +200,7 @@ private fun slice(options: SlicerOptions) {
  * из которого мы в него пришли, — так гладкий градиент и тени уходят целиком,
  * а на резкой границе объекта заливка останавливается.
  */
-private fun alphaFromBorderFlood(image: BufferedImage, tolerance: Int): FloatArray {
+private fun alphaFromBorderFlood(image: BufferedImage, tolerance: Int, holes: Boolean = false): FloatArray {
     val width = image.width
     val height = image.height
     val background = BooleanArray(width * height)
@@ -222,6 +232,31 @@ private fun alphaFromBorderFlood(image: BufferedImage, tolerance: Int): FloatArr
         if (x < width - 1) push(x + 1, y, rgb)
         if (y > 0) push(x, y - 1, rgb)
         if (y < height - 1) push(x, y + 1, rgb)
+    }
+
+    if (holes) {
+        // Замкнутые области фона — пустая середина кольца, просветы в орнаменте —
+        // заливкой от краёв не достаются. Ищем их по цвету: усредняем то, что уже
+        // признано фоном, и запускаем заливку из каждого похожего пикселя.
+        val reference = averageColor(image, background)
+        for (index in background.indices) {
+            if (background[index]) continue
+            val x = index % width
+            val y = index / width
+            if (colorDistance(image.getRGB(x, y), reference) > tolerance) continue
+            background[index] = true
+            queue.addLast(index)
+            while (queue.isNotEmpty()) {
+                val current = queue.removeFirst()
+                val cx = current % width
+                val cy = current / width
+                val rgb = image.getRGB(cx, cy)
+                if (cx > 0) push(cx - 1, cy, rgb)
+                if (cx < width - 1) push(cx + 1, cy, rgb)
+                if (cy > 0) push(cx, cy - 1, rgb)
+                if (cy < height - 1) push(cx, cy + 1, rgb)
+            }
+        }
     }
 
     // Смягчаем край: пиксель на границе фона и объекта получает промежуточную альфу,
@@ -268,6 +303,24 @@ private fun alphaFromChannel(image: BufferedImage): FloatArray {
         }
     }
     return alpha
+}
+
+/** Средний цвет пикселей, уже признанных фоном. */
+private fun averageColor(image: BufferedImage, mask: BooleanArray): Int {
+    var red = 0L
+    var green = 0L
+    var blue = 0L
+    var count = 0L
+    for (index in mask.indices) {
+        if (!mask[index]) continue
+        val rgb = image.getRGB(index % image.width, index / image.width)
+        red += (rgb shr 16) and 0xFF
+        green += (rgb shr 8) and 0xFF
+        blue += rgb and 0xFF
+        count++
+    }
+    if (count == 0L) return 0xFFFFFF
+    return (((red / count).toInt()) shl 16) or (((green / count).toInt()) shl 8) or (blue / count).toInt()
 }
 
 /** Для листов на чёрном фоне: прозрачность равна яркости, цвет остаётся исходным. */
@@ -344,6 +397,7 @@ private fun findPieces(
     width: Int,
     height: Int,
     minAreaFraction: Double,
+    threshold: Float,
 ): List<Piece> {
     val visited = BooleanArray(width * height)
     val pieces = mutableListOf<Piece>()
@@ -351,7 +405,7 @@ private fun findPieces(
     val queue = ArrayDeque<Int>()
 
     for (start in 0 until width * height) {
-        if (visited[start] || alpha[start] < 0.35f) continue
+        if (visited[start] || alpha[start] < threshold) continue
         visited[start] = true
         queue.addLast(start)
 
@@ -372,7 +426,7 @@ private fun findPieces(
                     val ny = y + dy
                     if (nx !in 0 until width || ny !in 0 until height) continue
                     val neighbour = ny * width + nx
-                    if (visited[neighbour] || alpha[neighbour] < 0.35f) continue
+                    if (visited[neighbour] || alpha[neighbour] < threshold) continue
                     visited[neighbour] = true
                     queue.addLast(neighbour)
                 }

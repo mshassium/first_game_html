@@ -20,6 +20,7 @@ class Assets : Disposable {
     private val placeholders = PlaceholderArt()
     private var cardsAtlas: TextureAtlas? = null
     private var uiAtlas: TextureAtlas? = null
+    private var vfxAtlas: TextureAtlas? = null
 
     lateinit var cardLetterFont: BitmapFont private set
     lateinit var titleLargeFont: BitmapFont private set
@@ -44,11 +45,17 @@ class Assets : Disposable {
         if (Gdx.files.internal(UI_ATLAS).exists()) {
             uiAtlas = TextureAtlas(Gdx.files.internal(UI_ATLAS))
         }
+        if (Gdx.files.internal(VFX_ATLAS).exists()) {
+            vfxAtlas = TextureAtlas(Gdx.files.internal(VFX_ATLAS))
+        }
         usesGeneratedArt = cardsAtlas != null
     }
 
     /** Регион из ui.atlas или null, если атласа ещё нет или спрайт не нарисован. */
     fun uiRegion(name: String): TextureRegion? = uiAtlas?.findRegion(name)
+
+    /** Элемент эффекта из vfx.atlas или null, если он ещё не нарисован. */
+    fun vfxRegion(name: String): TextureRegion? = vfxAtlas?.findRegion(name)
 
     /**
      * Иконка интерфейса по имени без префикса: `icon("settings")`.
@@ -64,7 +71,7 @@ class Assets : Disposable {
         get() = cardsAtlas?.findRegion("card_back") ?: placeholders.cardBack
 
     val white: TextureRegion get() = placeholders.white
-    val glow: TextureRegion get() = uiAtlas?.findRegion("fx_glow_soft") ?: placeholders.glow
+    val glow: TextureRegion get() = vfxRegion("fx_glow_soft") ?: placeholders.glow
     val panel: TextureRegion get() = uiAtlas?.findRegion("panel_wood") ?: placeholders.panel
     val panelStone: TextureRegion get() = uiAtlas?.findRegion("panel_stone") ?: placeholders.panelStone
     val slot: TextureRegion get() = uiAtlas?.findRegion("slot_card") ?: placeholders.slot
@@ -85,6 +92,7 @@ class Assets : Disposable {
         placeholders.dispose()
         cardsAtlas?.dispose()
         uiAtlas?.dispose()
+        vfxAtlas?.dispose()
         if (::cardLetterFont.isInitialized) {
             cardLetterFont.dispose()
             titleLargeFont.dispose()
@@ -97,5 +105,6 @@ class Assets : Disposable {
     private companion object {
         const val CARDS_ATLAS = "atlas/cards.atlas"
         const val UI_ATLAS = "atlas/ui.atlas"
+        const val VFX_ATLAS = "atlas/vfx.atlas"
     }
 }

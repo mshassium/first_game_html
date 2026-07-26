@@ -32,10 +32,10 @@ tasks.register<JavaExec>("sliceSheet") {
     workingDir = rootProject.projectDir
     argumentProviders.add {
         buildList {
-            listOf("sheet", "preset", "names", "out", "tolerance", "minArea").forEach { key ->
+            listOf("sheet", "preset", "names", "out", "tolerance", "minArea", "threshold").forEach { key ->
                 (project.findProperty(key) as String?)?.let { add("$key=$it") }
             }
-            listOf("dry", "black", "single", "solid").forEach { flag ->
+            listOf("dry", "black", "single", "solid", "holes", "cutbg", "keepalpha").forEach { flag ->
                 if (project.hasProperty(flag)) add(flag)
             }
         }

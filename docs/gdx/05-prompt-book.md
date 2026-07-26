@@ -646,8 +646,11 @@ Avoid: photorealism, 3D render, CGI, ray tracing, anime, pixel art, vector art, 
 Square image, aspect ratio 1:1, size 1024x1024.
 ```
 
-Нарезать на `fx_glow_soft`, `fx_burst_star`, `fx_ring_rune`, `fx_shockwave`, `fx_spark`,
-`fx_dust`, `fx_smoke_puff`, `fx_lightray`.
+Нарезать пресетом `vfx_neutral`. Порог прозрачности и минимальная площадь для листов
+эффектов подставляются автоматически: у свечений мягкий край, и обычный порог срезал бы
+ореол, а мелкая пылинка отсеялась бы как мусор.
+
+> Лист прошёл с первого раза без замечаний.
 
 ### 5.2 Тематические элементы школ
 

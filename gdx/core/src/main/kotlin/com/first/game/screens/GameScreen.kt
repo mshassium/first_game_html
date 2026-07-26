@@ -37,6 +37,7 @@ import com.first.game.i18n.Strings
 import com.first.game.ui.AnimationDirector
 import com.first.game.ui.BoardLayout
 import com.first.game.ui.CardActor
+import com.first.game.ui.GlowActor
 import com.first.game.ui.Palette
 import ktx.app.KtxScreen
 
@@ -335,27 +336,75 @@ class GameScreen(
         ghost.addAction(move)
     }
 
-    /** Вспышка и кольцо на месте приземления карты. */
+    /** Вспышка, звезда и расходящееся кольцо на месте приземления карты. */
     private fun impact(target: Rectangle, color: Color) {
-        val glow = com.badlogic.gdx.scenes.scene2d.ui.Image(assets.glow)
-        glow.color = Palette.rgba(color, 0.9f)
-        glow.setBounds(
-            target.x - target.width * 0.4f,
-            target.y - target.height * 0.2f,
-            target.width * 1.8f,
-            target.height * 1.4f,
-        )
-        fxGroup.addActor(glow)
         val duration = director.duration(0.35f)
-        glow.addAction(
-            Actions.sequence(
-                Actions.parallel(
-                    Actions.fadeOut(duration, Interpolation.pow3Out),
-                    Actions.scaleBy(0.4f, 0.4f, duration),
+        val centerX = target.x + target.width / 2f
+        val centerY = target.y + target.height / 2f
+
+        // Мягкое свечение цвета школы.
+        addGlow(assets.glow, centerX, centerY, target.width * 2.0f, 0.85f, color) { actor ->
+            actor.addAction(
+                Actions.sequence(
+                    Actions.parallel(
+                        Actions.fadeOut(duration, Interpolation.pow3Out),
+                        Actions.scaleTo(1.3f, 1.3f, duration),
+                    ),
+                    Actions.run { actor.remove() },
                 ),
-                Actions.removeActor(),
-            ),
-        )
+            )
+        }
+
+        // Звезда-вспышка: быстрая, почти белая.
+        assets.vfxRegion("fx_burst_star")?.let { region ->
+            addGlow(region, centerX, centerY, target.width * 1.7f, 1f, Palette.rgba(color, 1f).lerp(Color.WHITE, 0.5f)) { actor ->
+                actor.setScale(0.5f)
+                actor.addAction(
+                    Actions.sequence(
+                        Actions.parallel(
+                            Actions.scaleTo(1.15f, 1.15f, duration * 0.6f, Interpolation.pow3Out),
+                            Actions.sequence(Actions.delay(duration * 0.25f), Actions.fadeOut(duration * 0.6f)),
+                        ),
+                        Actions.run { actor.remove() },
+                    ),
+                )
+            }
+        }
+
+        // Кольцо ударной волны расходится наружу.
+        assets.vfxRegion("fx_shockwave")?.let { region ->
+            addGlow(region, centerX, centerY, target.width * 1.2f, 0.9f, color) { actor ->
+                actor.setScale(0.35f)
+                actor.addAction(
+                    Actions.sequence(
+                        Actions.parallel(
+                            Actions.scaleTo(1.7f, 1.7f, duration * 1.4f, Interpolation.pow2Out),
+                            Actions.fadeOut(duration * 1.4f, Interpolation.pow2In),
+                        ),
+                        Actions.run { actor.remove() },
+                    ),
+                )
+            }
+        }
+    }
+
+    /** Кладёт светящийся элемент по центру и отдаёт его на настройку анимации. */
+    private inline fun addGlow(
+        region: com.badlogic.gdx.graphics.g2d.TextureRegion,
+        centerX: Float,
+        centerY: Float,
+        width: Float,
+        alpha: Float,
+        color: Color,
+        configure: (GlowActor) -> Unit,
+    ) {
+        val height = width * region.regionHeight / region.regionWidth
+        val actor = GlowActor(region)
+        actor.setBounds(centerX - width / 2f, centerY - height / 2f, width, height)
+        actor.setOrigin(width / 2f, height / 2f)
+        actor.color = Palette.rgba(color, alpha)
+        fxGroup.addActor(actor)
+        configure(actor)
     }
 
     private fun pulse(target: Rectangle, color: Color, done: () -> Unit) {
