@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.g2d.Batch
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.math.Interpolation
+import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.Group
@@ -207,7 +208,7 @@ class GameScreen(
                 sound = SoundManager.Sfx.CARD_PLACE,
                 seconds = 0.45f,
                 done = {
-                    impact(spaceTarget(event.side), Palette.school(event.letter))
+                    impact(spaceTarget(event.side), event.letter)
                     done()
                 },
             )
@@ -241,6 +242,30 @@ class GameScreen(
 
             is GameEvent.CardStolen -> {
                 game.sound.play(SoundManager.Sfx.STEAL)
+                val victim = spaceTarget(event.victim)
+                assets.vfxRegion("fx_claw_slash")?.let { region ->
+                    addGlow(
+                        region,
+                        victim.x + victim.width / 2f,
+                        victim.y + victim.height / 2f,
+                        victim.width * 1.7f,
+                        1f,
+                        Color.WHITE,
+                    ) { actor ->
+                        actor.rotation = -18f
+                        actor.setScale(0.6f)
+                        val slash = director.duration(0.45f)
+                        actor.addAction(
+                            Actions.sequence(
+                                Actions.parallel(
+                                    Actions.scaleTo(1.2f, 1.2f, slash * 0.6f, Interpolation.pow3Out),
+                                    Actions.sequence(Actions.delay(slash * 0.25f), Actions.fadeOut(slash * 0.75f)),
+                                ),
+                                Actions.run { actor.remove() },
+                            ),
+                        )
+                    }
+                }
                 flyCard(
                     from = spaceTarget(event.victim),
                     to = discardRect(event.victim),
@@ -336,8 +361,9 @@ class GameScreen(
         ghost.addAction(move)
     }
 
-    /** Вспышка, звезда и расходящееся кольцо на месте приземления карты. */
-    private fun impact(target: Rectangle, color: Color) {
+    /** Вспышка, звезда, кольцо и тематический элемент школы на месте приземления карты. */
+    private fun impact(target: Rectangle, letter: Letter) {
+        val color = Palette.school(letter)
         val duration = director.duration(0.35f)
         val centerX = target.x + target.width / 2f
         val centerY = target.y + target.height / 2f
@@ -384,6 +410,127 @@ class GameScreen(
                         Actions.run { actor.remove() },
                     ),
                 )
+            }
+        }
+
+        schoolBurst(letter, centerX, centerY, target.width)
+    }
+
+    /**
+     * Тематический элемент школы поверх вспышки: у каждой буквы свой почерк,
+     * чтобы эффект читался без чтения журнала.
+     */
+    private fun schoolBurst(letter: Letter, centerX: Float, centerY: Float, cardWidth: Float) {
+        val duration = director.duration(0.55f)
+        val color = Palette.school(letter)
+        when (letter) {
+            // Запрет: рунное кольцо раскрывается, от него разлетаются звенья ледяной цепи.
+            Letter.F -> {
+                assets.vfxRegion("fx_ring_rune")?.let { region ->
+                    addGlow(region, centerX, centerY, cardWidth * 1.5f, 0.95f, color) { actor ->
+                        actor.setScale(0.4f)
+                        actor.addAction(
+                            Actions.sequence(
+                                Actions.parallel(
+                                    Actions.scaleTo(1.1f, 1.1f, duration, Interpolation.pow3Out),
+                                    Actions.rotateBy(90f, duration),
+                                    Actions.sequence(Actions.delay(duration * 0.4f), Actions.fadeOut(duration * 0.6f)),
+                                ),
+                                Actions.run { actor.remove() },
+                            ),
+                        )
+                    }
+                }
+                assets.vfxRegion("fx_chain_link")?.let { region ->
+                    repeat(3) { index ->
+                        val angle = -30f + index * 30f
+                        addGlow(region, centerX, centerY, cardWidth * 0.42f, 1f, Color.WHITE) { actor ->
+                            actor.rotation = angle
+                            actor.addAction(
+                                Actions.sequence(
+                                    Actions.parallel(
+                                        Actions.moveBy(
+                                            MathUtils.cosDeg(angle - 90f) * cardWidth * 0.7f,
+                                            MathUtils.sinDeg(angle - 90f) * cardWidth * 0.7f,
+                                            duration, Interpolation.pow2Out,
+                                        ),
+                                        Actions.fadeOut(duration, Interpolation.pow2In),
+                                    ),
+                                    Actions.run { actor.remove() },
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
+            // Прирост: листья поднимаются вверх.
+            Letter.I -> assets.vfxRegion("fx_leaf")?.let { region ->
+                repeat(5) { index ->
+                    val offsetX = MathUtils.random(-0.45f, 0.45f) * cardWidth
+                    addGlow(region, centerX + offsetX, centerY, cardWidth * 0.3f, 1f, Color.WHITE) { actor ->
+                        actor.rotation = MathUtils.random(-40f, 40f)
+                        actor.addAction(
+                            Actions.sequence(
+                                Actions.delay(index * duration * 0.08f),
+                                Actions.parallel(
+                                    Actions.moveBy(offsetX * 0.4f, cardWidth * 1.1f, duration, Interpolation.sineOut),
+                                    Actions.rotateBy(MathUtils.random(-60f, 60f), duration),
+                                    Actions.fadeOut(duration, Interpolation.pow2In),
+                                ),
+                                Actions.run { actor.remove() },
+                            ),
+                        )
+                    }
+                }
+            }
+            // Возврат: угольки взлетают из-под карты.
+            Letter.R -> assets.vfxRegion("fx_ember")?.let { region ->
+                repeat(6) { index ->
+                    val offsetX = MathUtils.random(-0.4f, 0.4f) * cardWidth
+                    addGlow(region, centerX + offsetX, centerY - cardWidth * 0.3f, cardWidth * 0.22f, 1f, Color.WHITE) { actor ->
+                        actor.addAction(
+                            Actions.sequence(
+                                Actions.delay(index * duration * 0.06f),
+                                Actions.parallel(
+                                    Actions.moveBy(offsetX * 0.5f, cardWidth * 1.3f, duration, Interpolation.sineOut),
+                                    Actions.fadeOut(duration, Interpolation.pow2In),
+                                ),
+                                Actions.run { actor.remove() },
+                            ),
+                        )
+                    }
+                }
+            }
+            // Кража: след когтей наискось по карте.
+            Letter.S -> assets.vfxRegion("fx_claw_slash")?.let { region ->
+                addGlow(region, centerX, centerY, cardWidth * 1.6f, 1f, Color.WHITE) { actor ->
+                    actor.rotation = -18f
+                    actor.setScale(0.7f)
+                    actor.addAction(
+                        Actions.sequence(
+                            Actions.parallel(
+                                Actions.scaleTo(1.25f, 1.25f, duration * 0.7f, Interpolation.pow3Out),
+                                Actions.sequence(Actions.delay(duration * 0.2f), Actions.fadeOut(duration * 0.8f)),
+                            ),
+                            Actions.run { actor.remove() },
+                        ),
+                    )
+                }
+            }
+            // Ловушка: челюсти капкана схлопываются.
+            Letter.T -> assets.vfxRegion("fx_snare_jaws")?.let { region ->
+                addGlow(region, centerX, centerY, cardWidth * 1.5f, 1f, Color.WHITE) { actor ->
+                    actor.setScale(1.35f)
+                    actor.addAction(
+                        Actions.sequence(
+                            Actions.parallel(
+                                Actions.scaleTo(0.95f, 0.95f, duration * 0.45f, Interpolation.pow3In),
+                                Actions.sequence(Actions.delay(duration * 0.45f), Actions.fadeOut(duration * 0.55f)),
+                            ),
+                            Actions.run { actor.remove() },
+                        ),
+                    )
+                }
             }
         }
     }

@@ -674,7 +674,10 @@ Avoid: photorealism, 3D render, CGI, ray tracing, anime, pixel art, vector art, 
 Landscape orientation, aspect ratio 4:3.
 ```
 
-Нарезать на `fx_chain_link`, `fx_leaf`, `fx_ember`, `fx_claw_slash`, `fx_snare_jaws`, `fx_crack`.
+Нарезать пресетом `vfx_schools`.
+
+> Лист прошёл с первого раза. Трещина по камню вырезается так, что тёмная порода уходит
+> в прозрачность и остаются светящиеся линии — для аддитивной отрисовки это правильно.
 
 ---
 

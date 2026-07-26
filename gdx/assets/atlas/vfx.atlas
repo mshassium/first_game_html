@@ -1,21 +1,49 @@
 
 vfx.png
-size: 777, 520
+size: 979, 780
 format: RGBA8888
 filter: Linear, Linear
 repeat: none
 fx_burst_star
   rotate: false
-  xy: 475, 262
+  xy: 510, 2
   size: 190, 256
   orig: 190, 256
   offset: 0, 0
   index: -1
+fx_chain_link
+  rotate: false
+  xy: 2, 522
+  size: 254, 256
+  orig: 254, 256
+  offset: 0, 0
+  index: -1
+fx_claw_slash
+  rotate: false
+  xy: 260, 522
+  size: 214, 256
+  orig: 214, 256
+  offset: 0, 0
+  index: -1
+fx_crack
+  rotate: false
+  xy: 260, 262
+  size: 216, 256
+  orig: 216, 256
+  offset: 0, 0
+  index: -1
 fx_dust
   rotate: false
-  xy: 651, 39
+  xy: 846, 299
   size: 100, 93
   orig: 100, 93
+  offset: 0, 0
+  index: -1
+fx_ember
+  rotate: false
+  xy: 695, 262
+  size: 147, 256
+  orig: 147, 256
   offset: 0, 0
   index: -1
 fx_glow_soft
@@ -25,9 +53,16 @@ fx_glow_soft
   orig: 254, 256
   offset: 0, 0
   index: -1
+fx_leaf
+  rotate: false
+  xy: 770, 522
+  size: 207, 256
+  orig: 207, 256
+  offset: 0, 0
+  index: -1
 fx_lightray
   rotate: false
-  xy: 510, 2
+  xy: 704, 2
   size: 137, 256
   orig: 137, 256
   offset: 0, 0
@@ -48,14 +83,21 @@ fx_shockwave
   index: -1
 fx_smoke_puff
   rotate: false
-  xy: 260, 262
+  xy: 480, 262
   size: 211, 256
   orig: 211, 256
   offset: 0, 0
   index: -1
+fx_snare_jaws
+  rotate: false
+  xy: 510, 548
+  size: 256, 230
+  orig: 256, 230
+  offset: 0, 0
+  index: -1
 fx_spark
   rotate: false
-  xy: 651, 136
+  xy: 846, 396
   size: 124, 122
   orig: 124, 122
   offset: 0, 0
