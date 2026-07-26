@@ -370,9 +370,11 @@ Subject: a strict grid of 16 game interface icons, 4 rows by 4 columns, on a pla
 
 The 16 symbols in reading order, left to right and top to bottom:
 row 1 — a cogwheel; a horn with three curved sound waves; the same horn with a diagonal slash across it; a small harp;
-row 2 — the same harp with a diagonal slash across it; an open book; three stacked horizontal bars; a diagonal cross;
+row 2 — the same harp with a diagonal slash across it; an open book; THREE THICK HORIZONTAL BARS stacked one above another with equal gaps between them, like the menu button of an application, and nothing else on the medallion; TWO THICK STRAIGHT BARS crossing each other in an X shape, like a close button, and nothing else on the medallion;
 row 3 — a circular arrow bent into a loop; an arrow pointing left; an hourglass; a neat stack of cards seen from the side;
 row 4 — a fan of three cards; a lightning bolt; two small crossed pennant flags on poles; a teardrop-shaped arcane sigil.
+
+The two abstract symbols in row 2 — the three bars and the X — must be plain geometric shapes. Do not replace them with objects, books, scrolls, swords or any other illustration.
 
 Every symbol is a pictogram only. There must be absolutely no written characters anywhere: no alphabet letters, no digits, no runes that resemble letters, no inscriptions on the medallions.
 
@@ -383,9 +385,37 @@ Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon f
 Square image, aspect ratio 1:1, size 1024x1024.
 ```
 
-Нарезать по сетке, имена — `icon_settings`, `icon_sound_on`, `icon_sound_off`, `icon_music_on`,
-`icon_music_off`, `icon_rules`, `icon_menu`, `icon_close`, `icon_restart`, `icon_back`,
-`icon_hourglass`, `icon_deck`, `icon_hand`, `icon_speed`, `icon_lang`, `icon_info`.
+Нарезать по сетке пресетом `icons`. Имена в порядке чтения зашиты в нарезчике.
+
+> **Что уже случилось на этом промпте.** Модель нарисовала 14 символов из 16 верно,
+> а два абстрактных заменила иллюстрациями: вместо трёх полос меню — раскрытую книгу,
+> вместо косого креста — скрещённые мечи. Плюс на шестой позиции вместо книги оказалась
+> перечёркнутая книга. Принятые файлы названы по факту (`icon_rules_off`, `icon_duel`),
+> мечи пригодились под кнопку «Играть». Абстрактные символы в промпте усилены прописными
+> буквами и отдельным абзацем — при повторной генерации должно сработать.
+
+### 3.5.1 Догенерация недостающих иконок
+
+Меню (три полосы) и закрытие (косой крест) в наборе отсутствуют. Приложите любую
+принятую иконку, например `assets_src/ui/icon_settings.png`, и запросите две штуки:
+
+```text
+A reference image of a game interface icon is attached: a symbol engraved and embossed on a small round tarnished bronze medallion with a warm polished gold rim. Match its material, lighting from the upper left, warm colour grading, size and painterly brushwork exactly.
+
+Subject: two icons of exactly that kind, side by side on a plain flat pure-white background, evenly spaced, not touching, both the same size as each other and as the reference.
+
+The left icon carries THREE THICK HORIZONTAL BARS stacked one above another with equal gaps between them, filling most of the medallion — the universal menu symbol. The right icon carries TWO THICK STRAIGHT BARS crossing each other in an X shape — the universal close symbol.
+
+Both symbols are plain geometric shapes engraved into the bronze. Do not turn them into books, scrolls, swords, banners or any other object. Nothing else is drawn on the medallions.
+
+Plain flat pure-white background, icons do not touch the canvas edges, no shadows reaching the canvas edges, so the background can be removed cleanly. No text, no letters, no numbers, no watermark, no logo, no border frame around the whole image.
+
+Avoid: photorealism, 3D render, CGI, anime, pixel art, vector art, flat design, cool blue tint, text of any kind, letters, numerals, watermarks, replacing the abstract symbols with objects.
+
+Square image, aspect ratio 1:1.
+```
+
+Нарезать: `./gradlew tools:sliceSheet -Psheet=... -Pnames=icon_menu,icon_close -Pout=../assets_src/ui`
 
 ### 3.6 Кубики — лист из шести граней
 

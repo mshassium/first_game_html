@@ -1,7 +1,11 @@
 package com.first.game.tools
 
 import com.badlogic.gdx.tools.texturepacker.TexturePacker
+import java.awt.RenderingHints
+import java.awt.image.BufferedImage
 import java.io.File
+import javax.imageio.ImageIO
+import kotlin.math.roundToInt
 
 /**
  * Пакует нарезанные ассеты в атласы, которые грузит игра.
@@ -17,15 +21,18 @@ private class AtlasSpec(
     val sourceDir: String,
     val name: String,
     val maxSize: Int,
-    /** Во сколько раз уменьшить исходники при упаковке. */
-    val scale: Float,
+    /**
+     * Наибольшая сторона спрайта в атласе. Исходники приходят от модели крупными —
+     * карта 1024×1536, урна 1024×1024, — а в игре они рисуются во много раз мельче.
+     * Без нормализации три таких объекта занимают целую страницу атласа каждый.
+     */
+    val maxSprite: Int,
 )
 
 private val ATLASES = listOf(
-    AtlasSpec("ui", "ui", 2048, scale = 1f),
-    // Карты приходят от модели в 1024×1536, в игре нужны 512×768.
-    AtlasSpec("cards", "cards", 2048, scale = 0.5f),
-    AtlasSpec("vfx", "vfx", 1024, scale = 1f),
+    AtlasSpec("ui", "ui", 2048, maxSprite = 512),
+    AtlasSpec("cards", "cards", 2048, maxSprite = 768),
+    AtlasSpec("vfx", "vfx", 1024, maxSprite = 256),
 )
 
 fun main(args: Array<String>) {
@@ -40,6 +47,31 @@ fun main(args: Array<String>) {
         if (images.isEmpty()) {
             println("${spec.name}: пропущен, в ${input.path} нет PNG")
             continue
+        }
+
+        // Нормализуем размеры во временную папку, оригиналы не трогаем.
+        val staging = File(outputDir, ".staging-${spec.name}")
+        staging.deleteRecursively()
+        staging.mkdirs()
+        var resized = 0
+        for (file in images) {
+            val source = ImageIO.read(file)
+            val longest = maxOf(source.width, source.height)
+            if (longest <= spec.maxSprite) {
+                file.copyTo(File(staging, file.name), overwrite = true)
+            } else {
+                val factor = spec.maxSprite.toDouble() / longest
+                val width = (source.width * factor).roundToInt().coerceAtLeast(1)
+                val height = (source.height * factor).roundToInt().coerceAtLeast(1)
+                val scaled = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
+                val g = scaled.createGraphics()
+                g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+                g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
+                g.drawImage(source, 0, 0, width, height, null)
+                g.dispose()
+                ImageIO.write(scaled, "png", File(staging, file.name))
+                resized++
+            }
         }
 
         val settings = TexturePacker.Settings().apply {
@@ -60,14 +92,14 @@ fun main(args: Array<String>) {
             // Размеры ассетов не степени двойки, а мипмапы для них ломают WebGL1.
             pot = false
             useIndexes = false
-            scale = floatArrayOf(spec.scale)
         }
 
-        TexturePacker.process(settings, input.absolutePath, outputDir.absolutePath, spec.name)
+        TexturePacker.process(settings, staging.absolutePath, outputDir.absolutePath, spec.name)
+        staging.deleteRecursively()
         val atlas = File(outputDir, "${spec.name}.atlas")
         val pages = outputDir.listFiles { file -> file.name.startsWith("${spec.name}") && file.name.endsWith(".png") }
             .orEmpty().size
-        println("${spec.name}: ${images.size} спрайтов → ${atlas.name}, страниц $pages")
+        println("${spec.name}: ${images.size} спрайтов (уменьшено $resized) → ${atlas.name}, страниц $pages")
     }
 
     val total = outputDir.walkTopDown().filter { it.isFile }.sumOf { it.length() }

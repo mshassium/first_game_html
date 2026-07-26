@@ -24,6 +24,9 @@ import kotlin.math.min
  *   ./gradlew tools:sliceSheet -Psheet=... -Pnames=a,b,c   (свой порядок имён)
  *   ./gradlew tools:sliceSheet -Psheet=... -Pdry           (только отчёт, без записи)
  *   ./gradlew tools:sliceSheet -Psheet=card.png -Pnames=card_F -Psolid   (одиночный объект)
+ *
+ * Если у картинки уже есть альфа, фон не вырезается повторно — она только обрезается
+ * по содержимому. Поведение можно задать явно: -Pkeepalpha или -Pcutbg.
  */
 
 /** Готовые раскладки листов: имена в порядке чтения. */
@@ -49,10 +52,13 @@ private val PRESETS: Map<String, List<String>> = mapOf(
     "board" to listOf("slot_card", "discard_urn", "deck_stack"),
     // Лист кубиков: грани 1..6.
     "dice" to listOf("die_1", "die_2", "die_3", "die_4", "die_5", "die_6"),
-    // Лист иконок 4x4.
+    // Лист иконок 4×4. Имена выверены по тому, что модель нарисовала на самом деле:
+    // вместо трёх полос меню она дала раскрытую книгу, вместо косого креста — мечи,
+    // а на шестой позиции оказалась перечёркнутая книга. Иконки меню и закрытия
+    // остались недорисованными, их нужно догенерировать отдельным листом.
     "icons" to listOf(
         "icon_settings", "icon_sound_on", "icon_sound_off", "icon_music_on",
-        "icon_music_off", "icon_rules", "icon_menu", "icon_close",
+        "icon_music_off", "icon_rules_off", "icon_rules", "icon_duel",
         "icon_restart", "icon_back", "icon_hourglass", "icon_deck",
         "icon_hand", "icon_speed", "icon_lang", "icon_info",
     ),
@@ -80,6 +86,8 @@ private class SlicerOptions(
     val single: Boolean,
     /** Объект сплошной: дыры внутри контура заливаются обратно. */
     val solid: Boolean,
+    /** У картинки уже есть альфа — берём её, а не вырезаем фон заново. */
+    val keepAlpha: Boolean?,
     val dryRun: Boolean,
 )
 
@@ -104,6 +112,11 @@ fun main(args: Array<String>) {
         blackBackground = preset?.startsWith("vfx") == true || arguments.containsKey("black"),
         single = arguments.containsKey("single") || names.size == 1,
         solid = arguments.containsKey("solid"),
+        keepAlpha = when {
+            arguments.containsKey("keepalpha") -> true
+            arguments.containsKey("cutbg") -> false
+            else -> null // определим по самой картинке
+        },
         dryRun = arguments.containsKey("dry"),
     )
 
@@ -114,10 +127,14 @@ private fun slice(options: SlicerOptions) {
     val image = ImageIO.read(options.sheet)
     println("Лист: ${options.sheet.name}, ${image.width}×${image.height}")
 
-    val alpha = if (options.blackBackground) {
-        alphaFromLuminance(image)
-    } else {
-        alphaFromBorderFlood(image, options.tolerance)
+    val keepAlpha = options.keepAlpha ?: hasUsefulAlpha(image)
+    val alpha = when {
+        keepAlpha -> {
+            println("Прозрачность уже есть — фон не вырезаем, только обрезаем по содержимому")
+            alphaFromChannel(image)
+        }
+        options.blackBackground -> alphaFromLuminance(image)
+        else -> alphaFromBorderFlood(image, options.tolerance)
     }
 
     var pieces = findPieces(alpha, image.width, image.height, options.minAreaFraction)
@@ -212,6 +229,45 @@ private fun alphaFromBorderFlood(image: BufferedImage, tolerance: Int): FloatArr
     val alpha = FloatArray(width * height)
     for (index in alpha.indices) alpha[index] = if (background[index]) 0f else 1f
     return feather(alpha, width, height)
+}
+
+/**
+ * Картинка уже с вырезанным фоном, если углы прозрачны и прозрачного заметно много.
+ * Тогда вырезать фон повторно нельзя: заливка пойдёт по чёрным пикселям под альфой
+ * и съест тёмные части самого объекта.
+ */
+private fun hasUsefulAlpha(image: BufferedImage): Boolean {
+    if (!image.colorModel.hasAlpha()) return false
+    val corners = listOf(
+        image.getRGB(0, 0), image.getRGB(image.width - 1, 0),
+        image.getRGB(0, image.height - 1), image.getRGB(image.width - 1, image.height - 1),
+    )
+    if (corners.any { (it ushr 24) and 0xFF > 8 }) return false
+
+    var transparent = 0
+    var total = 0
+    var y = 0
+    while (y < image.height) {
+        var x = 0
+        while (x < image.width) {
+            if ((image.getRGB(x, y) ushr 24) and 0xFF < 8) transparent++
+            total++
+            x += 4
+        }
+        y += 4
+    }
+    return transparent.toDouble() / total > 0.05
+}
+
+/** Берём готовый альфа-канал как есть. */
+private fun alphaFromChannel(image: BufferedImage): FloatArray {
+    val alpha = FloatArray(image.width * image.height)
+    for (y in 0 until image.height) {
+        for (x in 0 until image.width) {
+            alpha[y * image.width + x] = ((image.getRGB(x, y) ushr 24) and 0xFF) / 255f
+        }
+    }
+    return alpha
 }
 
 /** Для листов на чёрном фоне: прозрачность равна яркости, цвет остаётся исходным. */

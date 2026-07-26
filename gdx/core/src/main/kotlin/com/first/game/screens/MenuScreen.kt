@@ -108,19 +108,34 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         root.add(title).padBottom(2f).row()
         root.add(subtitle).padBottom(gap).row()
 
-        val buttons = listOf<Pair<String, () -> Unit>>(
-            Strings["menu.play"] to { game.startGame() },
-            Strings["menu.rules"] to { showRules() },
-            Strings["menu.settings"] to { showSettings() },
-            "${Strings["menu.language"]}: ${Strings.language.label}" to { toggleLanguage() },
+        val buttons = listOf<Triple<String, String, () -> Unit>>(
+            Triple(Strings["menu.play"], "duel") { game.startGame() },
+            Triple(Strings["menu.rules"], "rules") { showRules() },
+            Triple(Strings["menu.settings"], "settings") { showSettings() },
+            // Подпись — только название языка: что это переключатель, говорит иконка флажков.
+            Triple(Strings.language.label, "lang") { toggleLanguage() },
         )
-        for ((text, action) in buttons) {
-            root.add(menuButton(text, action)).size(buttonWidth, buttonHeight).padBottom(gap).row()
+        for ((text, icon, action) in buttons) {
+            root.add(menuButton(text, icon, action)).size(buttonWidth, buttonHeight).padBottom(gap).row()
         }
     }
 
-    private fun menuButton(text: String, action: () -> Unit): TextButton {
+    private fun menuButton(text: String, action: () -> Unit): TextButton = menuButton(text, null, action)
+
+    /** Кнопка меню; [icon] — имя иконки без префикса, если она нарисована. */
+    private fun menuButton(text: String, icon: String?, action: () -> Unit): TextButton {
         val button = TextButton(text, theme.button)
+        game.assets.icon(icon ?: "").let { region ->
+            if (region != null) {
+                val label = button.label
+                button.clearChildren()
+                val size = (stage.viewport.worldHeight * 0.055f).coerceIn(28f, 44f)
+                // Отступы по краям, чтобы содержимое не наезжало на резную рамку кнопки.
+                button.pad(0f, size * 0.5f, 0f, size * 0.5f)
+                button.add(Image(region)).size(size).padRight(size * 0.35f)
+                button.add(label)
+            }
+        }
         button.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 game.sound.play(SoundManager.Sfx.UI_CLICK)

@@ -70,7 +70,13 @@ C-02…C-06 генерируются **по одной** с приложенны
 |---|---|---|---|---|
 | U-18…U-33 | `icon_*.png` | 256×256 каждая | 128×128 | A L |
 
-Состав (16 шт.): `settings`, `sound_on`, `sound_off`, `music_on`, `music_off`, `rules`, `menu`, `close`, `restart`, `back`, `hourglass`, `deck`, `hand`, `speed`, `lang`, `info`.
+Состав нарисованного листа (16 шт.): `settings`, `sound_on`, `sound_off`, `music_on`,
+`music_off`, `rules_off`, `rules`, `duel`, `restart`, `back`, `hourglass`, `deck`, `hand`,
+`speed`, `lang`, `info`.
+
+`menu` (три полосы) и `close` (косой крест) на листе не получились — модель заменила их
+иллюстрациями. Догенерируются отдельным мини-листом, промпт в [05-prompt-book.md](05-prompt-book.md) §3.5.1.
+Взамен появились `rules_off` и `duel`; последняя ушла на кнопку «Играть».
 
 Стиль иконок: гравировка на бронзовой шайбе, тёплый металл, читаемый силуэт, без текста.
 

@@ -1,90 +1,223 @@
 
 ui.png
-size: 1021, 568
+size: 2011, 905
 format: RGBA8888
 filter: Linear, Linear
 repeat: none
 btn_primary_disabled
   rotate: false
-  xy: 446, 2
+  xy: 518, 348
   size: 436, 103
   orig: 436, 103
   offset: 0, 0
   index: -1
 btn_primary_down
   rotate: false
-  xy: 446, 109
+  xy: 1365, 311
   size: 439, 102
   orig: 439, 102
   offset: 0, 0
   index: -1
 btn_primary_up
   rotate: false
-  xy: 2, 51
+  xy: 1365, 523
   size: 440, 104
   orig: 440, 104
   offset: 0, 0
   index: -1
 btn_round_disabled
   rotate: false
-  xy: 892, 344
+  xy: 1315, 34
   size: 120, 105
   orig: 120, 105
   offset: 0, 0
   index: -1
 btn_round_down
   rotate: false
-  xy: 892, 241
+  xy: 1439, 39
   size: 119, 99
   orig: 119, 99
   offset: 0, 0
   index: -1
 btn_round_up
   rotate: false
-  xy: 891, 453
+  xy: 1810, 790
   size: 128, 113
   orig: 128, 113
   offset: 0, 0
   index: -1
 btn_secondary_down
   rotate: false
-  xy: 448, 321
+  xy: 2, 53
   size: 440, 104
   orig: 440, 104
   offset: 0, 0
   index: -1
 btn_secondary_up
   rotate: false
-  xy: 448, 215
+  xy: 1365, 417
   size: 440, 102
   orig: 440, 102
   offset: 0, 0
   index: -1
+deck_stack
+  rotate: false
+  xy: 518, 455
+  size: 512, 448
+  orig: 512, 448
+  offset: 0, 0
+  index: -1
+discard_urn
+  rotate: false
+  xy: 2, 437
+  size: 512, 466
+  orig: 512, 466
+  offset: 0, 0
+  index: -1
+icon_back
+  rotate: false
+  xy: 1811, 624
+  size: 169, 162
+  orig: 169, 162
+  offset: 0, 0
+  index: -1
+icon_deck
+  rotate: false
+  xy: 620, 9
+  size: 168, 164
+  orig: 168, 164
+  offset: 0, 0
+  index: -1
+icon_duel
+  rotate: false
+  xy: 796, 177
+  size: 168, 167
+  orig: 168, 167
+  offset: 0, 0
+  index: -1
+icon_hand
+  rotate: false
+  xy: 1142, 52
+  size: 169, 164
+  orig: 169, 164
+  offset: 0, 0
+  index: -1
+icon_hourglass
+  rotate: false
+  xy: 1494, 142
+  size: 170, 165
+  orig: 170, 165
+  offset: 0, 0
+  index: -1
+icon_info
+  rotate: false
+  xy: 1668, 142
+  size: 169, 165
+  orig: 169, 165
+  offset: 0, 0
+  index: -1
+icon_lang
+  rotate: false
+  xy: 1318, 143
+  size: 172, 164
+  orig: 172, 164
+  offset: 0, 0
+  index: -1
+icon_music_off
+  rotate: false
+  xy: 792, 9
+  size: 168, 164
+  orig: 168, 164
+  offset: 0, 0
+  index: -1
+icon_music_on
+  rotate: false
+  xy: 1809, 452
+  size: 170, 168
+  orig: 170, 168
+  offset: 0, 0
+  index: -1
+icon_restart
+  rotate: false
+  xy: 968, 52
+  size: 170, 164
+  orig: 170, 164
+  offset: 0, 0
+  index: -1
+icon_rules
+  rotate: false
+  xy: 446, 2
+  size: 169, 169
+  orig: 169, 169
+  offset: 0, 0
+  index: -1
+icon_rules_off
+  rotate: false
+  xy: 446, 175
+  size: 170, 169
+  orig: 170, 169
+  offset: 0, 0
+  index: -1
+icon_settings
+  rotate: false
+  xy: 968, 220
+  size: 171, 167
+  orig: 171, 167
+  offset: 0, 0
+  index: -1
+icon_sound_off
+  rotate: false
+  xy: 1143, 220
+  size: 171, 167
+  orig: 171, 167
+  offset: 0, 0
+  index: -1
+icon_sound_on
+  rotate: false
+  xy: 620, 177
+  size: 172, 167
+  orig: 172, 167
+  offset: 0, 0
+  index: -1
+icon_speed
+  rotate: false
+  xy: 1841, 285
+  size: 168, 163
+  orig: 168, 163
+  offset: 0, 0
+  index: -1
 modal_frame
   rotate: false
-  xy: 2, 428
+  xy: 2, 295
   size: 440, 138
   orig: 440, 138
   offset: 0, 0
   index: -1
 panel_parchment
   rotate: false
-  xy: 446, 429
+  xy: 1365, 766
   size: 441, 137
   orig: 441, 137
   offset: 0, 0
   index: -1
 panel_stone
   rotate: false
-  xy: 2, 293
+  xy: 1365, 631
   size: 442, 131
   orig: 442, 131
   offset: 0, 0
   index: -1
 panel_wood
   rotate: false
-  xy: 2, 159
+  xy: 2, 161
   size: 440, 130
   orig: 440, 130
+  offset: 0, 0
+  index: -1
+slot_card
+  rotate: false
+  xy: 1034, 391
+  size: 327, 512
+  orig: 327, 512
   offset: 0, 0
   index: -1

@@ -29,6 +29,7 @@ import com.first.game.domain.GameEvent
 import com.first.game.domain.GameState
 import com.first.game.domain.Letter
 import com.first.game.domain.Phase
+import com.first.game.domain.Rules
 import com.first.game.domain.SeededRng
 import com.first.game.domain.Side
 import com.first.game.domain.ai.aiPolicy
@@ -725,19 +726,42 @@ class GameScreen(
             title.color = Color.WHITE
 
             body.color = Palette.TEXT
+            val iconSize = hud.height * 0.52f
+            val baseline = hud.y + hud.height * 0.74f
+            val iconY = baseline - iconSize * 0.82f
+
             val timer = formatTime(elapsedSeconds)
             glyphs.setText(body, timer)
-            body.draw(batch, timer, hud.x + hud.width - glyphs.width - 16f, hud.y + hud.height * 0.74f)
+            var x = hud.x + hud.width - glyphs.width - 16f
+            body.draw(batch, timer, x, baseline)
+            assets.icon("hourglass")?.let {
+                batch.setColor(Color.WHITE)
+                batch.draw(it, x - iconSize * 1.15f, iconY, iconSize, iconSize)
+            }
 
-            val counters = "${Strings["hud.hand"]}: ${state.you.hand.size}/7   " +
-                "${Strings["hud.deck"]}: ${state.you.deck.size}   " +
-                "${Strings["hud.ai"]}: ${state.ai.hand.size} / ${state.ai.deck.size}"
-            glyphs.setText(body, counters)
-            body.draw(
-                batch, counters,
-                hud.x + (hud.width - glyphs.width) / 2f,
-                hud.y + hud.height * 0.74f,
+            // Счётчики руки, колоды и оппонента с иконками перед числами.
+            val counters = listOf(
+                "hand" to "${state.you.hand.size}/${Rules.HAND_LIMIT}",
+                "deck" to "${state.you.deck.size}",
+                "duel" to "${state.ai.hand.size} / ${state.ai.deck.size}",
             )
+            val gap = iconSize * 0.45f
+            var totalWidth = 0f
+            for ((icon, value) in counters) {
+                glyphs.setText(body, value)
+                totalWidth += glyphs.width + gap * 2f + if (assets.icon(icon) != null) iconSize else 0f
+            }
+            x = hud.x + (hud.width - totalWidth) / 2f
+            for ((icon, value) in counters) {
+                assets.icon(icon)?.let {
+                    batch.setColor(Color.WHITE)
+                    batch.draw(it, x, iconY, iconSize, iconSize)
+                    x += iconSize + gap * 0.4f
+                }
+                body.draw(batch, value, x, baseline)
+                glyphs.setText(body, value)
+                x += glyphs.width + gap * 1.6f
+            }
 
             drawDiscard(batch, layout.aiDiscard, Side.AI)
             drawDiscard(batch, layout.youDiscard, Side.YOU)

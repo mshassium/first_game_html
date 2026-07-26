@@ -50,6 +50,13 @@ class Assets : Disposable {
     /** Регион из ui.atlas или null, если атласа ещё нет или спрайт не нарисован. */
     fun uiRegion(name: String): TextureRegion? = uiAtlas?.findRegion(name)
 
+    /**
+     * Иконка интерфейса по имени без префикса: `icon("settings")`.
+     * Возвращает null, если иконка ещё не нарисована — вызывающий код решает,
+     * рисовать ли текстовую замену.
+     */
+    fun icon(name: String): TextureRegion? = uiRegion("icon_$name")
+
     fun cardFace(letter: Letter): TextureRegion =
         cardsAtlas?.findRegion("card_${letter.name}") ?: placeholders.cardFaces.getValue(letter)
 
