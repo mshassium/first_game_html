@@ -27,10 +27,15 @@ private class AtlasSpec(
      * Без нормализации три таких объекта занимают целую страницу атласа каждый.
      */
     val maxSprite: Int,
+    /**
+     * Отдельные пределы по префиксу имени. Иконки рисуются на экране мелкими,
+     * и держать их в атласе наравне с портретами — впустую занятая страница.
+     */
+    val spriteCaps: List<Pair<String, Int>> = emptyList(),
 )
 
 private val ATLASES = listOf(
-    AtlasSpec("ui", "ui", 2048, maxSprite = 512),
+    AtlasSpec("ui", "ui", 2048, maxSprite = 384, spriteCaps = listOf("icon_" to 192)),
     AtlasSpec("cards", "cards", 2048, maxSprite = 768),
     AtlasSpec("vfx", "vfx", 1024, maxSprite = 256),
 )
@@ -56,11 +61,13 @@ fun main(args: Array<String>) {
         var resized = 0
         for (file in images) {
             val source = ImageIO.read(file)
+            val cap = spec.spriteCaps.firstOrNull { (prefix, _) -> file.name.startsWith(prefix) }?.second
+                ?: spec.maxSprite
             val longest = maxOf(source.width, source.height)
-            if (longest <= spec.maxSprite) {
+            if (longest <= cap) {
                 file.copyTo(File(staging, file.name), overwrite = true)
             } else {
-                val factor = spec.maxSprite.toDouble() / longest
+                val factor = cap.toDouble() / longest
                 val width = (source.width * factor).roundToInt().coerceAtLeast(1)
                 val height = (source.height * factor).roundToInt().coerceAtLeast(1)
                 val scaled = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)

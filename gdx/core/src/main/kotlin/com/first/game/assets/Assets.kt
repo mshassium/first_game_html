@@ -94,6 +94,10 @@ class Assets : Disposable {
     val buttonUp: TextureRegion get() = uiAtlas?.findRegion("btn_primary_up") ?: placeholders.buttonUp
     val buttonDown: TextureRegion get() = uiAtlas?.findRegion("btn_primary_down") ?: placeholders.buttonDown
 
+    /** Круглая кнопка под иконку: у неё своя подложка, растянутая широкая смотрится дёшево. */
+    val roundButtonUp: TextureRegion get() = uiRegion("btn_round_up") ?: buttonUp
+    val roundButtonDown: TextureRegion get() = uiRegion("btn_round_down") ?: buttonDown
+
     fun dieFace(value: Int): TextureRegion =
         uiAtlas?.findRegion("die_$value") ?: placeholders.dieFaces[(value - 1).coerceIn(0, 5)]
 

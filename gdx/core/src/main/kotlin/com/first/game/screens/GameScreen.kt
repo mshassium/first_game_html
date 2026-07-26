@@ -76,6 +76,7 @@ class GameScreen(
     private var elapsedSeconds = 0f
     private var aiDelay = 0f
     private var choiceDialog: Group? = null
+    private var menuButton: com.badlogic.gdx.scenes.scene2d.ui.Button? = null
     private var resultDialogShown = false
 
     init {
@@ -87,6 +88,7 @@ class GameScreen(
         stage.addActor(uiGroup)
         boardGroup.addActor(BoardBackground())
         uiGroup.addActor(HudOverlay())
+        addMenuButton()
         stage.addListener(object : InputListener() {
             override fun touchDown(event: InputEvent?, x: Float, y: Float, pointer: Int, button: Int): Boolean {
                 game.sound.unlock()
@@ -96,6 +98,39 @@ class GameScreen(
         })
         enqueue(start.events)
         syncBoard()
+    }
+
+    /**
+     * Круглая кнопка возврата в меню. На телефоне клавиши Esc нет, и без неё
+     * выйти из партии можно было только системной кнопкой «назад».
+     */
+    private fun addMenuButton() {
+        val icon = assets.icon("menu") ?: return
+        val button = com.badlogic.gdx.scenes.scene2d.ui.Button(
+            com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(assets.roundButtonUp),
+            com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(assets.roundButtonDown),
+        )
+        button.add(com.badlogic.gdx.scenes.scene2d.ui.Image(icon)).grow()
+        button.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                game.sound.play(SoundManager.Sfx.UI_CLICK)
+                game.showMenu()
+            }
+        })
+        menuButton = button
+        uiGroup.addActor(button)
+        placeMenuButton()
+    }
+
+    private fun placeMenuButton() {
+        val button = menuButton ?: return
+        val size = layout.hud.height * 0.86f
+        button.setBounds(
+            layout.worldWidth - size - layout.hud.height * 0.25f,
+            layout.hud.y + (layout.hud.height - size) / 2f,
+            size,
+            size,
+        )
     }
 
     override fun show() {
@@ -123,6 +158,7 @@ class GameScreen(
         stage.viewport.update(width, height, true)
         layout = BoardLayout(stage.viewport.worldWidth, stage.viewport.worldHeight)
         syncBoard()
+        placeMenuButton()
         choiceDialog?.let { it.setBounds(0f, 0f, layout.worldWidth, layout.worldHeight) }
     }
 
@@ -1000,7 +1036,7 @@ class GameScreen(
 
             val timer = formatTime(elapsedSeconds)
             glyphs.setText(body, timer)
-            var x = hud.x + hud.width - glyphs.width - 16f
+            var x = hud.x + hud.width - glyphs.width - hud.height * 1.35f
             body.draw(batch, timer, x, baseline)
             assets.icon("hourglass")?.let {
                 batch.setColor(Color.WHITE)

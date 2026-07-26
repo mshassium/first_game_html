@@ -197,6 +197,24 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         build(content)
         group.addActor(content)
 
+        // Круглая кнопка закрытия в углу — привычнее, чем искать «Назад» внизу списка.
+        game.assets.icon("close")?.let { icon ->
+            val close = com.badlogic.gdx.scenes.scene2d.ui.Button(
+                com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(game.assets.roundButtonUp),
+                com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(game.assets.roundButtonDown),
+            )
+            close.add(Image(icon)).grow()
+            val size = group.height * 0.09f
+            close.setBounds(group.width - size * 1.6f, group.height - size * 1.6f, size, size)
+            close.addListener(object : ClickListener() {
+                override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                    game.sound.play(SoundManager.Sfx.UI_CLICK)
+                    closeOverlay()
+                }
+            })
+            group.addActor(close)
+        }
+
         group.color.a = 0f
         group.addAction(Actions.fadeIn(0.2f))
         stage.addActor(group)
