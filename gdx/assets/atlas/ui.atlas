@@ -1,0 +1,90 @@
+
+ui.png
+size: 1021, 568
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+btn_primary_disabled
+  rotate: false
+  xy: 446, 2
+  size: 436, 103
+  orig: 436, 103
+  offset: 0, 0
+  index: -1
+btn_primary_down
+  rotate: false
+  xy: 446, 109
+  size: 439, 102
+  orig: 439, 102
+  offset: 0, 0
+  index: -1
+btn_primary_up
+  rotate: false
+  xy: 2, 51
+  size: 440, 104
+  orig: 440, 104
+  offset: 0, 0
+  index: -1
+btn_round_disabled
+  rotate: false
+  xy: 892, 344
+  size: 120, 105
+  orig: 120, 105
+  offset: 0, 0
+  index: -1
+btn_round_down
+  rotate: false
+  xy: 892, 241
+  size: 119, 99
+  orig: 119, 99
+  offset: 0, 0
+  index: -1
+btn_round_up
+  rotate: false
+  xy: 891, 453
+  size: 128, 113
+  orig: 128, 113
+  offset: 0, 0
+  index: -1
+btn_secondary_down
+  rotate: false
+  xy: 448, 321
+  size: 440, 104
+  orig: 440, 104
+  offset: 0, 0
+  index: -1
+btn_secondary_up
+  rotate: false
+  xy: 448, 215
+  size: 440, 102
+  orig: 440, 102
+  offset: 0, 0
+  index: -1
+modal_frame
+  rotate: false
+  xy: 2, 428
+  size: 440, 138
+  orig: 440, 138
+  offset: 0, 0
+  index: -1
+panel_parchment
+  rotate: false
+  xy: 446, 429
+  size: 441, 137
+  orig: 441, 137
+  offset: 0, 0
+  index: -1
+panel_stone
+  rotate: false
+  xy: 2, 293
+  size: 442, 131
+  orig: 442, 131
+  offset: 0, 0
+  index: -1
+panel_wood
+  rotate: false
+  xy: 2, 159
+  size: 440, 130
+  orig: 440, 130
+  offset: 0, 0
+  index: -1

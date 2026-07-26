@@ -12,8 +12,8 @@ gdx/local.properties
 gdx/teavm/build/
 .DS_Store
 
-# Сырые выдачи нейросети до постобработки
-assets_src/raw/
+# Сырьё нейросети (assets_src/raw) держим в git: это единственный экземпляр
+# исходников, воспроизвести их генерацией заново нельзя.
 gdx/ios/build/
 gdx/android/build/
 gdx/tools/build/

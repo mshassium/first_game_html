@@ -674,26 +674,35 @@ class GameScreen(
         override fun draw(batch: Batch, parentAlpha: Float) {
             drawZone(batch, layout.aiSpace, state.turn == Side.AI)
             drawZone(batch, layout.youSpace, state.turn == Side.YOU)
-            drawPanel(batch, layout.hand, Palette.rgba(Palette.WOOD_DARK, 0.55f))
-            drawPanel(batch, layout.aiDiscard, Palette.rgba(Palette.STONE_DARK, 0.75f))
-            drawPanel(batch, layout.youDiscard, Palette.rgba(Palette.STONE_DARK, 0.75f))
+
+            batch.setColor(Color.WHITE)
+            theme.panel.draw(batch, layout.hand.x, layout.hand.y, layout.hand.width, layout.hand.height)
+            theme.panelStone.draw(
+                batch, layout.aiDiscard.x, layout.aiDiscard.y, layout.aiDiscard.width, layout.aiDiscard.height,
+            )
+            theme.panelStone.draw(
+                batch, layout.youDiscard.x, layout.youDiscard.y, layout.youDiscard.width, layout.youDiscard.height,
+            )
             if (layout.log.width > 0f) {
-                drawPanel(batch, layout.log, Palette.rgba(Palette.STONE_DARK, 0.75f))
+                theme.panelParchment.draw(
+                    batch, layout.log.x, layout.log.y, layout.log.width, layout.log.height,
+                )
             }
             batch.setColor(Color.WHITE)
         }
 
         private fun drawZone(batch: Batch, rect: Rectangle, active: Boolean) {
-            drawPanel(batch, rect, Palette.rgba(Palette.STONE_DARK, 0.7f))
+            drawPanel(batch, rect, Palette.rgba(Color.WHITE, 0.92f))
             if (active) {
                 batch.setColor(Palette.rgba(Palette.GOLD, 0.22f))
                 batch.draw(assets.glow, rect.x, rect.y, rect.width, rect.height)
             }
         }
 
+        /** Панель рисуется 9-patch'ем: резные углы держат размер, тянется только середина. */
         private fun drawPanel(batch: Batch, rect: Rectangle, color: Color) {
             batch.setColor(color)
-            batch.draw(assets.panelStone, rect.x, rect.y, rect.width, rect.height)
+            theme.panelStone.draw(batch, rect.x, rect.y, rect.width, rect.height)
         }
     }
 
@@ -738,44 +747,38 @@ class GameScreen(
 
         private fun drawDiscard(batch: Batch, rect: Rectangle, side: Side) {
             val body = assets.bodyFont
-            val bold = assets.bodyBoldFont
             val discard = state.side(side).discard
-            val caption = "${Strings["hud.discard"]} — ${if (side == Side.YOU) Strings["hud.you"] else Strings["hud.ai"]}"
-            body.color = Palette.TEXT_MUTED
-            body.draw(batch, caption, rect.x + 10f, rect.y + rect.height - 8f)
+            val padX = rect.width * 0.055f
+            val padY = rect.height * 0.16f
 
-            // Мини-карта на каждую букву: цвет школы, сама буква и количество.
-            val height = rect.height * 0.5f
-            val width = height * 0.68f
-            var x = rect.x + 10f
-            val y = rect.y + 10f
+            // Подпись держим внутри рамки и уменьшаем — панель низкая,
+            // а сверху и снизу у неё резной кант.
+            val caption = "${Strings["hud.discard"]} — ${if (side == Side.YOU) Strings["hud.you"] else Strings["hud.ai"]}"
+            val captionScale = (rect.height * 0.17f / body.capHeight).coerceAtMost(1f)
+            body.data.setScale(captionScale)
+            body.color = Palette.TEXT_MUTED
+            body.draw(batch, caption, rect.x + padX, rect.y + rect.height - padY * 1.15f)
+            body.data.setScale(1f)
+
+            // Миниатюра настоящей карты на каждую букву плюс счётчик.
+            val height = (rect.height - padY * 3.1f).coerceAtLeast(24f)
+            val width = height * (2f / 3f)
+            var x = rect.x + padX
+            val y = rect.y + padY * 0.9f
             for (letter in Letter.ALL) {
                 val count = discard.count { it == letter }
                 if (count == 0) continue
-                batch.setColor(Palette.schoolDark(letter))
-                batch.draw(assets.white, x, y, width, height)
-                batch.setColor(Palette.school(letter))
-                batch.draw(assets.white, x, y + height * 0.78f, width, height * 0.22f)
                 batch.setColor(Color.WHITE)
-
-                val scale = height * 0.5f / bold.capHeight
-                bold.data.setScale(scale)
-                bold.color = Palette.school(letter)
-                glyphs.setText(bold, letter.name)
-                bold.draw(batch, glyphs, x + (width - glyphs.width) / 2f, y + height * 0.66f)
-                bold.data.setScale(1f)
-                bold.color = Color.WHITE
-
+                batch.draw(assets.cardFace(letter), x, y, width, height)
                 if (count > 1) {
-                    val countScale = height * 0.22f / body.capHeight
-                    body.data.setScale(countScale)
-                    body.color = Palette.SHADOW
-                    glyphs.setText(body, "$count")
-                    body.draw(batch, glyphs, x + width - glyphs.width - 2f, y + height - 2f)
+                    val scale = height * 0.30f / body.capHeight
+                    body.data.setScale(scale)
+                    body.color = Palette.GOLD_LIGHT
+                    glyphs.setText(body, "×$count")
+                    body.draw(batch, glyphs, x + width - glyphs.width, y + glyphs.height + 2f)
                     body.data.setScale(1f)
-                    body.color = Palette.TEXT
                 }
-                x += width * 1.18f
+                x += width * 1.12f
             }
             body.color = Palette.TEXT
         }
@@ -783,21 +786,28 @@ class GameScreen(
         private fun drawLog(batch: Batch) {
             val body = assets.bodyFont
             val rect = layout.log
-            body.color = Palette.TEXT_MUTED
-            body.draw(batch, Strings["hud.log"], rect.x + 12f, rect.y + rect.height - 10f)
-            body.color = Palette.TEXT
+            // Пергамент светлый, поэтому текст здесь тёмный — иначе не читается.
+            val padX = rect.width * 0.10f
+            val padTop = rect.height * 0.075f
+            val ink = if (theme.parchmentLog) INK else Palette.TEXT
+            val inkMuted = if (theme.parchmentLog) INK_MUTED else Palette.TEXT_MUTED
+
+            body.color = inkMuted
+            body.draw(batch, Strings["hud.log"], rect.x + padX, rect.y + rect.height - padTop * 1.9f)
 
             // Строки переносятся по ширине, поэтому высоту каждой меряем, а не считаем
             // одинаковой: иначе длинные записи наезжают друг на друга.
-            val width = rect.width - 24f
-            val ceiling = rect.y + rect.height - 48f
-            var y = rect.y + 12f
+            val width = rect.width - padX * 2f
+            val ceiling = rect.y + rect.height - padTop * 2.6f - body.lineHeight
+            var y = rect.y + padTop * 1.6f
+            body.color = ink
             for (line in logLines.asReversed()) {
                 glyphs.setText(body, line, body.color, width, com.badlogic.gdx.utils.Align.left, true)
                 if (y + glyphs.height > ceiling) break
-                body.draw(batch, glyphs, rect.x + 12f, y + glyphs.height)
-                y += glyphs.height + 6f
+                body.draw(batch, glyphs, rect.x + padX, y + glyphs.height)
+                y += glyphs.height + 4f
             }
+            body.color = Palette.TEXT
         }
 
         private fun formatTime(seconds: Float): String {
@@ -812,5 +822,9 @@ class GameScreen(
         const val AI_THINK_TIME = 0.65f
         const val HOVER_LIFT = 14f
         const val LOG_CAPACITY = 40
+
+        /** Чернила по пергаменту. */
+        val INK: Color = Color.valueOf("2E2013")
+        val INK_MUTED: Color = Color.valueOf("6B5433")
     }
 }

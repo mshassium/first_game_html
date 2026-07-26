@@ -47,6 +47,9 @@ class Assets : Disposable {
         usesGeneratedArt = cardsAtlas != null
     }
 
+    /** Регион из ui.atlas или null, если атласа ещё нет или спрайт не нарисован. */
+    fun uiRegion(name: String): TextureRegion? = uiAtlas?.findRegion(name)
+
     fun cardFace(letter: Letter): TextureRegion =
         cardsAtlas?.findRegion("card_${letter.name}") ?: placeholders.cardFaces.getValue(letter)
 
