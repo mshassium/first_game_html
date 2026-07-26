@@ -2,7 +2,9 @@ name: Deploy web to /v2
 
 on:
   push:
-    branches: [main]
+    # Пока ремейк не смержен в main, деплоим и с ветки разработки:
+    # workflow_dispatch недоступен, пока файла нет в дефолтной ветке.
+    branches: [main, feature/libgdx-remake]
     paths:
       - "gdx/**"
       - ".github/workflows/deploy-web.yml"
@@ -45,12 +47,14 @@ jobs:
           # так старая HTML-версия и CNAME остаются в корне нетронутыми.
           if git ls-remote --exit-code --heads origin gh-pages > /dev/null; then
             git fetch origin gh-pages
-            git worktree add ../pages origin/gh-pages
+            # -B обязателен: без него worktree встаёт в detached HEAD
+            # и финальный push не находит ветку gh-pages.
+            git worktree add -B gh-pages ../pages origin/gh-pages
           else
             git worktree add --detach ../pages
             git -C ../pages checkout --orphan gh-pages
             git -C ../pages rm -rf . > /dev/null 2>&1 || true
-            cp index.html first_v*.html CNAME ../pages/ 2>/dev/null || true
+            cp index.html first_*.html CNAME ../pages/ 2>/dev/null || true
             cp -r images ../pages/ 2>/dev/null || true
           fi
 

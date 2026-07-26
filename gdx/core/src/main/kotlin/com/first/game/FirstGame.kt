@@ -20,6 +20,10 @@ import com.first.game.ui.Theme
 class FirstGame(
     private val bootToGame: Boolean = false,
     private val autoPlay: Boolean = false,
+    /** Открыть оверлей меню сразу: "rules" или "settings". Для проверки экранов. */
+    val bootOverlay: String? = null,
+    /** Принудительная скорость анимаций на этот запуск. Для проверки экранов. */
+    private val forcedSpeed: AnimationSpeed? = null,
 ) : Game() {
 
     lateinit var batch: SpriteBatch private set
@@ -33,6 +37,7 @@ class FirstGame(
         assets = Assets().apply { load() }
         theme = Theme(assets)
         sound = SoundManager().apply { load() }
+        forcedSpeed?.let { GamePrefs.animationSpeed = it }
         Strings.load(GamePrefs.language)
         if (bootToGame) startGame() else showMenu()
     }

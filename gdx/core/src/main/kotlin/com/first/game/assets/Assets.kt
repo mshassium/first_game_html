@@ -29,6 +29,9 @@ class Assets : Disposable {
     lateinit var bodyFont: BitmapFont private set
     lateinit var bodyBoldFont: BitmapFont private set
 
+    /** Тёмные чернила со светлой обводкой — для текста по пергаменту. */
+    lateinit var bodyInkFont: BitmapFont private set
+
     /** Настоящие ассеты найдены — заглушки не используются. */
     var usesGeneratedArt: Boolean = false
         private set
@@ -39,6 +42,7 @@ class Assets : Disposable {
         titleFont = font("fonts/title.fnt")
         bodyFont = font("fonts/body.fnt")
         bodyBoldFont = font("fonts/body_bold.fnt")
+        bodyInkFont = font("fonts/body_ink.fnt")
 
         if (Gdx.files.internal(CARDS_ATLAS).exists()) {
             cardsAtlas = TextureAtlas(Gdx.files.internal(CARDS_ATLAS))
@@ -121,6 +125,7 @@ class Assets : Disposable {
             titleFont.dispose()
             bodyFont.dispose()
             bodyBoldFont.dispose()
+            bodyInkFont.dispose()
         }
     }
 

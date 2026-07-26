@@ -71,6 +71,14 @@ private val SPECS = listOf(
         fillTop = Color(0xF2, 0xEE, 0xE4), fillBottom = Color(0xD3, 0xCB, 0xB8),
         outlineColor = Color(0x14, 0x10, 0x0C), outlineWidth = 2f, shadowOffset = 1, pageSize = 512,
     ),
+    // Вариант для светлого пергамента: тёмные чернила со светлой обводкой.
+    // Обычный body испечён под тёмный фон, и на пергаменте его тёмная обводка
+    // сливается с тёмной заливкой — буквы читаются как пятна.
+    FontSpec(
+        name = "body_ink", source = "PT_Sans-Web-Regular.ttf", size = 28,
+        fillTop = Color(0x3A, 0x28, 0x18), fillBottom = Color(0x24, 0x18, 0x0E),
+        outlineColor = Color(0xF0, 0xE4, 0xC8), outlineWidth = 1.6f, shadowOffset = 0, pageSize = 512,
+    ),
     FontSpec(
         name = "body_bold", source = "PT_Sans-Web-Bold.ttf", size = 28,
         fillTop = Color(0xFF, 0xFA, 0xEE), fillBottom = Color(0xDE, 0xD5, 0xC0),

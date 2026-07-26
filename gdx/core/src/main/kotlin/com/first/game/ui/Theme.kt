@@ -60,7 +60,12 @@ class Theme(val assets: Assets) {
         val region: TextureRegion = assets.uiRegion(name) ?: return TextureRegionDrawable(fallback)
         val left = (region.regionWidth * horizontal).toInt().coerceAtLeast(1)
         val top = (region.regionHeight * vertical).toInt().coerceAtLeast(1)
-        return NinePatchDrawable(NinePatch(region, left, left, top, top))
+        val patch = NinePatch(region, left, left, top, top)
+        // Обнуляем отступы: по умолчанию 9-patch отдаёт их равными нерастяжимым краям,
+        // а те заданы в пикселях спрайта — на кнопке высотой 70 единиц мира это
+        // 33 единицы сверху, и подпись выдавливает к нижнему ободу.
+        patch.setPadding(0f, 0f, 0f, 0f)
+        return NinePatchDrawable(patch)
     }
 
     fun dim(alpha: Float): Drawable = TextureRegionDrawable(assets.white).tint(Palette.rgba(Palette.SHADOW, alpha))

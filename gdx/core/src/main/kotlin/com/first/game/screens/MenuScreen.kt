@@ -10,6 +10,7 @@ import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.actions.Actions
 import com.badlogic.gdx.scenes.scene2d.ui.Image
 import com.badlogic.gdx.scenes.scene2d.ui.Label
+import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane
 import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
@@ -43,6 +44,10 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
             }
         })
         buildMenu()
+        when (game.bootOverlay) {
+            "rules" -> showRules()
+            "settings" -> showSettings()
+        }
     }
 
     override fun show() {
@@ -140,7 +145,8 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
             Triple(Strings.language.label, "lang") { toggleLanguage() },
         )
         for ((text, icon, action) in buttons) {
-            root.add(menuButton(text, icon, action)).size(buttonWidth, buttonHeight).padBottom(gap).row()
+            root.add(menuButton(text, icon, action).liftLabel(buttonHeight))
+                .size(buttonWidth, buttonHeight).padBottom(gap).row()
         }
     }
 
@@ -169,6 +175,16 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         return button
     }
 
+    /**
+     * Приподнимает содержимое кнопки. У спрайта нижний обод толще верхнего,
+     * поэтому подпись, отцентрованная геометрически, визуально садится на него.
+     */
+    private fun TextButton.liftLabel(height: Float): TextButton {
+        padTop(0f)
+        padBottom(height * 0.12f)
+        return this
+    }
+
     private fun toggleLanguage() {
         val next = Strings.nextLanguage()
         GamePrefs.language = next
@@ -178,35 +194,68 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
 
     // ------------------------------------------------------------- оверлеи
 
-    private fun showOverlay(build: (Table) -> Unit) {
+    /**
+     * Оверлей поверх меню: затемнение, рамка, заголовок и прокручиваемое содержимое.
+     *
+     * Ширина ячеек задаётся явно. Без этого Table укладывает переносимый текст
+     * по его минимальной ширине — то есть в один символ на строку.
+     */
+    private fun showOverlay(title: String, build: (Table, Float) -> Unit) {
         closeOverlay()
-        val group = Group()
-        group.setBounds(0f, 0f, stage.viewport.worldWidth, stage.viewport.worldHeight)
+        val worldWidth = stage.viewport.worldWidth
+        val worldHeight = stage.viewport.worldHeight
 
-        val dim = Image(theme.dim(0.85f))
-        dim.setBounds(0f, 0f, group.width, group.height)
+        val group = Group()
+        group.setBounds(0f, 0f, worldWidth, worldHeight)
+
+        val dim = Image(theme.dim(0.88f))
+        dim.setBounds(0f, 0f, worldWidth, worldHeight)
         group.addActor(dim)
 
-        val content = Table()
-        content.setBounds(
-            group.width * 0.08f,
-            group.height * 0.08f,
-            group.width * 0.84f,
-            group.height * 0.84f,
-        )
-        content.top()
-        build(content)
-        group.addActor(content)
+        val panelWidth = minOf(worldWidth * 0.62f, worldHeight * 1.15f)
+        val panelHeight = worldHeight * 0.86f
+        val panelX = (worldWidth - panelWidth) / 2f
+        val panelY = (worldHeight - panelHeight) / 2f
 
-        // Круглая кнопка закрытия в углу — привычнее, чем искать «Назад» внизу списка.
+        val frame = Image(theme.modalFrame)
+        frame.setBounds(panelX, panelY, panelWidth, panelHeight)
+        group.addActor(frame)
+
+        val innerPad = panelWidth * 0.08f
+        val contentWidth = panelWidth - innerPad * 2f
+
+        val header = Label(title, theme.title)
+        header.setAlignment(Align.center)
+        header.setBounds(panelX, panelY + panelHeight - innerPad - header.prefHeight, panelWidth, header.prefHeight)
+        group.addActor(header)
+
+        val body = Table()
+        body.top()
+        build(body, contentWidth)
+
+        val scroll = ScrollPane(body, ScrollPane.ScrollPaneStyle())
+        scroll.setFadeScrollBars(false)
+        scroll.setScrollingDisabled(true, false)
+        scroll.setOverscroll(false, false)
+        val scrollTop = header.y - innerPad * 0.4f
+        scroll.setBounds(panelX + innerPad, panelY + innerPad, contentWidth, scrollTop - panelY - innerPad)
+        group.addActor(scroll)
+        stage.scrollFocus = scroll
+
+        // Круглая кнопка закрытия в углу панели.
         game.assets.icon("close")?.let { icon ->
             val close = com.badlogic.gdx.scenes.scene2d.ui.Button(
                 com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(game.assets.roundButtonUp),
                 com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(game.assets.roundButtonDown),
             )
             close.add(Image(icon)).grow()
-            val size = group.height * 0.09f
-            close.setBounds(group.width - size * 1.6f, group.height - size * 1.6f, size, size)
+            val size = worldHeight * 0.085f
+            close.setBounds(
+                panelX + panelWidth - size * 0.55f,
+                panelY + panelHeight - size * 0.55f,
+                size,
+                size,
+            )
             close.addListener(object : ClickListener() {
                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
                     game.sound.play(SoundManager.Sfx.UI_CLICK)
@@ -227,67 +276,62 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         overlay = null
     }
 
-    private fun showRules(): Unit = showOverlay { content ->
-        content.add(Label(Strings["rules.title"], theme.title)).padBottom(16f).row()
-        val sections = listOf(
-            "rules.goal.title" to "rules.goal.body",
-            "rules.turn.title" to "rules.turn.body",
-        )
-        for ((titleKey, bodyKey) in sections) {
-            content.add(Label(Strings[titleKey], theme.bodyBold)).left().padTop(8f).row()
-            content.add(wrapped(Strings[bodyKey], content.width)).left().row()
+    private fun showRules(): Unit = showOverlay(Strings["rules.title"]) { content, width ->
+        val gap = stage.viewport.worldHeight * 0.012f
+
+        fun section(titleKey: String, bodyKey: String) {
+            content.add(Label(Strings[titleKey], theme.bodyBold).apply { color = Palette.GOLD_LIGHT })
+                .width(width).left().padTop(gap * 1.6f).row()
+            content.add(wrapped(Strings[bodyKey])).width(width).left().padTop(gap * 0.4f).row()
         }
-        content.add(Label(Strings["rules.cards.title"], theme.bodyBold)).left().padTop(8f).row()
+
+        section("rules.goal.title", "rules.goal.body")
+        section("rules.turn.title", "rules.turn.body")
+
+        content.add(Label(Strings["rules.cards.title"], theme.bodyBold).apply { color = Palette.GOLD_LIGHT })
+            .width(width).left().padTop(gap * 1.6f).row()
         for (letter in Letter.ALL) {
-            val label = wrapped(Strings["rules.card.${letter.name}"], content.width)
-            label.color = Palette.school(letter)
-            content.add(label).left().row()
+            val row = Table()
+            val card = CardActor(game.assets, letter)
+            val cardHeight = width * 0.13f
+            row.add(card).size(cardHeight * (2f / 3f), cardHeight).padRight(gap * 1.5f).top()
+            row.add(wrapped(Strings["rules.card.${letter.name}"])).width(width - cardHeight * (2f / 3f) - gap * 1.5f).left()
+            content.add(row).width(width).left().padTop(gap).row()
         }
-        content.add(Label(Strings["rules.limits.title"], theme.bodyBold)).left().padTop(8f).row()
-        content.add(wrapped(Strings["rules.limits.body"], content.width)).left().row()
-        content.add(menuButton(Strings["common.back"]) { closeOverlay() }).padTop(16f).row()
+
+        section("rules.limits.title", "rules.limits.body")
+        content.add(Label("", theme.body)).height(gap * 3f).row()
     }
 
-    private fun showSettings(): Unit = showOverlay { content ->
-        content.add(Label(Strings["settings.title"], theme.title)).padBottom(16f).row()
+    private fun showSettings(): Unit = showOverlay(Strings["settings.title"]) { content, width ->
+        val buttonWidth = width * 0.86f
+        val buttonHeight = (stage.viewport.worldHeight * 0.085f).coerceIn(44f, 70f)
+        val gap = stage.viewport.worldHeight * 0.02f
 
-        content.add(
-            menuButton(difficultyLabel()) {
-                GamePrefs.difficulty = nextDifficulty()
-                showSettings()
-            },
-        ).padBottom(8f).row()
-
-        content.add(
-            menuButton(speedLabel()) {
-                GamePrefs.animationSpeed = nextSpeed()
-                showSettings()
-            },
-        ).padBottom(8f).row()
-
-        content.add(
-            menuButton("${Strings["settings.music"]}: ${percent(GamePrefs.musicVolume)}") {
+        val rows = listOf<Pair<String, () -> Unit>>(
+            difficultyLabel() to { GamePrefs.difficulty = nextDifficulty(); showSettings() },
+            speedLabel() to { GamePrefs.animationSpeed = nextSpeed(); showSettings() },
+            "${Strings["settings.music"]}: ${percent(GamePrefs.musicVolume)}" to {
                 GamePrefs.musicVolume = cycleVolume(GamePrefs.musicVolume)
                 game.sound.applyVolumes()
                 showSettings()
             },
-        ).padBottom(8f).row()
-
-        content.add(
-            menuButton("${Strings["settings.sfx"]}: ${percent(GamePrefs.sfxVolume)}") {
+            "${Strings["settings.sfx"]}: ${percent(GamePrefs.sfxVolume)}" to {
                 GamePrefs.sfxVolume = cycleVolume(GamePrefs.sfxVolume)
                 showSettings()
             },
-        ).padBottom(8f).row()
-
-        content.add(menuButton(Strings["common.back"]) { closeOverlay() }).padTop(16f).row()
+        )
+        for ((text, action) in rows) {
+            content.add(menuButton(text, null, action).liftLabel(buttonHeight))
+                .size(buttonWidth, buttonHeight).padTop(gap).row()
+        }
     }
 
-    private fun wrapped(text: String, width: Float): Label {
+    /** Ширину переносимой надписи задаёт ячейка таблицы, а не сам актёр. */
+    private fun wrapped(text: String): Label {
         val label = Label(text, theme.body)
         label.wrap = true
-        label.width = width
-        label.setAlignment(Align.left)
+        label.setAlignment(Align.topLeft)
         return label
     }
 

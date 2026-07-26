@@ -14,6 +14,8 @@ import com.first.game.FirstGame
  *   -Dfirst.shots=/tmp/shots     — снять кадры в указанную папку и выйти
  *   -Dfirst.size=1280x720        — размер окна
  *   -Dfirst.frames=90,600        — на каких кадрах снимать
+ *   -Dfirst.overlay=rules        — сразу открыть оверлей меню (rules | settings)
+ *   -Dfirst.speed=instant        — скорость анимаций: normal | fast | instant
  */
 fun main() {
     val bootToGame = System.getProperty("first.boot") == "game"
@@ -21,7 +23,10 @@ fun main() {
     val shots = System.getProperty("first.shots")
     val (width, height) = parseSize(System.getProperty("first.size"))
 
-    val game = FirstGame(bootToGame, autoPlay)
+    val speed = System.getProperty("first.speed")?.let { name ->
+        com.first.game.AnimationSpeed.entries.firstOrNull { it.name.equals(name, ignoreCase = true) }
+    }
+    val game = FirstGame(bootToGame, autoPlay, System.getProperty("first.overlay"), speed)
     val listener: ApplicationListener = if (shots != null) {
         ScreenshotRunner(
             delegate = game,

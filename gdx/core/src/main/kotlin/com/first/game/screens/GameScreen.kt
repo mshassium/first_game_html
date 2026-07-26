@@ -796,14 +796,23 @@ class GameScreen(
 
         val dialog = Group()
         dialog.setBounds(0f, 0f, layout.worldWidth, layout.worldHeight)
-        val dim = com.badlogic.gdx.scenes.scene2d.ui.Image(theme.dim(0.8f))
+        val dim = com.badlogic.gdx.scenes.scene2d.ui.Image(theme.dim(0.86f))
         dim.setBounds(0f, 0f, layout.worldWidth, layout.worldHeight)
         dialog.addActor(dim)
+
+        // Рамка вокруг результата: без неё текст висит прямо на доске и выглядит недоделанным.
+        val panelWidth = minOf(layout.worldWidth * 0.52f, layout.worldHeight * 0.95f)
+        val panelHeight = layout.worldHeight * 0.46f
+        val panelX = (layout.worldWidth - panelWidth) / 2f
+        val panelY = (layout.worldHeight - panelHeight) / 2f
+        val frame = com.badlogic.gdx.scenes.scene2d.ui.Image(theme.modalFrame)
+        frame.setBounds(panelX, panelY, panelWidth, panelHeight)
+        dialog.addActor(frame)
 
         val title = Label(Strings[if (won) "result.victory" else "result.defeat"], theme.titleLarge)
         title.setAlignment(com.badlogic.gdx.utils.Align.center)
         title.color = if (won) Palette.GOLD_LIGHT else Palette.TEXT_MUTED
-        title.setBounds(0f, layout.worldHeight * 0.6f, layout.worldWidth, title.prefHeight)
+        title.setBounds(panelX, panelY + panelHeight * 0.62f, panelWidth, title.prefHeight)
         dialog.addActor(title)
 
         val reasonKey = when (outcome.reason) {
@@ -813,33 +822,56 @@ class GameScreen(
         }
         val reason = Label(Strings[reasonKey], theme.body)
         reason.setAlignment(com.badlogic.gdx.utils.Align.center)
-        reason.setBounds(0f, layout.worldHeight * 0.52f, layout.worldWidth, reason.prefHeight)
+        reason.wrap = true
+        reason.setBounds(
+            panelX + panelWidth * 0.08f,
+            panelY + panelHeight * 0.44f,
+            panelWidth * 0.84f,
+            reason.prefHeight,
+        )
         dialog.addActor(reason)
 
-        val buttonWidth = layout.worldWidth * 0.22f
-        val buttonHeight = layout.worldHeight * 0.09f
-        val newGame = TextButton(Strings["common.newGame"], theme.button)
-        newGame.setBounds(
-            layout.worldWidth / 2f - buttonWidth - 8f,
-            layout.worldHeight * 0.32f,
-            buttonWidth,
-            buttonHeight,
-        )
-        newGame.addListener(object : ClickListener() {
-            override fun clicked(event: InputEvent?, x: Float, y: Float) = game.startGame()
-        })
-        dialog.addActor(newGame)
+        val buttonWidth = panelWidth * 0.38f
+        val buttonHeight = (layout.worldHeight * 0.085f).coerceIn(44f, 70f)
+        val buttonY = panelY + panelHeight * 0.13f
+        val gap = panelWidth * 0.06f
 
-        val menu = TextButton(Strings["common.menu"], theme.button)
-        menu.setBounds(layout.worldWidth / 2f + 8f, layout.worldHeight * 0.32f, buttonWidth, buttonHeight)
-        menu.addListener(object : ClickListener() {
-            override fun clicked(event: InputEvent?, x: Float, y: Float) = game.showMenu()
-        })
-        dialog.addActor(menu)
+        dialog.addActor(
+            resultButton(Strings["common.newGame"], panelX + panelWidth / 2f - buttonWidth - gap / 2f, buttonY, buttonWidth, buttonHeight) {
+                game.startGame()
+            },
+        )
+        dialog.addActor(
+            resultButton(Strings["common.menu"], panelX + panelWidth / 2f + gap / 2f, buttonY, buttonWidth, buttonHeight) {
+                game.showMenu()
+            },
+        )
 
         dialog.color.a = 0f
         dialog.addAction(Actions.fadeIn(0.3f))
         uiGroup.addActor(dialog)
+    }
+
+    private fun resultButton(
+        text: String,
+        x: Float,
+        y: Float,
+        width: Float,
+        height: Float,
+        action: () -> Unit,
+    ): TextButton {
+        val button = TextButton(text, theme.button)
+        button.setBounds(x, y, width, height)
+        // Нижний обод кнопки толще верхнего — приподнимаем подпись, иначе она садится на него.
+        button.padTop(0f)
+        button.padBottom(height * 0.12f)
+        button.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                game.sound.play(SoundManager.Sfx.UI_CLICK)
+                action()
+            }
+        })
+        return button
     }
 
     // ------------------------------------------------------------- координаты
@@ -1086,7 +1118,7 @@ class GameScreen(
             val captionScale = (rect.height * 0.17f / body.capHeight).coerceAtMost(1f)
             body.data.setScale(captionScale)
             body.color = Palette.TEXT_MUTED
-            body.draw(batch, caption, rect.x + padX, rect.y + rect.height - padY * 1.15f)
+            body.draw(batch, caption, rect.x + padX, rect.y + rect.height - padY * 1.55f)
             body.data.setScale(1f)
 
             // Урна слева — в неё «падают» карты, дальше идут миниатюры по буквам.
@@ -1119,30 +1151,38 @@ class GameScreen(
             body.color = Palette.TEXT
         }
 
+        /**
+         * Журнал: новое сверху, сразу под заголовком. Старые строки бледнеют —
+         * так свежие события видны с одного взгляда, а история не мешает.
+         */
         private fun drawLog(batch: Batch) {
-            val body = assets.bodyFont
+            // На пергаменте берём шрифт со светлой обводкой, иначе тёмное по тёмному.
+            val body = if (theme.parchmentLog) assets.bodyInkFont else assets.bodyFont
+            val scale = 0.78f
+            body.data.setScale(scale)
             val rect = layout.log
-            // Пергамент светлый, поэтому текст здесь тёмный — иначе не читается.
-            val padX = rect.width * 0.10f
-            val padTop = rect.height * 0.075f
+            val padX = rect.width * 0.09f
+            val padTop = rect.height * 0.055f
             val ink = if (theme.parchmentLog) INK else Palette.TEXT
             val inkMuted = if (theme.parchmentLog) INK_MUTED else Palette.TEXT_MUTED
 
             body.color = inkMuted
-            body.draw(batch, Strings["hud.log"], rect.x + padX, rect.y + rect.height - padTop * 1.9f)
+            body.draw(batch, Strings["hud.log"], rect.x + padX, rect.y + rect.height - padTop * 1.6f)
 
-            // Строки переносятся по ширине, поэтому высоту каждой меряем, а не считаем
-            // одинаковой: иначе длинные записи наезжают друг на друга.
             val width = rect.width - padX * 2f
-            val ceiling = rect.y + rect.height - padTop * 2.6f - body.lineHeight
-            var y = rect.y + padTop * 1.6f
-            body.color = ink
-            for (line in logLines.asReversed()) {
+            val floor = rect.y + padTop
+            var y = rect.y + rect.height - padTop * 1.6f - body.lineHeight * 1.2f
+
+            for ((index, line) in logLines.asReversed().withIndex()) {
+                // Строки переносятся по ширине, поэтому высоту каждой меряем отдельно.
+                val fade = (1f - index * 0.11f).coerceAtLeast(0.35f)
+                body.color = Palette.rgba(ink, fade)
                 glyphs.setText(body, line, body.color, width, com.badlogic.gdx.utils.Align.left, true)
-                if (y + glyphs.height > ceiling) break
-                body.draw(batch, glyphs, rect.x + padX, y + glyphs.height)
-                y += glyphs.height + 4f
+                if (y - glyphs.height < floor) break
+                body.draw(batch, glyphs, rect.x + padX, y)
+                y -= glyphs.height + body.lineHeight * 0.25f
             }
+            body.data.setScale(1f)
             body.color = Palette.TEXT
         }
 

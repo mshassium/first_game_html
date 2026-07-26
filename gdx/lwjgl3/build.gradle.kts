@@ -24,7 +24,7 @@ tasks.named<JavaExec>("run") {
     // macOS требует запуска GL на главном потоке.
     if (System.getProperty("os.name").contains("Mac")) jvmArgs("-XstartOnFirstThread")
     // Отладочные ключи пробрасываются как -Pfirst.boot=game -Pfirst.shots=/tmp/shots
-    listOf("first.boot", "first.shots", "first.size", "first.autoplay", "first.frames").forEach { key ->
+    listOf("first.boot", "first.shots", "first.size", "first.autoplay", "first.frames", "first.overlay", "first.speed").forEach { key ->
         (project.findProperty(key) as String?)?.let { systemProperty(key, it) }
     }
 }
