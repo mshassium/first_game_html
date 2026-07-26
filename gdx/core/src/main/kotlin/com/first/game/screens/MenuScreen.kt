@@ -53,6 +53,7 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
     override fun render(delta: Float) {
         Gdx.gl.glClearColor(Palette.SHADOW.r, Palette.SHADOW.g, Palette.SHADOW.b, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
+        game.sound.update(delta)
 
         // Фон рисуем до сцены — он полноэкранный и ни с чем не взаимодействует.
         game.assets.background("bg_menu")?.let { texture ->
