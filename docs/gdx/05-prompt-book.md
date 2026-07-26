@@ -47,6 +47,41 @@
 **Один чат — одна группа.** Внутри диалога модель держит стиль лучше. Начали новую группу
 ассетов — новый чат, и в него снова прикладываем эталон.
 
+### Четыре правила, выведенные из брака
+
+Первый лист «слот, урна, колода» пришлось забраковать. Разбор дал четыре правила,
+которые теперь вшиты во все промпты — но если будете писать свой, держите их в голове.
+
+**1. Требуйте тёплую гамму явно.** Без прямого указания модель уводит камень в холодный
+синий. Замер по каналам (среднее R−B, «тепло»):
+
+| Ассет | Тепло (R−B) |
+|---|---|
+| card_F, рамка (эталон) | +29 |
+| panel_wood (принят) | +54 |
+| panel_stone (принят) | +21 |
+| card_back (принят) | +37 |
+| слот из забракованного листа | **−23** |
+| урна из забракованного листа | **−4** |
+| колода из забракованного листа | **−1** |
+
+Разрыв в 44 пункта между принятой каменной панелью и новым слотом виден невооружённым
+глазом: рядом они выглядят предметами из разных игр. Поэтому в каждом промпте на предмет
+интерфейса стоит строка «The palette is warm throughout» и запрет холодного тона.
+
+**2. Никакого цветного свечения на нейтральных предметах.** Азур, нефрит, янтарь, багрянец
+и аметист в этой игре означают конкретные школы магии. Слот, урна, колода и панели —
+общие для обеих сторон, и цветное свечение на них читается как ложная подсказка. Свечение
+активной зоны игра рисует сама, в цвет стороны.
+
+**3. Уже принятое не перерисовываем — прикладываем.** Если в новом ассете должен появиться
+элемент, который уже утверждён (рубашка карты на стопке колоды), приложите этот файл вторым
+референсом и прямо запретите выдумывать свой вариант. Иначе стопка окажется с одной рубашкой,
+а вылетающая с неё карта — с другой.
+
+**4. Плоский ракурс.** Всё, что лежит на столе рядом с картами, рисуется фронтально или
+с наклоном не больше 10 градусов. Выраженная перспектива спорит с плоскими картами.
+
 **Учёт.** Каждый принятый ассет записывайте в [assets_src/GENERATION-LOG.md](../../assets_src/GENERATION-LOG.md) —
 файл уже создан, эталон в нём отмечен.
 
@@ -260,31 +295,71 @@ Square image, aspect ratio 1:1, size 1024x1024.
 Нарезать на `panel_wood`, `panel_stone`, `panel_parchment`, `btn_primary_up/down/disabled`,
 `btn_secondary_up/down`, `btn_round_up/down` — имена из [04-asset-list.md](04-asset-list.md) §3.
 
-### 3.2 Слот, урна сброса и стопка колоды
+### 3.2 Слот под карту
 
 ```text
-A reference image of a fantasy spell card is attached. Match its art style, material treatment, stone and bronze rendering, lighting direction from the upper left, colour grading and brushwork exactly. These are game-board objects for the same game.
+A reference image of a fantasy spell card is attached. Match its warm colour grading, stone and bronze material treatment, lighting from the upper left and painterly brushwork exactly. This object sits on the same game board as that card.
 
-Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, rich warm lighting from the upper left, cool blue fill light from below, narrow warm rim light along top edges. Materials: grey-blue granite with faintly glowing rune veins, patinated bronze, aged dark oak, dark navy tooled leather. Muted rich palette, deep shadows, subtle bloom only on magical glows. Slightly stylised exaggerated proportions, bold readable silhouette, physical tabletop-object feel with worn edges and small chips. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, warm light from the upper left, cool blue fill light from below, narrow warm rim light along top edges. Materials: warm grey-brown granite with worn chipped edges, tarnished bronze with polished gold highlights. Muted rich warm palette, deep shadows. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
 
-Subject: three separate objects standing side by side on a plain flat pure-white background, evenly spaced, not touching each other, all lit identically:
+Subject: a single empty vertical card-shaped niche carved into a slab of warm grey-brown granite, seen perfectly flat and straight on with no perspective. The niche is recessed inward with a soft inner shadow, and a thin engraved bronze outline runs around its inner edge, catching a warm highlight along its upper left side. The interior of the niche is empty, flat and slightly darker than the surrounding stone, because a card will be placed into it later.
 
-1. A vertical empty card-shaped niche carved into a slab of grey-blue granite, seen straight on with no perspective, recessed inward with a soft inner shadow, a thin faintly glowing rune outline running around its inner edge. It is a slot where a card will later be placed, so its interior is empty and flat.
+The palette is warm throughout: the stone is grey-brown with a warm cast, the metal is tarnished bronze with polished gold highlights. There is no blue, no cyan and no coloured magical glow anywhere — this slot is neutral, cards of every school are placed into it, and a coloured glow would read as one particular school.
 
-2. A squat carved stone urn with a wide round opening and two bronze bands around its body, standing upright, empty, seen from slightly above so the opening reads as an oval. It is used as a discard container.
+Isolated object centred on a plain flat pure-white background with no shadow touching the canvas edges, so the background can be removed cleanly. Leave 8% empty margin on all sides. No text, no letters, no numbers, no digits, no words, no captions, no watermark, no signature, no logo, no border frame around the whole image.
 
-3. A neat stack of about ten face-down cards seen from slightly above at a shallow angle, the top card showing dark navy tooled leather with a small bronze heraldic seal in its centre, the edges of the cards below visible as thin worn layers. The stack is a deck waiting to be drawn from.
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, cool blue tint, cyan or azure glow, coloured magical light, perspective, tilt, text of any kind, letters, numerals, watermarks.
 
-Plain flat pure-white background, objects do not touch the canvas edges, no shadows reaching the canvas edges, so the background can be removed cleanly. No text, no letters, no numbers, no digits, no words, no captions, no watermark, no signature, no logo, no border frame around the whole image.
-
-Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, chibi, cartoon flash style, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, technology, text of any kind, letters, numerals, watermarks, cluttered micro-detail.
-
-Widescreen landscape orientation, aspect ratio 16:9.
+Portrait orientation, aspect ratio 2:3.
 ```
 
-Нарезать на `slot_card`, `discard_urn`, `deck_stack`.
+Сохранить как `assets_src/ui/slot_card.png`.
 
-### 3.3 Иконки — лист 4×4
+### 3.3 Урна сброса
+
+```text
+A reference image of a fantasy spell card is attached. Match its warm colour grading, stone and bronze material treatment, lighting from the upper left and painterly brushwork exactly. This object sits on the same game board as that card.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, warm light from the upper left, cool blue fill light from below, narrow warm rim light along the upper edges. Materials: warm grey-brown granite with worn chipped edges, tarnished bronze banding with polished gold highlights. Muted rich warm palette, deep shadows. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: a squat carved stone urn with a wide round opening, standing upright and seen from slightly above so the opening reads as an oval. Two tarnished bronze bands wrap around its body, and a small ornamental bronze boss sits at the front where the bands cross. The urn is empty inside, its interior falling into shadow. Discarded cards will be dropped into it, so it looks sturdy, low and open.
+
+The palette is warm throughout: warm grey-brown stone, tarnished bronze, gold highlights. There is no blue, no cyan and no coloured magical glow anywhere — the urn is a neutral board object shared by both players, and a coloured glow would tie it to one school of magic.
+
+Isolated object centred on a plain flat pure-white background with no shadow touching the canvas edges, so the background can be removed cleanly. Leave 8% empty margin on all sides. No text, no letters, no numbers, no digits, no words, no captions, no watermark, no signature, no logo, no border frame around the whole image.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, cool blue tint, cyan or azure glow, coloured magical light, text of any kind, letters, numerals, watermarks.
+
+Square image, aspect ratio 1:1.
+```
+
+Сохранить как `assets_src/ui/discard_urn.png`.
+
+### 3.4 Стопка колоды
+
+Прикладываем **два** файла: `card_F_anchor.png` и `card_back.png`. Второй обязателен —
+без него модель придумает свою рубашку, и стопка перестанет совпадать с картами,
+которые с неё вылетают.
+
+```text
+Two reference images are attached: a fantasy spell card, and the BACK of that same card. The deck in this image must use exactly the card back from the second reference — the same dark navy tooled leather, the same bronze ring with five coloured gemstones, the same ornament and the same proportions. Do not invent a different back design.
+
+Painterly digital illustration in the style of a premium fantasy collectible card game. Hand-painted textures with visible brushwork, warm light from the upper left, cool blue fill light from below, narrow warm rim light along top edges. Materials: dark navy tooled leather, tarnished bronze, warm polished gold, aged card edges. Muted rich warm palette, deep shadows. Not photorealistic, not 3D render, not anime, not pixel art, not flat vector.
+
+Subject: a neat stack of about ten identical face-down cards, seen from slightly above and almost straight on, tilted no more than 10 degrees, so the cards still read as flat objects rather than a perspective render. The top card shows the card back from the second reference exactly. Below it, the edges of the remaining cards are visible as thin worn warm-brown layers with faint gilded edges. The corners of the stack are slightly worn and chipped.
+
+The palette is warm throughout, matching the references. Any blue in the image comes only from the navy leather of the card back itself, never from the lighting or the card edges.
+
+Isolated object centred on a plain flat pure-white background with no shadow touching the canvas edges, so the background can be removed cleanly. Leave 8% empty margin on all sides. No text, no letters, no numbers, no digits, no words, no captions, no watermark, no signature, no logo, no border frame around the whole image.
+
+Avoid: photorealism, 3D render, CGI, ray tracing, anime, manga, pixel art, vector art, flat design, minimalism, neon, cyberpunk, sci-fi, modern objects, strong perspective, a card back different from the reference, cool blue tint, text of any kind, letters, numerals, watermarks.
+
+Landscape orientation, aspect ratio 4:3.
+```
+
+Сохранить как `assets_src/ui/deck_stack.png`.
+
+### 3.5 Иконки — лист 4×4
 
 ```text
 A reference image of a fantasy spell card is attached. Match its bronze and gold material treatment, lighting direction from the upper left, colour grading and painterly brushwork exactly. These are interface icons for the same game.
@@ -312,7 +387,7 @@ Square image, aspect ratio 1:1, size 1024x1024.
 `icon_music_off`, `icon_rules`, `icon_menu`, `icon_close`, `icon_restart`, `icon_back`,
 `icon_hourglass`, `icon_deck`, `icon_hand`, `icon_speed`, `icon_lang`, `icon_info`.
 
-### 3.4 Кубики — лист из шести граней
+### 3.6 Кубики — лист из шести граней
 
 ```text
 A reference image of a fantasy spell card is attached. Match its stone and bronze material treatment, lighting direction from the upper left, colour grading and painterly brushwork exactly. These are dice for the same game.
@@ -334,7 +409,7 @@ Landscape orientation, aspect ratio 4:3.
 
 Нарезать на `die_1` … `die_6`.
 
-### 3.5 Портрет игрока
+### 3.7 Портрет игрока
 
 ```text
 A reference image of a fantasy spell card is attached. Match its painterly style, warm lighting from the upper left, cool fill light from below, colour grading and brushwork exactly. This is a character portrait for the same game.
@@ -354,7 +429,7 @@ Square image, aspect ratio 1:1, size 1024x1024.
 
 Сохранить как `assets_src/ui/portrait_player.png`.
 
-### 3.6 Портрет оппонента
+### 3.8 Портрет оппонента
 
 ```text
 A reference image of a fantasy spell card is attached. Match its painterly style, warm lighting, cool fill light, colour grading and brushwork exactly. This is a character portrait for the same game and it must sit next to a portrait of a young sorcerer as its counterpart.
@@ -374,7 +449,7 @@ Square image, aspect ratio 1:1, size 1024x1024.
 
 Сохранить как `assets_src/ui/portrait_ai.png`.
 
-### 3.7 Рама портрета
+### 3.9 Рама портрета
 
 ```text
 A reference image of a fantasy spell card is attached. Match its bronze and gold material treatment, lighting direction from the upper left, colour grading and painterly brushwork exactly. This is a portrait frame for the same game.
@@ -394,7 +469,7 @@ Square image, aspect ratio 1:1, size 1024x1024.
 
 Сохранить как `assets_src/ui/frame_portrait.png`.
 
-### 3.8 Эмблема Ордена
+### 3.10 Эмблема Ордена
 
 ```text
 A reference image of a fantasy spell card is attached. Match its bronze and gold material treatment, lighting direction from the upper left, colour grading and painterly brushwork exactly. This is the heraldic emblem of the wizard order that the game is about.
@@ -569,12 +644,13 @@ Landscape orientation, aspect ratio 4:3.
 1. ~~Эталон — карта F~~ — **сделано**.
 2. Карты I, R, S, T — четыре отдельных запроса (§2.1–2.4).
 3. Рубашка (§2.5).
-4. Панели и кнопки (§3.1) → нарезать → разметить 9-patch.
-5. Слот, урна, колода (§3.2).
-6. Иконки (§3.3) → нарезать по сетке.
-7. Кубики (§3.4) → нарезать.
-8. Портреты и рама (§3.5–3.7).
-9. Эмблема (§3.8).
+4. Панели и кнопки (§3.1) → нарезать.
+5. Слот (§3.2), урна (§3.3), колода (§3.4) — тремя отдельными запросами.
+   Для колоды обязательно приложить `card_back.png` вторым референсом.
+6. Иконки (§3.5) → нарезать по сетке.
+7. Кубики (§3.6) → нарезать.
+8. Портреты и рама (§3.7–3.9).
+9. Эмблема (§3.10).
 10. Фоны (§4.1–4.4).
 11. VFX (§5.1–5.2).
 
@@ -599,6 +675,9 @@ Landscape orientation, aspect ratio 4:3.
 | Акцентный цвет ушёл | `The accent glow, the inner frame line and the bottom gemstone must all be exactly this colour: #FFD195. The wood and bronze stay neutral warm brown and must not be tinted by the accent colour.` |
 | Элементы на листе разного размера | `All items on the sheet must be exactly the same size, seen from exactly the same angle, and aligned on a strict grid with equal spacing.` |
 | Появилась рамка вокруг всего изображения | `Do not draw any border or frame around the whole image. Only the objects themselves on a plain background.` |
+| Ассет вышел холодным, не в тон принятым | `The palette must be warm throughout: warm grey-brown stone, tarnished bronze, warm gold highlights. Remove the cool blue cast entirely. Match the warm colour grading of the attached reference.` |
+| Модель нарисовала свою рубашку карты | `The card back must be exactly the one in the attached reference: same navy tooled leather, same bronze ring, same five gemstones, same ornament. Do not design a new back.` |
+| На нейтральном предмете появилось цветное свечение | `Remove all coloured magical glow. This object is neutral and shared by both players, so any school colour on it would be misleading. Keep only warm bronze and gold highlights.` |
 | Элементы на листе слиплись | `Increase the spacing between the elements so that none of them touch or overlap, and none of them touch the canvas edges.` |
 
 ---
