@@ -1,0 +1,307 @@
+
+ui.png
+size: 1837, 1552
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+btn_primary_disabled
+  rotate: false
+  xy: 1233, 903
+  size: 384, 91
+  orig: 384, 91
+  offset: 0, 0
+  index: -1
+btn_primary_down
+  rotate: false
+  xy: 1429, 1001
+  size: 384, 89
+  orig: 384, 89
+  offset: 0, 0
+  index: -1
+btn_primary_up
+  rotate: false
+  xy: 1233, 808
+  size: 384, 91
+  orig: 384, 91
+  offset: 0, 0
+  index: -1
+btn_round_disabled
+  rotate: false
+  xy: 1101, 243
+  size: 120, 105
+  orig: 120, 105
+  offset: 0, 0
+  index: -1
+btn_round_down
+  rotate: false
+  xy: 1101, 140
+  size: 119, 99
+  orig: 119, 99
+  offset: 0, 0
+  index: -1
+btn_round_up
+  rotate: false
+  xy: 1101, 352
+  size: 128, 113
+  orig: 128, 113
+  offset: 0, 0
+  index: -1
+btn_secondary_down
+  rotate: false
+  xy: 1429, 1094
+  size: 384, 91
+  orig: 384, 91
+  offset: 0, 0
+  index: -1
+btn_secondary_up
+  rotate: false
+  xy: 1101, 41
+  size: 384, 89
+  orig: 384, 89
+  offset: 0, 0
+  index: -1
+deck_stack
+  rotate: false
+  xy: 390, 50
+  size: 384, 336
+  orig: 384, 336
+  offset: 0, 0
+  index: -1
+die_1
+  rotate: false
+  xy: 778, 1166
+  size: 321, 384
+  orig: 321, 384
+  offset: 0, 0
+  index: -1
+die_2
+  rotate: false
+  xy: 390, 390
+  size: 320, 384
+  orig: 320, 384
+  offset: 0, 0
+  index: -1
+die_3
+  rotate: false
+  xy: 390, 1166
+  size: 321, 384
+  orig: 321, 384
+  offset: 0, 0
+  index: -1
+die_4
+  rotate: false
+  xy: 714, 390
+  size: 320, 384
+  orig: 320, 384
+  offset: 0, 0
+  index: -1
+die_5
+  rotate: false
+  xy: 778, 2
+  size: 319, 384
+  orig: 319, 384
+  offset: 0, 0
+  index: -1
+die_6
+  rotate: false
+  xy: 390, 778
+  size: 321, 384
+  orig: 321, 384
+  offset: 0, 0
+  index: -1
+discard_urn
+  rotate: false
+  xy: 2, 37
+  size: 384, 349
+  orig: 384, 349
+  offset: 0, 0
+  index: -1
+emblem_first
+  rotate: false
+  xy: 715, 778
+  size: 265, 384
+  orig: 265, 384
+  offset: 0, 0
+  index: -1
+frame_portrait
+  rotate: false
+  xy: 2, 1166
+  size: 384, 384
+  orig: 384, 384
+  offset: 0, 0
+  index: -1
+icon_back
+  rotate: false
+  xy: 1397, 134
+  size: 169, 162
+  orig: 169, 162
+  offset: 0, 0
+  index: -1
+icon_close
+  rotate: false
+  xy: 1233, 998
+  size: 192, 187
+  orig: 192, 187
+  offset: 0, 0
+  index: -1
+icon_deck
+  rotate: false
+  xy: 1408, 300
+  size: 168, 164
+  orig: 168, 164
+  offset: 0, 0
+  index: -1
+icon_duel
+  rotate: false
+  xy: 1491, 1210
+  size: 168, 167
+  orig: 168, 167
+  offset: 0, 0
+  index: -1
+icon_hand
+  rotate: false
+  xy: 1583, 322
+  size: 169, 164
+  orig: 169, 164
+  offset: 0, 0
+  index: -1
+icon_hourglass
+  rotate: false
+  xy: 1601, 490
+  size: 170, 165
+  orig: 170, 165
+  offset: 0, 0
+  index: -1
+icon_info
+  rotate: false
+  xy: 1410, 468
+  size: 169, 165
+  orig: 169, 165
+  offset: 0, 0
+  index: -1
+icon_lang
+  rotate: false
+  xy: 1234, 493
+  size: 172, 164
+  orig: 172, 164
+  offset: 0, 0
+  index: -1
+icon_menu
+  rotate: false
+  xy: 1038, 469
+  size: 192, 188
+  orig: 192, 188
+  offset: 0, 0
+  index: -1
+icon_music_off
+  rotate: false
+  xy: 1225, 157
+  size: 168, 164
+  orig: 168, 164
+  offset: 0, 0
+  index: -1
+icon_music_on
+  rotate: false
+  xy: 1665, 1209
+  size: 170, 168
+  orig: 170, 168
+  offset: 0, 0
+  index: -1
+icon_restart
+  rotate: false
+  xy: 1234, 325
+  size: 170, 164
+  orig: 170, 164
+  offset: 0, 0
+  index: -1
+icon_rules
+  rotate: false
+  xy: 1665, 1381
+  size: 169, 169
+  orig: 169, 169
+  offset: 0, 0
+  index: -1
+icon_rules_off
+  rotate: false
+  xy: 1491, 1381
+  size: 170, 169
+  orig: 170, 169
+  offset: 0, 0
+  index: -1
+icon_settings
+  rotate: false
+  xy: 1621, 659
+  size: 171, 167
+  orig: 171, 167
+  offset: 0, 0
+  index: -1
+icon_sound_off
+  rotate: false
+  xy: 1426, 637
+  size: 171, 167
+  orig: 171, 167
+  offset: 0, 0
+  index: -1
+icon_sound_on
+  rotate: false
+  xy: 1621, 830
+  size: 172, 167
+  orig: 172, 167
+  offset: 0, 0
+  index: -1
+icon_speed
+  rotate: false
+  xy: 1580, 155
+  size: 168, 163
+  orig: 168, 163
+  offset: 0, 0
+  index: -1
+modal_frame
+  rotate: false
+  xy: 1103, 1430
+  size: 384, 120
+  orig: 384, 120
+  offset: 0, 0
+  index: -1
+panel_parchment
+  rotate: false
+  xy: 1103, 1307
+  size: 384, 119
+  orig: 384, 119
+  offset: 0, 0
+  index: -1
+panel_stone
+  rotate: false
+  xy: 1103, 1189
+  size: 384, 114
+  orig: 384, 114
+  offset: 0, 0
+  index: -1
+panel_wood
+  rotate: false
+  xy: 1038, 661
+  size: 384, 113
+  orig: 384, 113
+  offset: 0, 0
+  index: -1
+portrait_ai
+  rotate: false
+  xy: 2, 778
+  size: 384, 384
+  orig: 384, 384
+  offset: 0, 0
+  index: -1
+portrait_player
+  rotate: false
+  xy: 2, 390
+  size: 384, 384
+  orig: 384, 384
+  offset: 0, 0
+  index: -1
+slot_card
+  rotate: false
+  xy: 984, 778
+  size: 245, 384
+  orig: 245, 384
+  offset: 0, 0
+  index: -1
