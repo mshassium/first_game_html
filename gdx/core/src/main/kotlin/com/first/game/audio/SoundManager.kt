@@ -117,12 +117,26 @@ class SoundManager : Disposable {
         }
     }
 
-    /** Вызывается при первом касании экрана — после него звук разрешён. */
+    /**
+     * Вызывается при каждом касании экрана.
+     *
+     * Первое касание снимает браузерный запрет. Последующие — страховка: если
+     * запуск не удался (мобильный браузер мог отклонить его, вкладку сворачивали,
+     * звуковой контекст усыпили), пробуем ещё раз. Одной попытки мало:
+     * на телефоне первая проваливается регулярно.
+     */
     fun unlock() {
-        if (unlocked) return
-        unlocked = true
-        pendingTrack?.let { playMusic(it) }
-        pendingTrack = null
+        if (!unlocked) {
+            unlocked = true
+            pendingTrack?.let { playMusic(it) }
+            pendingTrack = null
+            return
+        }
+        val music = current ?: return
+        if (!music.isPlaying) {
+            music.volume = GamePrefs.musicVolume
+            music.play()
+        }
     }
 
     fun applyVolumes() {

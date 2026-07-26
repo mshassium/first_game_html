@@ -20,6 +20,11 @@ object TeaVMLauncher {
 
     @JvmStatic
     fun main(args: Array<String>) {
+        // Ставим до старта приложения: слушатели должны существовать раньше,
+        // чем пользователь сделает первое касание.
+        WebBrowserHooks.installAudioResume()
+        WebBrowserHooks.installOrientationLock()
+
         val config = WebApplicationConfiguration().apply {
             width = 0
             height = 0
