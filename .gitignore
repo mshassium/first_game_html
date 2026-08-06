@@ -17,3 +17,21 @@ gdx/teavm/build/
 gdx/ios/build/
 gdx/android/build/
 gdx/tools/build/
+
+# Черновики генератора ассетов: сырые ответы модели и отклонённые попытки.
+tools/artgen/smoke_out/
+tools/artgen/__pycache__/
+
+# Отклонённые попытки генерации: 98 МБ, каждая заменена принятым ассетом рядом.
+# Принятые исходники в assets_src/raw остаются в git по правилу выше.
+assets_src/raw/attempts/
+
+# Рабочие файлы генератора: контактные листы, журнал запросов, логи прогонов.
+tools/artgen/*.png
+tools/artgen/*.log
+tools/artgen/runs.jsonl
+tools/artgen/__pycache__/
+
+# Артефакты сборки IDE и Kotlin.
+gdx/.kotlin/
+gdx/*/bin/
