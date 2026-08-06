@@ -1,103 +1,103 @@
 
 vfx.png
-size: 740, 781
+size: 1024, 1024
 format: RGBA8888
-filter: Linear, Linear
+filter: MipMapLinearLinear, Linear
 repeat: none
 fx_burst_star
   rotate: false
-  xy: 253, 292
+  xy: 271, 505
   size: 221, 227
   orig: 221, 227
   offset: 0, 0
   index: -1
 fx_chain_link
   rotate: false
-  xy: 2, 523
+  xy: 8, 748
   size: 248, 256
   orig: 248, 256
   offset: 0, 0
   index: -1
 fx_claw_slash
   rotate: false
-  xy: 254, 523
+  xy: 272, 748
   size: 231, 256
   orig: 231, 256
   offset: 0, 0
   index: -1
 fx_crack
   rotate: false
-  xy: 2, 3
+  xy: 8, 204
   size: 195, 256
   orig: 195, 256
   offset: 0, 0
   index: -1
 fx_dust
   rotate: false
-  xy: 413, 19
+  xy: 941, 940
   size: 65, 64
   orig: 65, 64
   offset: 0, 0
   index: -1
 fx_ember
   rotate: false
-  xy: 201, 3
+  xy: 219, 204
   size: 127, 256
   orig: 127, 256
   offset: 0, 0
   index: -1
 fx_glow_soft
   rotate: false
-  xy: 536, 8
+  xy: 433, 336
   size: 156, 153
   orig: 156, 153
   offset: 0, 0
   index: -1
 fx_leaf
   rotate: false
-  xy: 489, 523
+  xy: 519, 748
   size: 190, 256
   orig: 190, 256
   offset: 0, 0
   index: -1
 fx_lightray
   rotate: false
-  xy: 683, 541
+  xy: 362, 251
   size: 55, 238
   orig: 55, 238
   offset: 0, 0
   index: -1
 fx_ring_rune
   rotate: false
-  xy: 332, 87
+  xy: 725, 803
   size: 200, 201
   orig: 200, 201
   offset: 0, 0
   index: -1
 fx_shockwave
   rotate: false
-  xy: 536, 165
+  xy: 8, 8
   size: 182, 180
   orig: 182, 180
   offset: 0, 0
   index: -1
 fx_smoke_puff
   rotate: false
-  xy: 489, 349
+  xy: 206, 18
   size: 184, 170
   orig: 184, 170
   offset: 0, 0
   index: -1
 fx_snare_jaws
   rotate: false
-  xy: 2, 263
+  xy: 8, 476
   size: 247, 256
   orig: 247, 256
   offset: 0, 0
   index: -1
 fx_spark
   rotate: false
-  xy: 332, 2
+  xy: 433, 239
   size: 77, 81
   orig: 77, 81
   offset: 0, 0

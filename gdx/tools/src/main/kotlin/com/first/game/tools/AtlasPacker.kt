@@ -75,7 +75,9 @@ private val ATLASES = listOf(
             Compact("panel_stone", sourceFraction = 0.20f, targetBorder = 56),
         ),
     ),
-    AtlasSpec("cards", "cards", 2048, maxSprite = 768),
+    // Карта на экране не превышает 260 физических пикселей даже на плотном
+    // дисплее, поэтому 768 в атласе — троекратный запас впустую.
+    AtlasSpec("cards", "cards", 2048, maxSprite = 512),
     AtlasSpec("vfx", "vfx", 1024, maxSprite = 256),
 )
 
@@ -133,8 +135,11 @@ fun main(args: Array<String>) {
         val settings = TexturePacker.Settings().apply {
             maxWidth = spec.maxSize
             maxHeight = spec.maxSize
-            paddingX = 4
-            paddingY = 4
+            // Отступ рассчитан на мипмапы: на третьем уровне спрайт уменьшается
+            // в восемь раз, и четырёх пикселей не хватило бы — соседи потекли бы
+            // друг в друга.
+            paddingX = 16
+            paddingY = 16
             // Дублируем крайний пиксель в отступ, иначе на границах спрайтов
             // при линейной фильтрации появляется полоска соседа.
             duplicatePadding = true
@@ -143,10 +148,14 @@ fun main(args: Array<String>) {
             // Прозрачные поля не срезаем: код позиционирует спрайты по их полному размеру.
             stripWhitespaceX = false
             stripWhitespaceY = false
-            filterMin = com.badlogic.gdx.graphics.Texture.TextureFilter.Linear
+            // Мипмапы обязательны: карта лежит в атласе как 497x768, а рисуется
+            // в 90–150 px. Без них каждый пиксель экрана берёт четыре тексела из
+            // трёх десятков, которые должен усреднить, — отсюда муар и «рёбра».
+            filterMin = com.badlogic.gdx.graphics.Texture.TextureFilter.MipMapLinearLinear
             filterMag = com.badlogic.gdx.graphics.Texture.TextureFilter.Linear
-            // Размеры ассетов не степени двойки, а мипмапы для них ломают WebGL1.
-            pot = false
+            // WebGL1 умеет мипмапы только для текстур со сторонами-степенями двойки,
+            // а веб-сборка идёт именно на нём.
+            pot = true
             useIndexes = false
         }
 

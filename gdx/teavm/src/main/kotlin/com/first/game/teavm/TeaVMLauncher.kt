@@ -28,6 +28,9 @@ object TeaVMLauncher {
         val config = WebApplicationConfiguration().apply {
             width = 0
             height = 0
+            // Без этого canvas рисуется в CSS-пикселях: на экране с плотностью 2
+            // игра считается в половинном разрешении, а браузер растягивает результат.
+            usePhysicalPixels = true
             preloadListener = WebAssetPreloadListener { }
         }
         WebApplication(FirstGame(), config)
