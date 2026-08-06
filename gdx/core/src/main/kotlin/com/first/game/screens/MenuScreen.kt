@@ -17,11 +17,13 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport
 import com.first.game.AnimationSpeed
 import com.first.game.FirstGame
 import com.first.game.GamePrefs
+import com.first.game.SaveGame
 import com.first.game.audio.SoundManager
 import com.first.game.domain.Letter
 import com.first.game.domain.ai.Difficulty
 import com.first.game.i18n.Strings
 import com.first.game.ui.CardActor
+import com.first.game.ui.drawCover
 import com.first.game.ui.Overlay
 import com.first.game.ui.Palette
 import ktx.app.KtxScreen
@@ -60,17 +62,25 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         game.sound.update(delta)
 
         // Фон рисуем до сцены — он полноэкранный и ни с чем не взаимодействует.
-        game.assets.background("bg_menu")?.let { texture ->
+        menuBackground()?.let { texture ->
             game.batch.projectionMatrix = stage.viewport.camera.combined
             game.batch.begin()
             game.batch.setColor(1f, 1f, 1f, 1f)
-            game.batch.draw(texture, 0f, 0f, stage.viewport.worldWidth, stage.viewport.worldHeight)
+            game.batch.drawCover(texture, stage.viewport.worldWidth, stage.viewport.worldHeight)
             game.batch.end()
         }
 
         stage.act(delta)
         stage.draw()
     }
+
+    /** В вертикальной ориентации свой фон: горизонтальный пришлось бы обрезать втрое. */
+    private fun menuBackground() =
+        if (stage.viewport.worldHeight > stage.viewport.worldWidth) {
+            game.assets.background("bg_menu_portrait") ?: game.assets.background("bg_menu")
+        } else {
+            game.assets.background("bg_menu")
+        }
 
     override fun resize(width: Int, height: Int) {
         stage.viewport.update(width, height, true)
@@ -136,8 +146,13 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         root.add(title).padBottom(2f).row()
         root.add(subtitle).padBottom(gap).row()
 
-        val buttons = listOf<Triple<String, String, () -> Unit>>(
-            Triple(Strings["menu.play"], "duel") { game.startGame() },
+        val buttons = mutableListOf<Triple<String, String, () -> Unit>>()
+        // «Продолжить» появляется только когда есть что продолжать.
+        if (SaveGame.exists) {
+            buttons += Triple(Strings["menu.continue"], "restart") { game.continueGame() }
+        }
+        buttons += listOf(
+            Triple(Strings["menu.play"], "duel") { confirmNewGame() },
             Triple(Strings["menu.rules"], "rules") { overlay.showRules() },
             Triple(Strings["menu.settings"], "settings") { showSettings() },
             // Подпись — только название языка: что это переключатель, говорит иконка флажков.
@@ -146,6 +161,29 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         for ((text, icon, action) in buttons) {
             root.add(menuButton(text, icon, action))
                 .size(buttonWidth, buttonHeight).padBottom(gap).row()
+        }
+    }
+
+    /**
+     * Новая игра поверх отложенной партии спрашивает подтверждение: сохранение
+     * одно, и старт новой стирает его безвозвратно.
+     */
+    private fun confirmNewGame() {
+        if (!SaveGame.exists) {
+            game.startGame()
+            return
+        }
+        overlay.show(Strings["newgame.title"]) { content, width ->
+            val gap = stage.viewport.worldHeight * 0.02f
+            content.add(overlay.wrapped(Strings["newgame.body"])).width(width).left().padTop(gap).row()
+            val buttonHeight = (stage.viewport.worldHeight * 0.085f).coerceIn(44f, 70f)
+            for ((key, action) in listOf<Pair<String, () -> Unit>>(
+                "newgame.confirm" to { game.startGame() },
+                "newgame.cancel" to { overlay.close() },
+            )) {
+                content.add(menuButton(Strings[key], null, action))
+                    .size(width * 0.86f, buttonHeight).padTop(gap * 1.5f).row()
+            }
         }
     }
 

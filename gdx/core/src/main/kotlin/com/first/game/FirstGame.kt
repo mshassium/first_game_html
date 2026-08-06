@@ -44,7 +44,16 @@ class FirstGame(
 
     fun showMenu() = swapTo(MenuScreen(this))
 
-    fun startGame() = swapTo(GameScreen(this, autoPlay))
+    fun startGame() {
+        SaveGame.clear()
+        swapTo(GameScreen(this, autoPlay))
+    }
+
+    /** Открыть отложенную партию. Если сохранение битое, начинается новая. */
+    fun continueGame() {
+        val saved = SaveGame.load()
+        if (saved == null) startGame() else swapTo(GameScreen(this, autoPlay, saved))
+    }
 
     /** Экраны лёгкие, кэшировать их незачем: предыдущий сразу освобождаем. */
     private fun swapTo(next: Screen) {

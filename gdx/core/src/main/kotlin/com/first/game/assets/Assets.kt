@@ -53,7 +53,7 @@ class Assets : Disposable {
         if (Gdx.files.internal(VFX_ATLAS).exists()) {
             vfxAtlas = TextureAtlas(Gdx.files.internal(VFX_ATLAS))
         }
-        for (name in listOf("bg_menu", "bg_table_landscape", "bg_table_portrait", "bg_loading")) {
+        for (name in listOf("bg_menu", "bg_menu_portrait", "bg_table_landscape", "bg_table_portrait", "bg_loading")) {
             val handle = Gdx.files.internal("bg/$name.jpg")
             if (!handle.exists()) continue
             // Без мипмапов: размеры фонов не степени двойки, а такие текстуры

@@ -21,6 +21,8 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.utils.viewport.ExtendViewport
 import com.first.game.FirstGame
 import com.first.game.GamePrefs
+import com.first.game.SaveGame
+import com.first.game.SavedGame
 import com.first.game.audio.SoundManager
 import com.first.game.domain.ChoiceKind
 import com.first.game.domain.Command
@@ -40,6 +42,7 @@ import com.first.game.ui.BoardLayout
 import com.first.game.ui.CardActor
 import com.first.game.ui.GlowActor
 import com.first.game.ui.Palette
+import com.first.game.ui.drawCover
 import ktx.app.KtxScreen
 
 /**
@@ -51,6 +54,8 @@ import ktx.app.KtxScreen
 class GameScreen(
     private val game: FirstGame,
     private val autoPlay: Boolean = false,
+    /** Отложенная партия: экран открывается сразу в ней, без раздачи. */
+    private val resumed: SavedGame? = null,
 ) : KtxScreen {
 
     private val assets = game.assets
@@ -84,7 +89,10 @@ class GameScreen(
 
     private var elapsedSeconds = 0f
     private var aiDelay = 0f
+    private val hudOverlay = HudOverlay()
+    private var hudHint: Group? = null
     private var choiceDialog: Group? = null
+    private var pauseDialog: Group? = null
     private var menuButton: com.badlogic.gdx.scenes.scene2d.ui.Button? = null
     private var rulesButton: TextButton? = null
     private val overlay = com.first.game.ui.Overlay(stage, theme, assets, game.sound)
@@ -110,7 +118,8 @@ class GameScreen(
 
     init {
         val start = engine.newGame()
-        state = start.state
+        state = resumed?.state ?: start.state
+        elapsedSeconds = resumed?.elapsedSeconds ?: 0f
         stage.addActor(boardGroup)
         stage.addActor(cardGroup)
         stage.addActor(fxGroup)
@@ -118,9 +127,10 @@ class GameScreen(
         stage.addActor(dialogGroup)
         stage.addActor(topGroup)
         boardGroup.addActor(BoardBackground())
-        uiGroup.addActor(HudOverlay())
+        uiGroup.addActor(hudOverlay)
         addMenuButton()
         addRulesButton()
+        placeHud()
         stage.addListener(object : InputListener() {
             override fun touchDown(event: InputEvent?, x: Float, y: Float, pointer: Int, button: Int): Boolean {
                 game.sound.unlock()
@@ -128,7 +138,8 @@ class GameScreen(
                 return false
             }
         })
-        enqueue(start.events)
+        // Продолженная партия не переигрывает раздачу: доска собирается сразу.
+        if (resumed == null) enqueue(start.events)
         syncBoard()
     }
 
@@ -146,7 +157,7 @@ class GameScreen(
         button.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 game.sound.play(SoundManager.Sfx.UI_CLICK)
-                game.showMenu()
+                showPauseDialog()
             }
         })
         menuButton = button
@@ -172,6 +183,56 @@ class GameScreen(
         rulesButton = button
         topGroup.addActor(button)
         placeRulesButton()
+    }
+
+    /** Границы HUD нужны не для отрисовки, а чтобы он ловил касания по счётчикам. */
+    private fun placeHud() {
+        hudOverlay.setBounds(layout.hud.x, layout.hud.y, layout.hud.width, layout.hud.height)
+    }
+
+    /**
+     * Описание счётчика под его иконкой.
+     *
+     * Значки в верхней строке ничего не поясняют сами по себе, а новичку неочевидно,
+     * где чья колода и что означает дробь.
+     */
+    private fun showHudHint(key: String, anchor: Rectangle) {
+        hideHudHint()
+        val width = (layout.worldWidth * 0.22f).coerceIn(200f, 340f)
+        val pad = width * 0.07f
+        val label = overlay.wrapped(Strings[key])
+        // Подсказка служебная и висит поверх стола: шрифт мельче, чем в правилах.
+        label.setFontScale(HUD_HINT_FONT)
+        label.setWidth(width - pad * 2f)
+        val height = label.prefHeight + pad * 2f
+
+        val x = (anchor.x + anchor.width / 2f - width / 2f)
+            .coerceIn(pad, layout.worldWidth - width - pad)
+        val y = (anchor.y - height - pad * 0.5f).coerceAtLeast(pad)
+
+        val group = Group()
+        group.setBounds(x, y, width, height)
+        val panel = com.badlogic.gdx.scenes.scene2d.ui.Image(theme.panelStone)
+        panel.setBounds(0f, 0f, width, height)
+        group.addActor(panel)
+        label.setBounds(pad, pad, width - pad * 2f, height - pad * 2f)
+        group.addActor(label)
+        group.color.a = 0f
+        group.addAction(
+            Actions.sequence(
+                Actions.fadeIn(0.12f),
+                Actions.delay(HUD_HINT_TIME),
+                Actions.fadeOut(0.2f),
+                Actions.run { hideHudHint() },
+            ),
+        )
+        topGroup.addActor(group)
+        hudHint = group
+    }
+
+    private fun hideHudHint() {
+        hudHint?.remove()
+        hudHint = null
     }
 
     private fun placeRulesButton() {
@@ -204,8 +265,12 @@ class GameScreen(
         game.sound.update(delta)
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.BACK)) {
-            // Открытые правила закрываются первым нажатием, из партии выходим вторым.
-            if (overlay.isOpen) overlay.close() else game.showMenu()
+            // Открытые правила закрываются первым нажатием, дальше спрашиваем о выходе.
+            when {
+                overlay.isOpen -> overlay.close()
+                pauseDialog != null -> dismissPauseDialog()
+                else -> showPauseDialog()
+            }
             return
         }
 
@@ -220,7 +285,17 @@ class GameScreen(
         syncBoard()
         placeMenuButton()
         placeRulesButton()
+        placeHud()
+        hideHudHint()
         choiceDialog?.let { it.setBounds(0f, 0f, layout.worldWidth, layout.worldHeight) }
+    }
+
+    /**
+     * Сворачивание приложения — на телефоне игру чаще всего закрывают именно так,
+     * и без сохранения здесь партия просто пропадёт.
+     */
+    override fun pause() {
+        if (!state.isOver) SaveGame.save(state, elapsedSeconds)
     }
 
     override fun dispose() {
@@ -234,7 +309,10 @@ class GameScreen(
         if (!director.isIdle) return
 
         if (state.isOver) {
-            if (!resultDialogShown) showResultDialog()
+            if (!resultDialogShown) {
+                SaveGame.clear()
+                showResultDialog()
+            }
             return
         }
 
@@ -468,7 +546,7 @@ class GameScreen(
                 game.sound.play(SoundManager.Sfx.FORBID_TRIGGER)
                 flyCard(
                     from = handSlotFor(event.side, event.letter),
-                    to = discardRect(event.side),
+                    to = discardTarget(event.side),
                     letter = event.letter,
                     sound = null,
                     seconds = 0.75f,
@@ -483,7 +561,7 @@ class GameScreen(
             }
 
             is GameEvent.CardRecovered -> flyCard(
-                from = discardRect(event.side),
+                from = discardTarget(event.side),
                 to = handArrivalSlot(event.side),
                 letter = event.letter.takeIf { event.side == Side.YOU },
                 sound = SoundManager.Sfx.RECOVER,
@@ -519,7 +597,7 @@ class GameScreen(
                 }
                 flyCard(
                     from = spaceSlotFor(event.victim, event.letter),
-                    to = discardRect(event.victim),
+                    to = discardTarget(event.victim),
                     letter = event.letter,
                     sound = null,
                     seconds = 0.7f,
@@ -536,7 +614,7 @@ class GameScreen(
                 game.sound.play(SoundManager.Sfx.TRAP_SNAP)
                 flyCard(
                     from = handSlotFor(event.side, event.letter),
-                    to = discardRect(event.side),
+                    to = discardTarget(event.side),
                     letter = event.letter.takeIf { event.side == Side.YOU },
                     sound = null,
                     seconds = 0.6f,
@@ -547,7 +625,7 @@ class GameScreen(
 
             is GameEvent.HandOverflow -> flyCard(
                 from = handSlotFor(event.side, event.letter),
-                to = discardRect(event.side),
+                to = discardTarget(event.side),
                 letter = event.letter.takeIf { event.side == Side.YOU },
                 sound = SoundManager.Sfx.CARD_DISCARD,
                 seconds = 0.45f,
@@ -975,6 +1053,89 @@ class GameScreen(
 
     // ---------------------------------------------------------------- диалоги
 
+    /**
+     * Выход из партии: отложить или прервать.
+     *
+     * Без этого кнопка меню молча обрывала матч, и вернуться к нему было нельзя.
+     * Третий пункт обязателен: кнопку нажимают и по ошибке.
+     */
+    private fun showPauseDialog() {
+        if (pauseDialog != null || state.isOver) return
+        val dialog = Group()
+        dialog.setBounds(0f, 0f, layout.worldWidth, layout.worldHeight)
+
+        val dim = com.badlogic.gdx.scenes.scene2d.ui.Image(theme.dim(0.72f))
+        dim.setBounds(0f, 0f, layout.worldWidth, layout.worldHeight)
+        dialog.addActor(dim)
+
+        val panelWidth = minOf(layout.worldWidth * 0.58f, layout.worldHeight * 0.9f)
+        val buttonHeight = (layout.worldHeight * 0.085f).coerceIn(44f, 70f)
+        val gap = layout.worldHeight * 0.02f
+        val innerWidth = panelWidth * 0.8f
+
+        // Заголовок и текст меряем до раскладки: высота панели считается по ним,
+        // иначе кнопки вылезают за рамку, как только текст переносится на две строки.
+        val title = Label(Strings["pause.title"], theme.title)
+        title.setAlignment(com.badlogic.gdx.utils.Align.center)
+        val body = overlay.wrapped(Strings["pause.body"])
+        body.setAlignment(com.badlogic.gdx.utils.Align.center)
+        body.setWidth(innerWidth)
+
+        val panelHeight = gap * 3f + title.prefHeight + gap + body.prefHeight +
+            gap * 1.6f + buttonHeight * 3f + gap * 2f + gap * 2.4f
+        val panelX = (layout.worldWidth - panelWidth) / 2f
+        val panelY = (layout.worldHeight - panelHeight) / 2f
+
+        val frame = com.badlogic.gdx.scenes.scene2d.ui.Image(theme.modalFrame)
+        frame.setBounds(panelX, panelY, panelWidth, panelHeight)
+        dialog.addActor(frame)
+
+        title.setBounds(panelX, panelY + panelHeight - gap * 3f - title.prefHeight, panelWidth, title.prefHeight)
+        dialog.addActor(title)
+
+        body.setBounds(
+            panelX + (panelWidth - innerWidth) / 2f, title.y - gap - body.prefHeight,
+            innerWidth, body.prefHeight,
+        )
+        dialog.addActor(body)
+
+        val actions = listOf<Pair<String, () -> Unit>>(
+            "pause.save" to {
+                SaveGame.save(state, elapsedSeconds)
+                game.showMenu()
+            },
+            "pause.abandon" to {
+                SaveGame.clear()
+                game.showMenu()
+            },
+            "pause.resume" to { dismissPauseDialog() },
+        )
+        var buttonY = body.y - gap * 1.6f - buttonHeight
+        for ((key, action) in actions) {
+            val button = TextButton(Strings[key], theme.buttonCompact)
+            button.label.setFontScale(PAUSE_BUTTON_SCALE)
+            button.setBounds(panelX + (panelWidth - innerWidth) / 2f, buttonY, innerWidth, buttonHeight)
+            button.addListener(object : ClickListener() {
+                override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                    game.sound.play(SoundManager.Sfx.UI_CLICK)
+                    action()
+                }
+            })
+            dialog.addActor(button)
+            buttonY -= buttonHeight + gap
+        }
+
+        dialog.color.a = 0f
+        dialog.addAction(Actions.fadeIn(0.18f))
+        dialogGroup.addActor(dialog)
+        pauseDialog = dialog
+    }
+
+    private fun dismissPauseDialog() {
+        pauseDialog?.remove()
+        pauseDialog = null
+    }
+
     private fun showChoiceDialog() {
         val pending = state.pending ?: return
         val titleKey = when (pending.kind) {
@@ -1117,6 +1278,24 @@ class GameScreen(
 
     // ------------------------------------------------------------- координаты
 
+    /**
+     * Куда прилетает сброшенная карта.
+     *
+     * Панель сброса — это целый прямоугольник, и полёт в неё растягивал карту до
+     * её габаритов: в портрете карта на мгновение раздувалась во всю ширину экрана.
+     * Летим в карточное пятно внутри панели.
+     */
+    private fun discardTarget(side: Side): Rectangle {
+        val panel = discardRect(side)
+        val height = minOf(layout.cardHeight * 0.55f, panel.height * 0.7f)
+        val width = height * (2f / 3f)
+        return Rectangle(
+            panel.x + panel.width / 2f - width / 2f,
+            panel.y + (panel.height - height) / 2f,
+            width, height,
+        )
+    }
+
     /** Колода одна на обе стороны, поэтому сторона на её положение не влияет. */
     private fun deckRect(side: Side): Rectangle = layout.deck
 
@@ -1218,7 +1397,7 @@ class GameScreen(
                 if (layout.portrait) "bg_table_portrait" else "bg_table_landscape",
             ) ?: return
             batch.setColor(Color.WHITE)
-            batch.draw(texture, 0f, 0f, layout.worldWidth, layout.worldHeight)
+            batch.drawCover(texture, layout.worldWidth, layout.worldHeight)
         }
 
         private fun drawZone(batch: Batch, rect: Rectangle, active: Boolean) {
@@ -1289,6 +1468,27 @@ class GameScreen(
     private inner class HudOverlay : Actor() {
         private val glyphs = GlyphLayout()
 
+        /**
+         * Границы счётчиков в координатах сцены, заполняются при отрисовке.
+         *
+         * Позиции считаются по ширине чисел, а она меняется на ходу, поэтому
+         * готовых прямоугольников заранее нет — запоминаем те, что нарисовали.
+         */
+        private val counterBounds = linkedMapOf<String, Rectangle>()
+
+        init {
+            addListener(object : ClickListener() {
+                override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                    val stageX = this@HudOverlay.x + x
+                    val stageY = this@HudOverlay.y + y
+                    val hit = counterBounds.entries.firstOrNull { it.value.contains(stageX, stageY) }
+                        ?: return
+                    game.sound.play(SoundManager.Sfx.UI_CLICK)
+                    showHudHint("hud.hint.${hit.key}", hit.value)
+                }
+            })
+        }
+
         override fun draw(batch: Batch, parentAlpha: Float) {
             val body = assets.bodyFont
             val title = assets.titleFont
@@ -1332,7 +1532,9 @@ class GameScreen(
                 totalWidth += glyphs.width + gap * 2f + if (assets.icon(icon) != null) iconSize else 0f
             }
             x = hud.x + (hud.width - totalWidth) / 2f
+            counterBounds.clear()
             for ((icon, value) in counters) {
+                val start = x
                 assets.icon(icon)?.let {
                     batch.setColor(Color.WHITE)
                     batch.draw(it, x, iconY, iconSize, iconSize)
@@ -1341,6 +1543,8 @@ class GameScreen(
                 body.draw(batch, value, x, capTop)
                 glyphs.setText(body, value)
                 x += glyphs.width + gap * 1.6f
+                // Зона нажатия — иконка вместе со своим числом, на всю высоту строки.
+                counterBounds[icon] = Rectangle(start, hud.y, x - start, hud.height)
             }
 
             drawDiscard(batch, layout.aiDiscard, Side.AI)
@@ -1442,6 +1646,15 @@ class GameScreen(
         /** Длительность стартовой раздачи: все карты летят одновременно. */
         const val DEAL_TIME = 0.6f
         const val HOVER_LIFT = 14f
+
+        /** Масштаб шрифта в подсказке счётчика относительно обычного текста. */
+        const val HUD_HINT_FONT = 0.72f
+
+        /** Сколько держится подсказка по счётчику, прежде чем растаять. */
+        const val HUD_HINT_TIME = 4f
+
+        /** Подписи на кнопках паузы длинные, поэтому мельче обычных. */
+        const val PAUSE_BUTTON_SCALE = 0.72f
 
         /** Подпись на кнопке правил мельче обычной: кнопка узкая и служебная. */
         const val RULES_BUTTON_SCALE = 0.62f
