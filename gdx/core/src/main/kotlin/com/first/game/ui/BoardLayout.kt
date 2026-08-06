@@ -32,6 +32,9 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
      * правилах одна, и раздача идёт из неё же.
      */
     val deck = Rectangle()
+
+    /** Кнопка правил — под колодой, в той же колонке. */
+    val rulesButton = Rectangle()
     val aiPortrait = Rectangle()
     val youPortrait = Rectangle()
 
@@ -82,12 +85,17 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
         aiDiscard.set(sideX, aiSpace.y, sideWidth, rowHeight)
         youDiscard.set(sideX, youSpace.y, sideWidth, rowHeight)
 
-        // Колода — в свободной колонке справа от руки, на одной линии с ней.
-        val deckHeight = minOf(cardHeight * 0.95f, rowHeight * 0.72f)
+        // Колода и кнопка правил — один блок в свободной колонке справа от руки,
+        // отцентрированный по её ряду: иначе кнопка свисает ниже панели.
+        val buttonHeight = (rowHeight * 0.26f).coerceIn(38f, 56f)
+        val gap = pad * 0.6f
+        val deckHeight = minOf(cardHeight * 0.85f, rowHeight * 0.62f)
         val deckWidth = deckHeight * CARD_ASPECT
+        val blockY = hand.y + (rowHeight - (deckHeight + gap + buttonHeight)) / 2f
+        rulesButton.set(sideX + sideWidth * 0.06f, blockY, sideWidth * 0.88f, buttonHeight)
         deck.set(
             sideX + (sideWidth - deckWidth) / 2f,
-            hand.y + (rowHeight - deckHeight) / 2f,
+            blockY + buttonHeight + gap,
             deckWidth, deckHeight,
         )
     }
@@ -126,15 +134,15 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
         youDiscard.set(pad, y, boardWidth, discardHeight)
         // В портрете колода тоже одна и тоже справа: панель руки сужается на её ширину.
         y -= rowHeight + pad
-        val deckHeight = minOf(cardHeight * 0.8f, rowHeight * 0.7f)
+        val buttonHeight = (rowHeight * 0.24f).coerceIn(34f, 50f)
+        val deckHeight = minOf(cardHeight * 0.72f, rowHeight * 0.58f)
         val deckWidth = deckHeight * CARD_ASPECT
         val deckColumn = deckWidth + pad * 3f
         hand.set(pad, y, boardWidth - deckColumn, rowHeight)
-        deck.set(
-            hand.x + hand.width + pad * 1.5f,
-            hand.y + (rowHeight - deckHeight) / 2f,
-            deckWidth, deckHeight,
-        )
+        val blockY = hand.y + (rowHeight - (deckHeight + pad + buttonHeight)) / 2f
+        val columnX = hand.x + hand.width + pad * 1.5f
+        rulesButton.set(columnX, blockY, deckWidth, buttonHeight)
+        deck.set(columnX, blockY + buttonHeight + pad, deckWidth, deckHeight)
     }
 
     /**

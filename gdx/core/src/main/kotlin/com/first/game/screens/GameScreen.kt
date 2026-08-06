@@ -72,11 +72,41 @@ class GameScreen(
     private val fxGroup = Group()
     private val uiGroup = Group()
 
+    /** Всплывающие окна: их затемнение перехватывает касания по всей площади. */
+    private val dialogGroup = Group()
+
+    /**
+     * Слой поверх диалогов. Кнопка правил живёт здесь, потому что забыть эффект
+     * карты проще всего именно в момент выбора цели — тогда правила и нужны.
+     * Порядок слоёв задан один раз и не зависит от того, кто когда добавился.
+     */
+    private val topGroup = Group()
+
     private var elapsedSeconds = 0f
     private var aiDelay = 0f
     private var choiceDialog: Group? = null
     private var menuButton: com.badlogic.gdx.scenes.scene2d.ui.Button? = null
+    private var rulesButton: TextButton? = null
+    private val overlay = com.first.game.ui.Overlay(stage, theme, assets, game.sound)
     private var resultDialogShown = false
+
+    /**
+     * Отложенные изменения доски.
+     *
+     * Движок применяет весь ход разом и отдаёт финальное состояние, а экран
+     * проигрывает события по очереди. Если рисовать прямо из состояния, любое
+     * изменение видно с первого кадра: взятая карта появляется в руке ещё до того,
+     * как прилетит из колоды, а разыгранная исчезает раньше своего полёта.
+     *
+     * Поэтому вся пачка событий резервируется заранее, и каждое отпускается ровно
+     * тогда, когда его анимация отыграла. Доска рисуется из состояния с поправкой
+     * на эти списки.
+     */
+    private val pendingHand = mutableListOf<Letter>()
+    private val leavingHand = mutableListOf<Letter>()
+    private val pendingSpace = mutableListOf<Pair<Side, Letter>>()
+    private val leavingSpace = mutableListOf<Pair<Side, Letter>>()
+    private val pendingDiscard = mutableListOf<Pair<Side, Letter>>()
 
     init {
         val start = engine.newGame()
@@ -85,9 +115,12 @@ class GameScreen(
         stage.addActor(cardGroup)
         stage.addActor(fxGroup)
         stage.addActor(uiGroup)
+        stage.addActor(dialogGroup)
+        stage.addActor(topGroup)
         boardGroup.addActor(BoardBackground())
         uiGroup.addActor(HudOverlay())
         addMenuButton()
+        addRulesButton()
         stage.addListener(object : InputListener() {
             override fun touchDown(event: InputEvent?, x: Float, y: Float, pointer: Int, button: Int): Boolean {
                 game.sound.unlock()
@@ -121,6 +154,32 @@ class GameScreen(
         placeMenuButton()
     }
 
+    /**
+     * Кнопка правил рядом с колодой.
+     *
+     * Новички забывают способности карт, а окно правил до сих пор жило только
+     * в меню — чтобы его открыть, приходилось выходить из партии.
+     */
+    private fun addRulesButton() {
+        val button = TextButton(Strings["menu.rules"], theme.buttonCompact)
+        button.label.setFontScale(RULES_BUTTON_SCALE)
+        button.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                game.sound.play(SoundManager.Sfx.UI_CLICK)
+                overlay.showRules()
+            }
+        })
+        rulesButton = button
+        topGroup.addActor(button)
+        placeRulesButton()
+    }
+
+    private fun placeRulesButton() {
+        val button = rulesButton ?: return
+        val rect = layout.rulesButton
+        button.setBounds(rect.x, rect.y, rect.width, rect.height)
+    }
+
     private fun placeMenuButton() {
         val button = menuButton ?: return
         val size = layout.hud.height * 0.86f
@@ -145,7 +204,8 @@ class GameScreen(
         game.sound.update(delta)
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.BACK)) {
-            game.showMenu()
+            // Открытые правила закрываются первым нажатием, из партии выходим вторым.
+            if (overlay.isOpen) overlay.close() else game.showMenu()
             return
         }
 
@@ -159,6 +219,7 @@ class GameScreen(
         layout = BoardLayout(stage.viewport.worldWidth, stage.viewport.worldHeight)
         syncBoard()
         placeMenuButton()
+        placeRulesButton()
         choiceDialog?.let { it.setBounds(0f, 0f, layout.worldWidth, layout.worldHeight) }
     }
 
@@ -199,18 +260,152 @@ class GameScreen(
     }
 
     private fun enqueue(events: List<GameEvent>) {
-        for (event in events) {
-            director.enqueue { done ->
-                // После каждого события — пауза. Без неё ход игрока проигрывается
-                // одним непрерывным потоком: взял карту, разыграл, сработала
-                // способность, сбросил лишнее — и глазу негде разделить их.
-                animate(event) { delay(beatAfter(event), done) }
+        // Резервируем всю пачку сразу: иначе пересборка доски между событиями
+        // покажет то, что случится только через несколько шагов.
+        events.forEach(::reserve)
+        var index = 0
+        while (index < events.size) {
+            // Раздача в начале партии идёт одним залпом: по карте за раз это
+            // семь одинаковых перелётов подряд, и рука всё это время пустая.
+            if (events[index] is GameEvent.CardDealt) {
+                val batch = mutableListOf<GameEvent.CardDealt>()
+                while (index < events.size && events[index] is GameEvent.CardDealt) {
+                    batch += events[index] as GameEvent.CardDealt
+                    index++
+                }
+                director.enqueue { done ->
+                    dealHand(batch) {
+                        batch.forEach(::release)
+                        syncBoard()
+                        delay(BEAT_PLAY, done)
+                    }
+                }
+                continue
             }
+            val event = events[index]
+            director.enqueue { done ->
+                animate(event) {
+                    release(event)
+                    // Доска догоняет состояние сразу после события, а не после всей
+                    // пачки: иначе карта, которую только что разыграли, продолжает
+                    // висеть в руке до конца хода и выглядит задвоенной.
+                    syncBoard()
+                    // Пауза после каждого события. Без неё ход проигрывается одним
+                    // непрерывным потоком: взял карту, разыграл, сработала способность,
+                    // сбросил лишнее — и глазу негде разделить их.
+                    delay(beatAfter(event), done)
+                }
+            }
+            index++
         }
-        director.enqueue { done ->
-            syncBoard()
-            done()
+    }
+
+    /** Событие ещё не проиграно: его изменения на доске не показываем. */
+    private fun reserve(event: GameEvent) = shift(event, reserve = true)
+
+    /** Событие отыграло: изменение можно показывать. */
+    private fun release(event: GameEvent) = shift(event, reserve = false)
+
+    private fun shift(event: GameEvent, reserve: Boolean) {
+        fun hand(list: MutableList<Letter>, letter: Letter) {
+            if (reserve) list += letter else list.remove(letter)
         }
+
+        fun zone(list: MutableList<Pair<Side, Letter>>, side: Side, letter: Letter) {
+            if (reserve) list += side to letter else list.remove(side to letter)
+        }
+
+        when (event) {
+            is GameEvent.CardDealt -> if (event.side == Side.YOU) hand(pendingHand, event.letter)
+            is GameEvent.CardDrawn -> if (event.side == Side.YOU) hand(pendingHand, event.letter)
+            is GameEvent.CardRecovered -> if (event.side == Side.YOU) hand(pendingHand, event.letter)
+
+            is GameEvent.CardPlayed -> {
+                if (event.side == Side.YOU) hand(leavingHand, event.letter)
+                zone(pendingSpace, event.side, event.letter)
+            }
+
+            is GameEvent.HandOverflow -> {
+                if (event.side == Side.YOU) hand(leavingHand, event.letter)
+                zone(pendingDiscard, event.side, event.letter)
+            }
+
+            is GameEvent.CardForbidden -> {
+                if (event.side == Side.YOU) hand(leavingHand, event.letter)
+                zone(pendingDiscard, event.side, event.letter)
+            }
+
+            is GameEvent.TrapTriggered -> {
+                if (event.side == Side.YOU) hand(leavingHand, event.letter)
+                zone(pendingDiscard, event.side, event.letter)
+            }
+
+            is GameEvent.CardStolen -> {
+                zone(leavingSpace, event.victim, event.letter)
+                zone(pendingDiscard, event.victim, event.letter)
+            }
+
+            else -> Unit
+        }
+    }
+
+    /** Рука игрока такой, какой её уже показали: без ещё летящих и с ещё не улетевшими. */
+    private fun visualHand(): List<Letter> =
+        state.you.hand.toMutableList().apply {
+            pendingHand.forEach { remove(it) }
+            addAll(leavingHand)
+        }
+
+    private fun visualSpace(side: Side): List<Letter> =
+        state.side(side).space.toMutableList().apply {
+            pendingSpace.filter { it.first == side }.forEach { remove(it.second) }
+            addAll(leavingSpace.filter { it.first == side }.map { it.second })
+        }
+
+    private fun visualDiscard(side: Side): List<Letter> =
+        state.side(side).discard.toMutableList().apply {
+            pendingDiscard.filter { it.first == side }.forEach { remove(it.second) }
+        }
+
+    /**
+     * Стартовая раздача: все карты вылетают из колоды разом и приземляются вместе.
+     *
+     * Рубашками вверх — до приземления игрок не должен знать свою руку; открывается
+     * она целиком в момент, когда доска пересобирается.
+     */
+    private fun dealHand(batch: List<GameEvent.CardDealt>, done: () -> Unit) {
+        game.sound.play(SoundManager.Sfx.CARD_DRAW)
+        val duration = director.duration(DEAL_TIME)
+        val from = layout.deck
+        val yourCards = batch.filter { it.side == Side.YOU }
+        val slots = layout.handSlots(yourCards.size)
+
+        var pending = 0
+        var yourIndex = 0
+        for (event in batch) {
+            val to = if (event.side == Side.YOU) {
+                slots.getOrElse(yourIndex++) { handTarget(Side.YOU) }
+            } else {
+                handTarget(Side.AI)
+            }
+            val ghost = CardActor(assets, null, faceUp = false)
+            ghost.setBounds(from.x, from.y, from.width, from.height, centerOrigin = true)
+            fxGroup.addActor(ghost)
+            pending++
+            ghost.addAction(
+                Actions.sequence(
+                    Actions.parallel(
+                        Actions.moveTo(to.x, to.y, duration, Interpolation.swing),
+                        Actions.sizeTo(to.width, to.height, duration, Interpolation.sine),
+                    ),
+                    Actions.run {
+                        ghost.remove()
+                        if (--pending == 0) done()
+                    },
+                ),
+            )
+        }
+        if (pending == 0) done()
     }
 
     // ------------------------------------------------------------- анимации
@@ -241,7 +436,7 @@ class GameScreen(
 
             is GameEvent.CardDealt -> flyCard(
                 from = deckRect(event.side),
-                to = handTarget(event.side),
+                to = handArrivalSlot(event.side),
                 letter = event.letter.takeIf { event.side == Side.YOU },
                 sound = SoundManager.Sfx.CARD_DRAW,
                 seconds = 0.34f,
@@ -250,7 +445,7 @@ class GameScreen(
 
             is GameEvent.CardDrawn -> flyCard(
                 from = deckRect(event.side),
-                to = handTarget(event.side),
+                to = handArrivalSlot(event.side),
                 letter = event.letter.takeIf { event.side == Side.YOU },
                 sound = SoundManager.Sfx.CARD_DRAW,
                 seconds = 0.38f,
@@ -258,13 +453,13 @@ class GameScreen(
             )
 
             is GameEvent.CardPlayed -> flyCard(
-                from = handTarget(event.side),
-                to = spaceTarget(event.side),
+                from = handSlotFor(event.side, event.letter),
+                to = spaceSlotFor(event.side, event.letter),
                 letter = event.letter,
                 sound = SoundManager.Sfx.CARD_PLACE,
                 seconds = 0.55f,
                 done = {
-                    impact(spaceTarget(event.side), event.letter)
+                    impact(spaceSlotFor(event.side, event.letter), event.letter)
                     done()
                 },
             )
@@ -272,7 +467,7 @@ class GameScreen(
             is GameEvent.CardForbidden -> {
                 game.sound.play(SoundManager.Sfx.FORBID_TRIGGER)
                 flyCard(
-                    from = handTarget(event.side),
+                    from = handSlotFor(event.side, event.letter),
                     to = discardRect(event.side),
                     letter = event.letter,
                     sound = null,
@@ -289,7 +484,7 @@ class GameScreen(
 
             is GameEvent.CardRecovered -> flyCard(
                 from = discardRect(event.side),
-                to = handTarget(event.side),
+                to = handArrivalSlot(event.side),
                 letter = event.letter.takeIf { event.side == Side.YOU },
                 sound = SoundManager.Sfx.RECOVER,
                 seconds = 0.7f,
@@ -298,7 +493,7 @@ class GameScreen(
 
             is GameEvent.CardStolen -> {
                 game.sound.play(SoundManager.Sfx.STEAL)
-                val victim = spaceTarget(event.victim)
+                val victim = spaceSlotFor(event.victim, event.letter)
                 assets.vfxRegion("fx_claw_slash")?.let { region ->
                     addGlow(
                         region,
@@ -323,7 +518,7 @@ class GameScreen(
                     }
                 }
                 flyCard(
-                    from = spaceTarget(event.victim),
+                    from = spaceSlotFor(event.victim, event.letter),
                     to = discardRect(event.victim),
                     letter = event.letter,
                     sound = null,
@@ -340,7 +535,7 @@ class GameScreen(
             is GameEvent.TrapTriggered -> {
                 game.sound.play(SoundManager.Sfx.TRAP_SNAP)
                 flyCard(
-                    from = handTarget(event.side),
+                    from = handSlotFor(event.side, event.letter),
                     to = discardRect(event.side),
                     letter = event.letter.takeIf { event.side == Side.YOU },
                     sound = null,
@@ -351,7 +546,7 @@ class GameScreen(
             }
 
             is GameEvent.HandOverflow -> flyCard(
-                from = handTarget(event.side),
+                from = handSlotFor(event.side, event.letter),
                 to = discardRect(event.side),
                 letter = event.letter.takeIf { event.side == Side.YOU },
                 sound = SoundManager.Sfx.CARD_DISCARD,
@@ -377,6 +572,25 @@ class GameScreen(
         }
     }
 
+    /**
+     * Прячет карту доски, стоящую в заданном месте.
+     *
+     * Возвращать видимость не нужно: сразу после анимации доска пересобирается.
+     */
+    private fun hideCardAt(rect: Rectangle) {
+        val centerX = rect.x + rect.width / 2f
+        val centerY = rect.y + rect.height / 2f
+        val reach = rect.width * 0.6f
+        cardGroup.children
+            .filterIsInstance<CardActor>()
+            .firstOrNull {
+                it.isVisible &&
+                    kotlin.math.abs(it.x + it.width / 2f - centerX) < reach &&
+                    kotlin.math.abs(it.y + it.height / 2f - centerY) < reach
+            }
+            ?.isVisible = false
+    }
+
     /** Ghost-карта, летящая между зонами. Сами актёры доски не двигаются. */
     private fun flyCard(
         from: Rectangle,
@@ -389,6 +603,9 @@ class GameScreen(
     ) {
         sound?.let(game.sound::play)
         val duration = director.duration(seconds)
+        // Карта на доске, стоящая в точке вылета, прячется: без этого во время
+        // полёта видны обе — оригинал в руке и летящий призрак.
+        hideCardAt(from)
         val ghost = CardActor(assets, letter, faceUp = letter != null)
         ghost.setBounds(from.x, from.y, from.width, from.height, centerOrigin = true)
         fxGroup.addActor(ghost)
@@ -707,7 +924,7 @@ class GameScreen(
      */
     private fun addSpaceCards(side: Side) {
         val zone = if (side == Side.AI) layout.aiSpace else layout.youSpace
-        val space = state.side(side).space
+        val space = visualSpace(side)
         val slots = layout.spaceSlots(zone)
         Letter.ALL.forEachIndexed { index, letter ->
             val count = space.count { it == letter }
@@ -724,7 +941,10 @@ class GameScreen(
     }
 
     private fun addHandCards() {
-        val hand = state.you.hand
+        // Индекс карты уходит в команду движку, поэтому важно: отложенная рука
+        // совпадает с настоящей, когда все анимации отыграли, — а разыграть карту
+        // раньше и нельзя, обработчик клика ждёт простоя режиссёра.
+        val hand = visualHand()
         val slots = layout.handSlots(hand.size)
         val playable = state.turn == Side.YOU && state.phase == Phase.AWAITING_PLAY && !state.isOver
         hand.forEachIndexed { index, letter ->
@@ -801,7 +1021,7 @@ class GameScreen(
 
         dialog.color.a = 0f
         dialog.addAction(Actions.fadeIn(director.duration(0.22f)))
-        uiGroup.addActor(dialog)
+        dialogGroup.addActor(dialog)
         choiceDialog = dialog
     }
 
@@ -870,7 +1090,7 @@ class GameScreen(
 
         dialog.color.a = 0f
         dialog.addAction(Actions.fadeIn(0.3f))
-        uiGroup.addActor(dialog)
+        dialogGroup.addActor(dialog)
     }
 
     private fun resultButton(
@@ -933,6 +1153,39 @@ class GameScreen(
             layout.cardWidth,
             layout.cardHeight,
         )
+    }
+
+    /**
+     * Гнездо буквы в зоне SPACE — туда карта и приземлится после пересборки доски.
+     * Полёт в центр зоны выглядел как «карта уехала не туда, а потом прыгнула».
+     */
+    private fun spaceSlotFor(side: Side, letter: Letter): Rectangle {
+        val zone = if (side == Side.AI) layout.aiSpace else layout.youSpace
+        val index = Letter.ALL.indexOf(letter)
+        return layout.spaceSlots(zone).getOrNull(index) ?: spaceTarget(side)
+    }
+
+    /**
+     * Куда приземляется приходящая в руку карта: последнее гнездо текущей раскладки.
+     *
+     * Точнее не получится — движок к моменту анимации уже применил всю пачку
+     * событий, и промежуточных размеров руки не осталось.
+     */
+    private fun handArrivalSlot(side: Side): Rectangle {
+        if (side == Side.AI) return handTarget(side)
+        val hand = state.you.hand
+        if (hand.isEmpty()) return handTarget(side)
+        return layout.handSlots(hand.size).last()
+    }
+
+    /** Место карты этой буквы в руке игрока; если её там нет — центр панели. */
+    private fun handSlotFor(side: Side, letter: Letter): Rectangle {
+        if (side == Side.AI) return handTarget(side)
+        val actor = cardGroup.children
+            .filterIsInstance<CardActor>()
+            .firstOrNull { it.isVisible && it.letter == letter && it.y < layout.hand.y + layout.hand.height }
+            ?: return handTarget(side)
+        return Rectangle(actor.x, actor.y, actor.width, actor.height)
     }
 
 
@@ -1105,7 +1358,7 @@ class GameScreen(
          */
         private fun drawDiscard(batch: Batch, rect: Rectangle, side: Side) {
             val body = assets.bodyFont
-            val discard = state.side(side).discard
+            val discard = visualDiscard(side)
             val padX = rect.width * 0.07f
             val padY = rect.height * 0.09f
 
@@ -1113,24 +1366,16 @@ class GameScreen(
             val captionScale = (captionHeight * 0.62f / body.capHeight).coerceAtMost(0.8f)
             body.data.setScale(captionScale)
             body.color = Palette.TEXT_MUTED
-            body.draw(batch, Strings["hud.discard"], rect.x + padX, rect.y + rect.height - padY)
+            glyphs.setText(body, Strings["hud.discard"])
+            body.draw(
+                batch, glyphs,
+                rect.x + (rect.width - glyphs.width) / 2f,
+                rect.y + rect.height - padY,
+            )
             body.data.setScale(1f)
 
             val contentTop = rect.y + rect.height - captionHeight - padY
             val contentHeight = (contentTop - rect.y - padY).coerceAtLeast(16f)
-            val contentWidth = rect.width - padX * 2f
-
-            // Урна — якорь панели: в неё летят карты в анимации сброса. Рисуется
-            // приглушённо: это служебный предмет, он не должен спорить с картами
-            // за внимание (иерархия яркости, §10.1 промпт-бука).
-            var contentX = rect.x + padX
-            assets.uiRegion("discard_urn")?.let { urn ->
-                val urnHeight = (contentHeight * 0.42f).coerceAtMost(contentWidth * 0.5f)
-                val urnWidth = urnHeight * urn.regionWidth / urn.regionHeight
-                batch.setColor(URN_TINT)
-                batch.draw(urn, contentX, contentTop - urnHeight, urnWidth, urnHeight)
-                contentX += urnWidth * 1.15f
-            }
 
             val entries = Letter.ALL.map { it to discard.count { card -> card == it } }.filter { it.second > 0 }
             if (entries.isEmpty()) {
@@ -1139,7 +1384,9 @@ class GameScreen(
             }
 
             // В узкой высокой панели миниатюры идут в два ряда, в широкой низкой — в один.
-            val available = rect.x + rect.width - padX - contentX
+            // Урны здесь больше нет: она занимала половину панели и ничего не сообщала,
+            // а место нужно самим сброшенным картам.
+            val available = rect.width - padX * 2f
             val rows = if (rect.height > rect.width) 2 else 1
             val columns = ((entries.size + rows - 1) / rows).coerceAtLeast(1)
             val gap = 0.12f
@@ -1148,12 +1395,19 @@ class GameScreen(
             val width = minOf(byWidth, byHeight).coerceAtLeast(8f)
             val height = width * (3f / 2f)
 
+            // Сетка миниатюр центруется в панели, как и подпись над ней.
+            val usedRows = ((entries.size + columns - 1) / columns).coerceAtLeast(1)
+            val gridWidth = columns * width + (columns - 1) * width * gap
+            val gridHeight = usedRows * height + (usedRows - 1) * height * gap
+            val gridX = rect.x + (rect.width - gridWidth) / 2f
+            val gridTop = contentTop - (contentHeight - gridHeight) / 2f
+
             for ((index, entry) in entries.withIndex()) {
                 val (letter, count) = entry
                 val column = index % columns
                 val row = index / columns
-                val x = contentX + column * width * (1f + gap)
-                val y = contentTop - height - row * height * (1f + gap)
+                val x = gridX + column * width * (1f + gap)
+                val y = gridTop - height - row * height * (1f + gap)
                 batch.setColor(Color.WHITE)
                 batch.draw(assets.cardFace(letter), x, y, width, height)
                 if (count > 1) {
@@ -1184,9 +1438,13 @@ class GameScreen(
         const val BEAT_SHORT = 0.12f
         const val BEAT_PLAY = 0.22f
         const val BEAT_ABILITY = 0.5f
+
+        /** Длительность стартовой раздачи: все карты летят одновременно. */
+        const val DEAL_TIME = 0.6f
         const val HOVER_LIFT = 14f
 
-        /** Урна сброса — служебный предмет, гасится до 78% яркости (§10.1 бука). */
-        val URN_TINT: Color = Color(0.78f, 0.78f, 0.78f, 1f)
+        /** Подпись на кнопке правил мельче обычной: кнопка узкая и служебная. */
+        const val RULES_BUTTON_SCALE = 0.62f
+
     }
 }

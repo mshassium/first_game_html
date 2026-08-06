@@ -3,14 +3,12 @@ package com.first.game.screens
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.math.Interpolation
-import com.badlogic.gdx.scenes.scene2d.Group
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.InputListener
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.actions.Actions
 import com.badlogic.gdx.scenes.scene2d.ui.Image
 import com.badlogic.gdx.scenes.scene2d.ui.Label
-import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane
 import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
@@ -24,6 +22,7 @@ import com.first.game.domain.Letter
 import com.first.game.domain.ai.Difficulty
 import com.first.game.i18n.Strings
 import com.first.game.ui.CardActor
+import com.first.game.ui.Overlay
 import com.first.game.ui.Palette
 import ktx.app.KtxScreen
 
@@ -32,7 +31,7 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
 
     private val stage = Stage(ExtendViewport(WORLD_WIDTH, WORLD_HEIGHT), game.batch)
     private val theme = game.theme
-    private var overlay: Group? = null
+    private val overlay = Overlay(stage, theme, game.assets, game.sound)
     private val root = Table()
 
     init {
@@ -45,7 +44,7 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         })
         buildMenu()
         when (game.bootOverlay) {
-            "rules" -> showRules()
+            "rules" -> overlay.showRules()
             "settings" -> showSettings()
         }
     }
@@ -139,7 +138,7 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
 
         val buttons = listOf<Triple<String, String, () -> Unit>>(
             Triple(Strings["menu.play"], "duel") { game.startGame() },
-            Triple(Strings["menu.rules"], "rules") { showRules() },
+            Triple(Strings["menu.rules"], "rules") { overlay.showRules() },
             Triple(Strings["menu.settings"], "settings") { showSettings() },
             // Подпись — только название языка: что это переключатель, говорит иконка флажков.
             Triple(Strings.language.label, "lang") { toggleLanguage() },
@@ -180,16 +179,14 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
             val iconLayer = Table().apply {
                 add(Image(region)).size(size).expandX().left().padLeft(size * ICON_INSET)
             }
-            // Подпись приподнята: у прописных букв нет нижних выносов, и геометрический
-            // центр бокса зрительно читается как посадка на нижний кант.
             val textLayer = Table().apply {
-                add(label).height(size).expand().center().padBottom(size * LABEL_LIFT)
+                add(label).height(size).expand().center().padBottom(capSink(label) * 2f)
             }
             button.stack(textLayer, iconLayer).grow()
         } else {
             // Кнопки настроек без иконок: подпись просто по центру.
             button.pad(0f, size * 0.5f, 0f, size * 0.5f)
-            button.add(label).height(size).expandX()
+            button.add(label).height(size).expandX().padBottom(capSink(label) * 2f)
         }
 
         button.addListener(object : ClickListener() {
@@ -201,6 +198,18 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         return button
     }
 
+
+    /**
+     * Насколько Label опускает прописные буквы ниже центра своего бокса.
+     *
+     * Вертикальную центровку Label делает по высоте разметки текста, а она не
+     * совпадает с прописными: у шрифта заголовков capHeight 39 при боксе 71.
+     * Величина измерена по экрану настроек и задана в долях capHeight, чтобы
+     * не зависеть от размера кнопки — от него смещение не меняется.
+     * Отступ ячейки сдвигает виджет на половину своей величины, поэтому
+     * вызывающий удваивает результат.
+     */
+    private fun capSink(label: Label): Float = label.style.font.capHeight * CAP_SINK
 
     private fun toggleLanguage() {
         val next = Strings.nextLanguage()
@@ -217,117 +226,8 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
      * Ширина ячеек задаётся явно. Без этого Table укладывает переносимый текст
      * по его минимальной ширине — то есть в один символ на строку.
      */
-    private fun showOverlay(title: String, build: (Table, Float) -> Unit) {
-        closeOverlay()
-        val worldWidth = stage.viewport.worldWidth
-        val worldHeight = stage.viewport.worldHeight
 
-        val group = Group()
-        group.setBounds(0f, 0f, worldWidth, worldHeight)
-
-        val dim = Image(theme.dim(0.88f))
-        dim.setBounds(0f, 0f, worldWidth, worldHeight)
-        group.addActor(dim)
-
-        val panelWidth = minOf(worldWidth * 0.62f, worldHeight * 1.15f)
-        val panelHeight = worldHeight * 0.86f
-        val panelX = (worldWidth - panelWidth) / 2f
-        val panelY = (worldHeight - panelHeight) / 2f
-
-        val frame = Image(theme.modalFrame)
-        frame.setBounds(panelX, panelY, panelWidth, panelHeight)
-        group.addActor(frame)
-
-        val innerPad = panelWidth * 0.08f
-        val contentWidth = panelWidth - innerPad * 2f
-
-        val header = Label(title, theme.title)
-        header.setAlignment(Align.center)
-        header.setBounds(panelX, panelY + panelHeight - innerPad - header.prefHeight, panelWidth, header.prefHeight)
-        group.addActor(header)
-
-        val body = Table()
-        body.top()
-        build(body, contentWidth)
-
-        val scroll = object : ScrollPane(body, ScrollPane.ScrollPaneStyle()) {
-            /**
-             * Шаг колеса по умолчанию — около 22% высоты области за щелчок. Панель
-             * правил невысокая, и такой шаг проматывает почти экран разом: текст
-             * перескакивает, а не едет.
-             */
-            override fun getMouseWheelY(): Float = super.getMouseWheelY() * WHEEL_STEP_SCALE
-        }
-        scroll.setFadeScrollBars(false)
-        scroll.setScrollingDisabled(true, false)
-        scroll.setOverscroll(false, false)
-        val scrollTop = header.y - innerPad * 0.4f
-        scroll.setBounds(panelX + innerPad, panelY + innerPad, contentWidth, scrollTop - panelY - innerPad)
-        group.addActor(scroll)
-        stage.scrollFocus = scroll
-
-        // Круглая кнопка закрытия в углу панели.
-        game.assets.icon("close")?.let { icon ->
-            val close = com.badlogic.gdx.scenes.scene2d.ui.Button(
-                com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(game.assets.roundButtonUp),
-                com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(game.assets.roundButtonDown),
-            )
-            close.add(Image(icon)).grow()
-            val size = worldHeight * 0.085f
-            close.setBounds(
-                panelX + panelWidth - size * 0.55f,
-                panelY + panelHeight - size * 0.55f,
-                size,
-                size,
-            )
-            close.addListener(object : ClickListener() {
-                override fun clicked(event: InputEvent?, x: Float, y: Float) {
-                    game.sound.play(SoundManager.Sfx.UI_CLICK)
-                    closeOverlay()
-                }
-            })
-            group.addActor(close)
-        }
-
-        group.color.a = 0f
-        group.addAction(Actions.fadeIn(0.2f))
-        stage.addActor(group)
-        overlay = group
-    }
-
-    private fun closeOverlay() {
-        overlay?.remove()
-        overlay = null
-    }
-
-    private fun showRules(): Unit = showOverlay(Strings["rules.title"]) { content, width ->
-        val gap = stage.viewport.worldHeight * 0.012f
-
-        fun section(titleKey: String, bodyKey: String) {
-            content.add(Label(Strings[titleKey], theme.bodyBold).apply { color = Palette.GOLD_LIGHT })
-                .width(width).left().padTop(gap * 1.6f).row()
-            content.add(wrapped(Strings[bodyKey])).width(width).left().padTop(gap * 0.4f).row()
-        }
-
-        section("rules.goal.title", "rules.goal.body")
-        section("rules.turn.title", "rules.turn.body")
-
-        content.add(Label(Strings["rules.cards.title"], theme.bodyBold).apply { color = Palette.GOLD_LIGHT })
-            .width(width).left().padTop(gap * 1.6f).row()
-        for (letter in Letter.ALL) {
-            val row = Table()
-            val card = CardActor(game.assets, letter)
-            val cardHeight = width * 0.13f
-            row.add(card).size(cardHeight * (2f / 3f), cardHeight).padRight(gap * 1.5f).top()
-            row.add(wrapped(Strings["rules.card.${letter.name}"])).width(width - cardHeight * (2f / 3f) - gap * 1.5f).left()
-            content.add(row).width(width).left().padTop(gap).row()
-        }
-
-        section("rules.limits.title", "rules.limits.body")
-        content.add(Label("", theme.body)).height(gap * 3f).row()
-    }
-
-    private fun showSettings(): Unit = showOverlay(Strings["settings.title"]) { content, width ->
+    private fun showSettings(): Unit = overlay.show(Strings["settings.title"]) { content, width ->
         val buttonWidth = width * 0.86f
         val buttonHeight = (stage.viewport.worldHeight * 0.085f).coerceIn(44f, 70f)
         val gap = stage.viewport.worldHeight * 0.02f
@@ -352,12 +252,6 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
     }
 
     /** Ширину переносимой надписи задаёт ячейка таблицы, а не сам актёр. */
-    private fun wrapped(text: String): Label {
-        val label = Label(text, theme.body)
-        label.wrap = true
-        label.setAlignment(Align.topLeft)
-        return label
-    }
 
     private fun difficultyLabel(): String {
         val key = when (GamePrefs.difficulty) {
@@ -394,13 +288,11 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         const val WORLD_WIDTH = 1280f
         const val WORLD_HEIGHT = 720f
 
-        /** Доля от штатного шага колеса в прокручиваемых панелях правил и настроек. */
-        const val WHEEL_STEP_SCALE = 0.45f
 
         /** Насколько иконка кнопки отступает от края, в долях своего размера. */
         const val ICON_INSET = 0.35f
 
-        /** Насколько подпись приподнята над геометрическим центром, в долях иконки. */
-        const val LABEL_LIFT = 0.12f
+        /** Доля capHeight, на которую Label опускает прописные ниже центра бокса. */
+        const val CAP_SINK = 0.29f
     }
 }

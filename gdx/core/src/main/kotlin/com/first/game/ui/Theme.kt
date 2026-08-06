@@ -50,20 +50,37 @@ class Theme(val assets: Assets) {
         disabledFontColor = Palette.TEXT_MUTED
     }
 
+    /** Кнопка для узких мест: те же спрайты, но с ужатыми углами. */
+    val buttonCompact = TextButton.TextButtonStyle(
+        stretchable("btn_primary_up", 0.12f, 0.32f, assets.buttonUp, COMPACT_BUTTON_SCALE),
+        stretchable("btn_primary_down", 0.12f, 0.32f, assets.buttonDown, COMPACT_BUTTON_SCALE),
+        null,
+        assets.titleFont,
+    ).apply {
+        fontColor = Color.WHITE
+        downFontColor = Palette.GOLD_LIGHT
+    }
+
     /**
      * 9-patch из атласа, если спрайт нарисован; иначе — обычная растяжка заглушки.
-     * [horizontal] и [vertical] — доли ширины и высоты, которые остаются нерастяжимыми.
+     * [horizontal] и [vertical] — доли ширины и высоты, которые остаются нерастяжимыми,
+     * [scale] ужимает неподвижные углы для кнопок, которые ниже спрайта.
      */
     private fun stretchable(
         name: String,
         horizontal: Float,
         vertical: Float,
         fallback: TextureRegion,
+        scale: Float = 1f,
     ): Drawable {
         val region: TextureRegion = assets.uiRegion(name) ?: return TextureRegionDrawable(fallback)
         val left = (region.regionWidth * horizontal).toInt().coerceAtLeast(1)
         val top = (region.regionHeight * vertical).toInt().coerceAtLeast(1)
         val patch = NinePatch(region, left, left, top, top)
+        // Неподвижные углы рисуются в пикселях спрайта. У кнопки это 86 единиц по
+        // высоте, и в кнопку ниже они попросту не влезают: верх и низ наезжают друг
+        // на друга, и нижний кант уходит за границу. Масштаб ужимает сами углы.
+        if (scale != 1f) patch.scale(scale, scale)
         // Обнуляем отступы: по умолчанию 9-patch отдаёт их равными нерастяжимым краям,
         // а те заданы в пикселях спрайта — на кнопке высотой 70 единиц мира это
         // 33 единицы сверху, и подпись выдавливает к нижнему ободу.
@@ -81,5 +98,12 @@ class Theme(val assets: Assets) {
          * (список COMPACT в AtlasPacker). Число задано там же при сборке спрайта.
          */
         const val COMPACT_SPLIT = 0.45f
+
+        /**
+         * Во сколько раз ужимаются углы кнопки в узких местах. При 86 неподвижных
+         * единицах спрайта и кнопке высотой около 52 углы должны занимать не больше
+         * двух третей высоты, иначе на растяжку ничего не остаётся.
+         */
+        const val COMPACT_BUTTON_SCALE = 0.42f
     }
 }
