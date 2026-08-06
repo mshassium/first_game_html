@@ -1,307 +1,363 @@
 
 ui.png
-size: 1837, 1552
+size: 2008, 1746
 format: RGBA8888
 filter: Linear, Linear
 repeat: none
 btn_primary_disabled
   rotate: false
-  xy: 1233, 903
-  size: 384, 91
-  orig: 384, 91
+  xy: 2, 977
+  size: 384, 138
+  orig: 384, 138
   offset: 0, 0
   index: -1
 btn_primary_down
   rotate: false
-  xy: 1429, 1001
-  size: 384, 89
-  orig: 384, 89
+  xy: 2, 837
+  size: 384, 136
+  orig: 384, 136
+  offset: 0, 0
+  index: -1
+btn_primary_hover
+  rotate: false
+  xy: 2, 418
+  size: 384, 135
+  orig: 384, 135
   offset: 0, 0
   index: -1
 btn_primary_up
   rotate: false
-  xy: 1233, 808
-  size: 384, 91
-  orig: 384, 91
+  xy: 2, 279
+  size: 384, 135
+  orig: 384, 135
   offset: 0, 0
   index: -1
 btn_round_disabled
   rotate: false
-  xy: 1101, 243
+  xy: 1355, 775
   size: 120, 105
   orig: 120, 105
   offset: 0, 0
   index: -1
 btn_round_down
   rotate: false
-  xy: 1101, 140
-  size: 119, 99
-  orig: 119, 99
+  xy: 1329, 240
+  size: 209, 210
+  orig: 209, 210
   offset: 0, 0
   index: -1
 btn_round_up
   rotate: false
-  xy: 1101, 352
-  size: 128, 113
-  orig: 128, 113
+  xy: 1113, 278
+  size: 212, 214
+  orig: 212, 214
   offset: 0, 0
   index: -1
 btn_secondary_down
   rotate: false
-  xy: 1429, 1094
-  size: 384, 91
-  orig: 384, 91
+  xy: 2, 697
+  size: 384, 136
+  orig: 384, 136
   offset: 0, 0
   index: -1
 btn_secondary_up
   rotate: false
-  xy: 1101, 41
-  size: 384, 89
-  orig: 384, 89
+  xy: 2, 557
+  size: 384, 136
+  orig: 384, 136
+  offset: 0, 0
+  index: -1
+checkbox_checked
+  rotate: false
+  xy: 1718, 2
+  size: 150, 151
+  orig: 150, 151
+  offset: 0, 0
+  index: -1
+checkbox_empty
+  rotate: false
+  xy: 566, 188
+  size: 149, 151
+  orig: 149, 151
   offset: 0, 0
   index: -1
 deck_stack
   rotate: false
-  xy: 390, 50
-  size: 384, 336
-  orig: 384, 336
+  xy: 390, 731
+  size: 365, 384
+  orig: 365, 384
   offset: 0, 0
   index: -1
 die_1
   rotate: false
-  xy: 778, 1166
-  size: 321, 384
-  orig: 321, 384
+  xy: 759, 692
+  size: 331, 384
+  orig: 331, 384
   offset: 0, 0
   index: -1
 die_2
   rotate: false
-  xy: 390, 390
-  size: 320, 384
-  orig: 320, 384
+  xy: 390, 343
+  size: 331, 384
+  orig: 331, 384
   offset: 0, 0
   index: -1
 die_3
   rotate: false
-  xy: 390, 1166
-  size: 321, 384
-  orig: 321, 384
+  xy: 1162, 1360
+  size: 332, 384
+  orig: 332, 384
   offset: 0, 0
   index: -1
 die_4
   rotate: false
-  xy: 714, 390
-  size: 320, 384
-  orig: 320, 384
+  xy: 1482, 584
+  size: 330, 384
+  orig: 330, 384
   offset: 0, 0
   index: -1
 die_5
   rotate: false
-  xy: 778, 2
-  size: 319, 384
-  orig: 319, 384
+  xy: 1436, 972
+  size: 331, 384
+  orig: 331, 384
   offset: 0, 0
   index: -1
 die_6
   rotate: false
-  xy: 390, 778
-  size: 321, 384
-  orig: 321, 384
+  xy: 1498, 1360
+  size: 331, 384
+  orig: 331, 384
   offset: 0, 0
   index: -1
 discard_urn
   rotate: false
-  xy: 2, 37
-  size: 384, 349
-  orig: 384, 349
+  xy: 763, 1080
+  size: 384, 276
+  orig: 384, 276
+  offset: 0, 0
+  index: -1
+divider_ornament
+  rotate: false
+  xy: 1355, 454
+  size: 384, 39
+  orig: 384, 39
+  offset: 0, 0
+  index: -1
+dropdown_closed
+  rotate: false
+  xy: 1355, 497
+  size: 384, 83
+  orig: 384, 83
+  offset: 0, 0
+  index: -1
+dropdown_focus
+  rotate: false
+  xy: 1094, 884
+  size: 384, 84
+  orig: 384, 84
   offset: 0, 0
   index: -1
 emblem_first
   rotate: false
-  xy: 715, 778
-  size: 265, 384
-  orig: 265, 384
+  xy: 1151, 972
+  size: 281, 384
+  orig: 281, 384
   offset: 0, 0
   index: -1
 frame_portrait
   rotate: false
-  xy: 2, 1166
-  size: 384, 384
-  orig: 384, 384
+  xy: 390, 1119
+  size: 369, 384
+  orig: 369, 384
   offset: 0, 0
   index: -1
 icon_back
   rotate: false
-  xy: 1397, 134
-  size: 169, 162
-  orig: 169, 162
+  xy: 901, 513
+  size: 172, 175
+  orig: 172, 175
   offset: 0, 0
   index: -1
 icon_close
   rotate: false
-  xy: 1233, 998
-  size: 192, 187
-  orig: 192, 187
+  xy: 1542, 275
+  size: 172, 175
+  orig: 172, 175
   offset: 0, 0
   index: -1
 icon_deck
   rotate: false
-  xy: 1408, 300
-  size: 168, 164
-  orig: 168, 164
+  xy: 1718, 157
+  size: 172, 175
+  orig: 172, 175
   offset: 0, 0
   index: -1
 icon_duel
   rotate: false
-  xy: 1491, 1210
-  size: 168, 167
-  orig: 168, 167
+  xy: 390, 165
+  size: 172, 174
+  orig: 172, 174
   offset: 0, 0
   index: -1
 icon_hand
   rotate: false
-  xy: 1583, 322
-  size: 169, 164
-  orig: 169, 164
+  xy: 177, 101
+  size: 171, 174
+  orig: 171, 174
   offset: 0, 0
   index: -1
 icon_hourglass
   rotate: false
-  xy: 1601, 490
-  size: 170, 165
-  orig: 170, 165
+  xy: 2, 100
+  size: 171, 175
+  orig: 171, 175
   offset: 0, 0
   index: -1
 icon_info
   rotate: false
-  xy: 1410, 468
-  size: 169, 165
-  orig: 169, 165
+  xy: 1542, 96
+  size: 172, 175
+  orig: 172, 175
   offset: 0, 0
   index: -1
 icon_lang
   rotate: false
-  xy: 1234, 493
-  size: 172, 164
-  orig: 172, 164
+  xy: 1816, 776
+  size: 190, 192
+  orig: 190, 192
   offset: 0, 0
   index: -1
 icon_menu
   rotate: false
-  xy: 1038, 469
-  size: 192, 188
-  orig: 192, 188
+  xy: 1833, 1389
+  size: 172, 176
+  orig: 172, 176
   offset: 0, 0
   index: -1
 icon_music_off
   rotate: false
-  xy: 1225, 157
-  size: 168, 164
-  orig: 168, 164
+  xy: 1816, 596
+  size: 172, 176
+  orig: 172, 176
   offset: 0, 0
   index: -1
 icon_music_on
   rotate: false
-  xy: 1665, 1209
-  size: 170, 168
-  orig: 170, 168
+  xy: 901, 281
+  size: 170, 174
+  orig: 170, 174
   offset: 0, 0
   index: -1
 icon_restart
   rotate: false
-  xy: 1234, 325
-  size: 170, 164
-  orig: 170, 164
+  xy: 725, 280
+  size: 172, 175
+  orig: 172, 175
   offset: 0, 0
   index: -1
 icon_rules
   rotate: false
-  xy: 1665, 1381
-  size: 169, 169
-  orig: 169, 169
+  xy: 725, 512
+  size: 172, 176
+  orig: 172, 176
   offset: 0, 0
   index: -1
 icon_rules_off
   rotate: false
-  xy: 1491, 1381
+  xy: 1243, 67
   size: 170, 169
   orig: 170, 169
   offset: 0, 0
   index: -1
 icon_settings
   rotate: false
-  xy: 1621, 659
-  size: 171, 167
-  orig: 171, 167
+  xy: 1833, 1569
+  size: 173, 175
+  orig: 173, 175
   offset: 0, 0
   index: -1
 icon_sound_off
   rotate: false
-  xy: 1426, 637
-  size: 171, 167
-  orig: 171, 167
+  xy: 719, 102
+  size: 171, 174
+  orig: 171, 174
   offset: 0, 0
   index: -1
 icon_sound_on
   rotate: false
-  xy: 1621, 830
-  size: 172, 167
-  orig: 172, 167
+  xy: 894, 102
+  size: 171, 174
+  orig: 171, 174
   offset: 0, 0
   index: -1
 icon_speed
   rotate: false
-  xy: 1580, 155
-  size: 168, 163
-  orig: 168, 163
+  xy: 1069, 100
+  size: 170, 174
+  orig: 170, 174
   offset: 0, 0
   index: -1
 modal_frame
   rotate: false
-  xy: 1103, 1430
-  size: 384, 120
-  orig: 384, 120
+  xy: 1743, 336
+  size: 244, 244
+  orig: 244, 244
   offset: 0, 0
   index: -1
 panel_parchment
   rotate: false
-  xy: 1103, 1307
-  size: 384, 119
-  orig: 384, 119
+  xy: 1094, 496
+  size: 257, 384
+  orig: 257, 384
   offset: 0, 0
   index: -1
 panel_stone
   rotate: false
-  xy: 1103, 1189
-  size: 384, 114
-  orig: 384, 114
+  xy: 1872, 29
+  size: 124, 124
+  orig: 124, 124
   offset: 0, 0
   index: -1
 panel_wood
   rotate: false
-  xy: 1038, 661
-  size: 384, 113
-  orig: 384, 113
+  xy: 2, 1507
+  size: 768, 237
+  orig: 768, 237
   offset: 0, 0
   index: -1
 portrait_ai
   rotate: false
-  xy: 2, 778
+  xy: 774, 1360
   size: 384, 384
   orig: 384, 384
   offset: 0, 0
   index: -1
 portrait_player
   rotate: false
-  xy: 2, 390
+  xy: 2, 1119
   size: 384, 384
   orig: 384, 384
   offset: 0, 0
   index: -1
+slider_knob
+  rotate: false
+  xy: 566, 38
+  size: 145, 146
+  orig: 145, 146
+  offset: 0, 0
+  index: -1
+slider_track
+  rotate: false
+  xy: 725, 459
+  size: 384, 33
+  orig: 384, 33
+  offset: 0, 0
+  index: -1
 slot_card
   rotate: false
-  xy: 984, 778
-  size: 245, 384
-  orig: 245, 384
+  xy: 1771, 972
+  size: 223, 384
+  orig: 223, 384
   offset: 0, 0
   index: -1
