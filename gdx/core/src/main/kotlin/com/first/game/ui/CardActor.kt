@@ -70,9 +70,12 @@ class CardActor(
         val accent = Palette.school(letter)
         font.color = Color(accent.r * shade, accent.g * shade, accent.b * shade, alpha)
         layout.setText(font, letter.name)
-        // Картуш занимает 6%..30% высоты карты, буква центрируется в нём.
-        val centerY = y + height * 0.82f + layout.height / 2f
-        font.draw(batch, layout, x + (width - layout.width) / 2f, centerY)
+        // Буква садится в пустой бронзовый медальон, нарисованный на карте.
+        // Его центр задан в промпт-буке (§2.3) и продублирован здесь: если менять
+        // одно, надо менять и другое, иначе буква съедет с медальона.
+        val centerX = x + width * MEDALLION_X
+        val centerY = y + height * (1f - MEDALLION_Y) + layout.height / 2f
+        font.draw(batch, layout, centerX - layout.width / 2f, centerY)
         font.data.setScale(1f)
         font.color = Color.WHITE
     }
@@ -85,7 +88,8 @@ class CardActor(
             Palette.GOLD_LIGHT.r * shade, Palette.GOLD_LIGHT.g * shade, Palette.GOLD_LIGHT.b * shade, alpha,
         )
         layout.setText(font, "×$stackCount")
-        font.draw(batch, layout, x + width * 0.06f, y + height - height * 0.02f)
+        // Справа вверху: слева теперь медальон с буквой.
+        font.draw(batch, layout, x + width - layout.width - width * 0.06f, y + height - height * 0.03f)
         font.data.setScale(1f)
         font.color = Color.WHITE
     }
@@ -96,7 +100,19 @@ class CardActor(
     }
 
     private companion object {
-        const val LETTER_SCALE = 0.34f
+        /**
+         * Центр медальона под букву: доли ширины и высоты карты от левого верха.
+         *
+         * Значения измерены по готовым картам, а не взяты из промпта. Модель ставит
+         * медальон с разбросом, и вырезание фона у каждой карты срезает свой отступ,
+         * поэтому номинал промпта (0.16 / 0.13) на деле даёт 0.13 / 0.09.
+         * Перемерить после перегенерации: tools/artgen/measure_medallion.py.
+         */
+        const val MEDALLION_X = 0.142f
+        const val MEDALLION_Y = 0.092f
+
+        /** Высота прописной буквы в долях ширины карты — чуть больше половины медальона. */
+        const val LETTER_SCALE = 0.115f
         const val COUNT_SCALE = 0.14f
 
         /** Насколько темнее рисуется карта, недоступная для розыгрыша. */

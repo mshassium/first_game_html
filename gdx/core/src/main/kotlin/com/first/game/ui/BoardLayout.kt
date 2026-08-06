@@ -8,9 +8,12 @@ import com.first.game.domain.Rules
  * Раскладка стола. Считается от размера мира, а не от разрешения экрана,
  * поэтому одинаково работает и на десктопе, и на телефоне.
  *
- * Landscape: слева три ряда (SPACE противника, свой SPACE, рука), справа колонка
- * со сбросами и журналом. Portrait: сбросы уезжают наверх одной строкой,
- * журнал скрывается — на узком экране он только съедает место.
+ * Landscape: три ряда (SPACE противника, свой SPACE, рука), а сброс каждой стороны
+ * стоит вплотную справа от её собственного ряда. Portrait: сброс прижат к своей зоне
+ * сверху для противника и снизу для игрока.
+ *
+ * Принадлежность сброса читается по положению, а не по подписи: он всегда на одной
+ * линии со своим SPACE и своим портретом.
  */
 class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
 
@@ -22,9 +25,13 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
     val hand = Rectangle()
     val aiDiscard = Rectangle()
     val youDiscard = Rectangle()
-    val log = Rectangle()
-    val aiDeck = Rectangle()
-    val youDeck = Rectangle()
+    /**
+     * Колода общая на обе стороны и стоит справа от руки.
+     *
+     * Две одинаковые стопки у каждого игрового поля не несли информации: колода в
+     * правилах одна, и раздача идёт из неё же.
+     */
+    val deck = Rectangle()
     val aiPortrait = Rectangle()
     val youPortrait = Rectangle()
 
@@ -42,7 +49,9 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
         val hudHeight = worldHeight * 0.075f
         hud.set(0f, worldHeight - hudHeight, worldWidth, hudHeight)
 
-        val sideWidth = (worldWidth * 0.23f).coerceIn(220f, 340f)
+        // Колонка сброса заметно уже прежней: журнала в ней больше нет, а стопке
+        // урны с миниатюрами карт хватает узкой полосы. Освободившееся уходит столу.
+        val sideWidth = (worldWidth * 0.13f).coerceIn(140f, 230f)
         val boardWidth = worldWidth - sideWidth - pad * 3f
         val boardHeight = worldHeight - hudHeight - pad * 4f
         val rowHeight = boardHeight / 3f
@@ -67,14 +76,20 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
         y -= rowHeight + pad
         hand.set(pad, y, boardWidth, rowHeight)
 
+        // Сброс на одной линии со своим рядом: слева портрет стороны, в центре её
+        // SPACE, справа её же сброс. Читать подпись, чтобы понять чей он, не нужно.
         val sideX = pad * 2 + boardWidth
-        val discardHeight = worldHeight * 0.16f
-        aiDiscard.set(sideX, worldHeight - hudHeight - pad - discardHeight, sideWidth, discardHeight)
-        youDiscard.set(sideX, aiDiscard.y - pad - discardHeight, sideWidth, discardHeight)
-        log.set(sideX, pad, sideWidth, youDiscard.y - pad * 2)
+        aiDiscard.set(sideX, aiSpace.y, sideWidth, rowHeight)
+        youDiscard.set(sideX, youSpace.y, sideWidth, rowHeight)
 
-        aiDeck.set(aiSpace.x + aiSpace.width - cardWidth * 0.7f, aiSpace.y, cardWidth * 0.7f, cardHeight * 0.7f)
-        youDeck.set(youSpace.x + youSpace.width - cardWidth * 0.7f, youSpace.y, cardWidth * 0.7f, cardHeight * 0.7f)
+        // Колода — в свободной колонке справа от руки, на одной линии с ней.
+        val deckHeight = minOf(cardHeight * 0.95f, rowHeight * 0.72f)
+        val deckWidth = deckHeight * CARD_ASPECT
+        deck.set(
+            sideX + (sideWidth - deckWidth) / 2f,
+            hand.y + (rowHeight - deckHeight) / 2f,
+            deckWidth, deckHeight,
+        )
     }
 
     private fun layoutPortrait() {
@@ -83,8 +98,9 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
         hud.set(0f, worldHeight - hudHeight, worldWidth, hudHeight)
 
         val boardWidth = worldWidth - pad * 2
-        val discardHeight = worldHeight * 0.075f
-        val available = worldHeight - hudHeight - discardHeight - pad * 6
+        // Две полосы сброса: по одной на сторону, каждая вплотную к своей зоне.
+        val discardHeight = worldHeight * 0.07f
+        val available = worldHeight - hudHeight - discardHeight * 2f - pad * 7
         val rowHeight = available / 3f
 
         val byHeight = rowHeight * 0.94f
@@ -92,33 +108,50 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
         cardHeight = minOf(byHeight, byWidth)
         cardWidth = cardHeight * CARD_ASPECT
 
-        val discardWidth = (boardWidth - pad) / 2f
-        var y = worldHeight - hudHeight - pad - discardHeight
-        aiDiscard.set(pad, y, discardWidth, discardHeight)
-        youDiscard.set(pad * 2 + discardWidth, y, discardWidth, discardHeight)
-
         val portraitSize = minOf(rowHeight * 0.5f, boardWidth * 0.13f)
         val zoneX = pad + portraitSize + pad
         val zoneWidth = boardWidth - portraitSize - pad
 
-        y -= rowHeight + pad
+        // Сверху вниз: сброс противника, его зона, своя зона, свой сброс, рука.
+        // Каждая полоса сброса касается своей зоны, а не чужой.
+        var y = worldHeight - hudHeight - pad - discardHeight
+        aiDiscard.set(pad, y, boardWidth, discardHeight)
+        y -= rowHeight + pad * 0.5f
         aiSpace.set(zoneX, y, zoneWidth, rowHeight)
         aiPortrait.set(pad, y + (rowHeight - portraitSize) / 2f, portraitSize, portraitSize)
         y -= rowHeight + pad
         youSpace.set(zoneX, y, zoneWidth, rowHeight)
         youPortrait.set(pad, y + (rowHeight - portraitSize) / 2f, portraitSize, portraitSize)
+        y -= discardHeight + pad * 0.5f
+        youDiscard.set(pad, y, boardWidth, discardHeight)
+        // В портрете колода тоже одна и тоже справа: панель руки сужается на её ширину.
         y -= rowHeight + pad
-        hand.set(pad, y, boardWidth, rowHeight)
-
-        // В портрете журнал не показываем — под него нет места без ущерба столу.
-        log.set(0f, 0f, 0f, 0f)
-
-        aiDeck.set(aiSpace.x + aiSpace.width - cardWidth * 0.6f, aiSpace.y, cardWidth * 0.6f, cardHeight * 0.6f)
-        youDeck.set(youSpace.x + youSpace.width - cardWidth * 0.6f, youSpace.y, cardWidth * 0.6f, cardHeight * 0.6f)
+        val deckHeight = minOf(cardHeight * 0.8f, rowHeight * 0.7f)
+        val deckWidth = deckHeight * CARD_ASPECT
+        val deckColumn = deckWidth + pad * 3f
+        hand.set(pad, y, boardWidth - deckColumn, rowHeight)
+        deck.set(
+            hand.x + hand.width + pad * 1.5f,
+            hand.y + (rowHeight - deckHeight) / 2f,
+            deckWidth, deckHeight,
+        )
     }
 
-    /** Позиции карт руки: до семи штук по центру своей зоны. */
-    fun handSlots(count: Int): List<Rectangle> = rowSlots(hand, count, cardWidth, cardHeight)
+    /**
+     * Позиции карт руки: до семи штук по центру своей зоны.
+     *
+     * Карты кладутся внутрь резной рамки панели, а не в её габарит: иначе верхний
+     * и нижний кант оказываются под картами и панель выглядит продавленной.
+     */
+    fun handSlots(count: Int): List<Rectangle> {
+        val inset = hand.height * HAND_INSET
+        val inner = Rectangle(
+            hand.x + inset, hand.y + inset,
+            hand.width - inset * 2f, hand.height - inset * 2f,
+        )
+        val height = minOf(cardHeight, inner.height)
+        return rowSlots(inner, count, height * CARD_ASPECT, height)
+    }
 
     /**
      * Пять постоянных гнёзд в зоне SPACE — по одному на букву.
@@ -154,6 +187,9 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
     private companion object {
         /** Портретная карта 2:3 (решение D-9). */
         const val CARD_ASPECT = 2f / 3f
+
+        /** Отступ карт руки от края панели, в долях её высоты — под резной кант. */
+        const val HAND_INSET = 0.08f
         const val CARD_ASPECT_INVERSE = 3f / 2f
     }
 }

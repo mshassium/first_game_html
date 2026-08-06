@@ -145,27 +145,53 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
             Triple(Strings.language.label, "lang") { toggleLanguage() },
         )
         for ((text, icon, action) in buttons) {
-            root.add(menuButton(text, icon, action).liftLabel(buttonHeight))
+            root.add(menuButton(text, icon, action))
                 .size(buttonWidth, buttonHeight).padBottom(gap).row()
         }
     }
 
     private fun menuButton(text: String, action: () -> Unit): TextButton = menuButton(text, null, action)
 
-    /** Кнопка меню; [icon] — имя иконки без префикса, если она нарисована. */
+    /**
+     * Кнопка меню; [icon] — имя иконки без префикса, если она нарисована.
+     *
+     * Высота подписи задаётся явно. По умолчанию Label просит
+     * `capHeight - descent * 2`, у нашего заголовочного шрифта это 71 px при
+     * высоте кнопки 61: бокс не влезает, строка распирает таблицу, содержимое
+     * выходит за кнопку — иконка упирается в верхний кант, а текст садится ниже неё.
+     * С общей высотой ячеек иконка и прописные буквы центрируются по одной оси.
+     */
     private fun menuButton(text: String, icon: String?, action: () -> Unit): TextButton {
         val button = TextButton(text, theme.button)
-        game.assets.icon(icon ?: "").let { region ->
-            if (region != null) {
-                val label = button.label
-                button.clearChildren()
-                val size = (stage.viewport.worldHeight * 0.055f).coerceIn(28f, 44f)
-                // Отступы по краям, чтобы содержимое не наезжало на резную рамку кнопки.
-                button.pad(0f, size * 0.5f, 0f, size * 0.5f)
-                button.add(Image(region)).size(size).padRight(size * 0.35f)
-                button.add(label)
+        val label = button.label
+        val size = (stage.viewport.worldHeight * 0.055f).coerceIn(28f, 44f)
+        val region = game.assets.icon(icon ?: "")
+
+        button.clearChildren()
+        label.setAlignment(Align.center)
+        if (region != null) {
+            // Иконка и подпись лежат в разных слоях: иконка прижата к левому краю,
+            // подпись центрируется по всей ширине кнопки. Если положить их в одну
+            // строку таблицы, подпись центруется по остатку после иконки — и уезжает
+            // вправо тем сильнее, чем шире иконка.
+            button.pad(0f, size * 0.28f, 0f, size * 0.28f)
+            // Отступ иконки задаётся внутри её слоя, а не полем кнопки: поле сдвинуло бы
+            // и область, по которой центруется подпись.
+            val iconLayer = Table().apply {
+                add(Image(region)).size(size).expandX().left().padLeft(size * ICON_INSET)
             }
+            // Подпись приподнята: у прописных букв нет нижних выносов, и геометрический
+            // центр бокса зрительно читается как посадка на нижний кант.
+            val textLayer = Table().apply {
+                add(label).height(size).expand().center().padBottom(size * LABEL_LIFT)
+            }
+            button.stack(textLayer, iconLayer).grow()
+        } else {
+            // Кнопки настроек без иконок: подпись просто по центру.
+            button.pad(0f, size * 0.5f, 0f, size * 0.5f)
+            button.add(label).height(size).expandX()
         }
+
         button.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 game.sound.play(SoundManager.Sfx.UI_CLICK)
@@ -175,15 +201,6 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         return button
     }
 
-    /**
-     * Приподнимает содержимое кнопки. У спрайта нижний обод толще верхнего,
-     * поэтому подпись, отцентрованная геометрически, визуально садится на него.
-     */
-    private fun TextButton.liftLabel(height: Float): TextButton {
-        padTop(0f)
-        padBottom(height * 0.12f)
-        return this
-    }
 
     private fun toggleLanguage() {
         val next = Strings.nextLanguage()
@@ -233,7 +250,14 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         body.top()
         build(body, contentWidth)
 
-        val scroll = ScrollPane(body, ScrollPane.ScrollPaneStyle())
+        val scroll = object : ScrollPane(body, ScrollPane.ScrollPaneStyle()) {
+            /**
+             * Шаг колеса по умолчанию — около 22% высоты области за щелчок. Панель
+             * правил невысокая, и такой шаг проматывает почти экран разом: текст
+             * перескакивает, а не едет.
+             */
+            override fun getMouseWheelY(): Float = super.getMouseWheelY() * WHEEL_STEP_SCALE
+        }
         scroll.setFadeScrollBars(false)
         scroll.setScrollingDisabled(true, false)
         scroll.setOverscroll(false, false)
@@ -322,7 +346,7 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
             },
         )
         for ((text, action) in rows) {
-            content.add(menuButton(text, null, action).liftLabel(buttonHeight))
+            content.add(menuButton(text, null, action))
                 .size(buttonWidth, buttonHeight).padTop(gap).row()
         }
     }
@@ -369,5 +393,14 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
     private companion object {
         const val WORLD_WIDTH = 1280f
         const val WORLD_HEIGHT = 720f
+
+        /** Доля от штатного шага колеса в прокручиваемых панелях правил и настроек. */
+        const val WHEEL_STEP_SCALE = 0.45f
+
+        /** Насколько иконка кнопки отступает от края, в долях своего размера. */
+        const val ICON_INSET = 0.35f
+
+        /** Насколько подпись приподнята над геометрическим центром, в долях иконки. */
+        const val LABEL_LIFT = 0.12f
     }
 }

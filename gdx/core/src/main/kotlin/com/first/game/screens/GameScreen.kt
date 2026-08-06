@@ -43,7 +43,7 @@ import com.first.game.ui.Palette
 import ktx.app.KtxScreen
 
 /**
- * Игровой экран: стол, рука, журнал боя и все анимации.
+ * Игровой экран: стол, рука и все анимации.
  *
  * Разделение обязанностей строгое: движок считает правила и отдаёт события,
  * экран их проигрывает и перерисовывает доску. Никакой игровой логики здесь нет.
@@ -72,7 +72,6 @@ class GameScreen(
     private val fxGroup = Group()
     private val uiGroup = Group()
 
-    private val logLines = mutableListOf<String>()
     private var elapsedSeconds = 0f
     private var aiDelay = 0f
     private var choiceDialog: Group? = null
@@ -201,11 +200,11 @@ class GameScreen(
 
     private fun enqueue(events: List<GameEvent>) {
         for (event in events) {
-            // Запись в журнал делаем в момент проигрывания, а не постановки в очередь:
-            // иначе текст обгоняет картинку и описывает ещё не показанные ходы.
             director.enqueue { done ->
-                logEvent(event)
-                animate(event, done)
+                // После каждого события — пауза. Без неё ход игрока проигрывается
+                // одним непрерывным потоком: взял карту, разыграл, сработала
+                // способность, сбросил лишнее — и глазу негде разделить их.
+                animate(event) { delay(beatAfter(event), done) }
             }
         }
         director.enqueue { done ->
@@ -216,6 +215,26 @@ class GameScreen(
 
     // ------------------------------------------------------------- анимации
 
+    /**
+     * Пауза после события, в секундах до умножения на настройку скорости.
+     *
+     * Срабатывания способностей держатся заметно дольше перемещений: это самое
+     * непонятное на экране, и его нужно успеть прочитать.
+     */
+    private fun beatAfter(event: GameEvent): Float = when (event) {
+        is GameEvent.ForbidSet,
+        is GameEvent.TrapSet,
+        is GameEvent.TrapTriggered,
+        is GameEvent.CardStolen,
+        is GameEvent.CardRecovered,
+        is GameEvent.CardForbidden,
+        is GameEvent.EffectFizzled,
+        is GameEvent.TurnSkipped -> BEAT_ABILITY
+        is GameEvent.CardPlayed -> BEAT_PLAY
+        is GameEvent.GameStarted, is GameEvent.GameEnded -> 0f
+        else -> BEAT_SHORT
+    }
+
     private fun animate(event: GameEvent, done: () -> Unit) {
         when (event) {
             is GameEvent.GameStarted -> animateDice(event, done)
@@ -225,7 +244,7 @@ class GameScreen(
                 to = handTarget(event.side),
                 letter = event.letter.takeIf { event.side == Side.YOU },
                 sound = SoundManager.Sfx.CARD_DRAW,
-                seconds = 0.28f,
+                seconds = 0.34f,
                 done = done,
             )
 
@@ -234,7 +253,7 @@ class GameScreen(
                 to = handTarget(event.side),
                 letter = event.letter.takeIf { event.side == Side.YOU },
                 sound = SoundManager.Sfx.CARD_DRAW,
-                seconds = 0.3f,
+                seconds = 0.38f,
                 done = done,
             )
 
@@ -243,7 +262,7 @@ class GameScreen(
                 to = spaceTarget(event.side),
                 letter = event.letter,
                 sound = SoundManager.Sfx.CARD_PLACE,
-                seconds = 0.45f,
+                seconds = 0.55f,
                 done = {
                     impact(spaceTarget(event.side), event.letter)
                     done()
@@ -257,7 +276,7 @@ class GameScreen(
                     to = discardRect(event.side),
                     letter = event.letter,
                     sound = null,
-                    seconds = 0.5f,
+                    seconds = 0.75f,
                     shake = true,
                     done = done,
                 )
@@ -273,7 +292,7 @@ class GameScreen(
                 to = handTarget(event.side),
                 letter = event.letter.takeIf { event.side == Side.YOU },
                 sound = SoundManager.Sfx.RECOVER,
-                seconds = 0.45f,
+                seconds = 0.7f,
                 done = done,
             )
 
@@ -291,7 +310,7 @@ class GameScreen(
                     ) { actor ->
                         actor.rotation = -18f
                         actor.setScale(0.6f)
-                        val slash = director.duration(0.45f)
+                        val slash = director.duration(0.8f)
                         actor.addAction(
                             Actions.sequence(
                                 Actions.parallel(
@@ -308,7 +327,7 @@ class GameScreen(
                     to = discardRect(event.victim),
                     letter = event.letter,
                     sound = null,
-                    seconds = 0.45f,
+                    seconds = 0.7f,
                     done = done,
                 )
             }
@@ -325,7 +344,7 @@ class GameScreen(
                     to = discardRect(event.side),
                     letter = event.letter.takeIf { event.side == Side.YOU },
                     sound = null,
-                    seconds = 0.4f,
+                    seconds = 0.6f,
                     shake = true,
                     done = done,
                 )
@@ -336,7 +355,7 @@ class GameScreen(
                 to = discardRect(event.side),
                 letter = event.letter.takeIf { event.side == Side.YOU },
                 sound = SoundManager.Sfx.CARD_DISCARD,
-                seconds = 0.35f,
+                seconds = 0.45f,
                 done = done,
             )
 
@@ -401,7 +420,7 @@ class GameScreen(
     /** Вспышка, звезда, кольцо и тематический элемент школы на месте приземления карты. */
     private fun impact(target: Rectangle, letter: Letter) {
         val color = Palette.school(letter)
-        val duration = director.duration(0.35f)
+        val duration = director.duration(0.45f)
         val centerX = target.x + target.width / 2f
         val centerY = target.y + target.height / 2f
 
@@ -458,7 +477,8 @@ class GameScreen(
      * чтобы эффект читался без чтения журнала.
      */
     private fun schoolBurst(letter: Letter, centerX: Float, centerY: Float, cardWidth: Float) {
-        val duration = director.duration(0.55f)
+        // Единственный показ того, какая именно школа сработала: держим дольше вспышки.
+        val duration = director.duration(0.8f)
         val color = Palette.school(letter)
         when (letter) {
             // Запрет: рунное кольцо раскрывается, от него разлетаются звенья ледяной цепи.
@@ -596,7 +616,8 @@ class GameScreen(
         glow.color = Palette.rgba(color, 0f)
         glow.setBounds(target.x, target.y - target.height * 0.2f, target.width, target.height * 1.4f)
         fxGroup.addActor(glow)
-        val duration = director.duration(0.3f)
+        // Пульс — единственный показ запрета и ловушки, поэтому он длиннее полёта карты.
+        val duration = director.duration(0.55f)
         glow.addAction(
             Actions.sequence(
                 Actions.alpha(0.8f, duration, Interpolation.fade),
@@ -662,10 +683,10 @@ class GameScreen(
         addSpaceCards(Side.YOU)
         addHandCards()
 
-        // Колода — нарисованная стопка, если она есть; иначе рубашка одной карты.
-        for (side in listOf(Side.AI, Side.YOU)) {
-            if (state.side(side).deck.isEmpty()) continue
-            val rect = deckRect(side)
+        // Колода одна на обе стороны: рисуем её, пока хоть у кого-то остались карты.
+        val deckAlive = Side.entries.any { state.side(it).deck.isNotEmpty() }
+        if (deckAlive) {
+            val rect = layout.deck
             val stack = assets.uiRegion("deck_stack")
             if (stack != null) {
                 val image = com.badlogic.gdx.scenes.scene2d.ui.Image(stack)
@@ -876,8 +897,8 @@ class GameScreen(
 
     // ------------------------------------------------------------- координаты
 
-    private fun deckRect(side: Side): Rectangle =
-        if (side == Side.AI) layout.aiDeck else layout.youDeck
+    /** Колода одна на обе стороны, поэтому сторона на её положение не влияет. */
+    private fun deckRect(side: Side): Rectangle = layout.deck
 
     private fun discardRect(side: Side): Rectangle =
         if (side == Side.AI) layout.aiDiscard else layout.youDiscard
@@ -914,34 +935,6 @@ class GameScreen(
         )
     }
 
-    // ---------------------------------------------------------------- журнал
-
-    private fun logEvent(event: GameEvent) {
-        val you = Strings["hud.you"]
-        val ai = Strings["hud.ai"]
-        fun name(side: Side) = if (side == Side.YOU) you else ai
-
-        val line = when (event) {
-            is GameEvent.GameStarted -> Strings["log.gameStarted"]
-            is GameEvent.TurnBegan -> Strings.format("log.turnBegan", name(event.side))
-            is GameEvent.CardDrawn -> Strings.format("log.drew", name(event.side))
-            is GameEvent.HandOverflow -> Strings.format("log.overflow", name(event.side), event.letter.name)
-            is GameEvent.CardPlayed -> Strings.format("log.played", name(event.side), event.letter.name)
-            is GameEvent.CardForbidden -> Strings.format("log.forbidden", name(event.side), event.letter.name)
-            is GameEvent.ForbidSet -> Strings.format("log.forbidSet", name(event.by))
-            is GameEvent.CardRecovered -> Strings.format("log.recovered", name(event.side), event.letter.name)
-            is GameEvent.CardStolen -> Strings.format("log.stolen", name(event.victim), event.letter.name)
-            is GameEvent.TrapSet -> Strings.format("log.trapSet", name(event.on))
-            is GameEvent.TrapTriggered -> Strings.format("log.trapTriggered", name(event.side), event.letter.name)
-            is GameEvent.EffectFizzled -> Strings.format("log.fizzled", name(event.side), event.letter.name)
-            is GameEvent.TurnSkipped -> Strings.format("log.skipped", name(event.side))
-            is GameEvent.GameEnded -> Strings["log.ended"]
-            else -> null
-        } ?: return
-
-        logLines += line
-        if (logLines.size > LOG_CAPACITY) logLines.removeAt(0)
-    }
 
     // ------------------------------------------------------------- слои фона
 
@@ -963,11 +956,6 @@ class GameScreen(
             theme.panelStone.draw(
                 batch, layout.youDiscard.x, layout.youDiscard.y, layout.youDiscard.width, layout.youDiscard.height,
             )
-            if (layout.log.width > 0f) {
-                theme.panelParchment.draw(
-                    batch, layout.log.x, layout.log.y, layout.log.width, layout.log.height,
-                )
-            }
             batch.setColor(Color.WHITE)
         }
 
@@ -1054,7 +1042,7 @@ class GameScreen(
             val hud = layout.hud
 
             val turnText = when {
-                state.isOver -> Strings["log.ended"]
+                state.isOver -> Strings["hud.gameOver"]
                 state.turn == Side.YOU -> Strings["hud.yourTurn"]
                 else -> Strings["hud.opponentTurn"]
             }
@@ -1064,13 +1052,15 @@ class GameScreen(
 
             body.color = Palette.TEXT
             val iconSize = hud.height * 0.52f
-            val baseline = hud.y + hud.height * 0.74f
-            val iconY = baseline - iconSize * 0.82f
+            val capTop = hud.y + hud.height * 0.74f
+            // В libGDX y при отрисовке — верх прописных, а не базовая линия. Середина
+            // цифр лежит на capHeight/2 ниже, по ней и центруется иконка.
+            val iconY = capTop - body.capHeight / 2f - iconSize / 2f
 
             val timer = formatTime(elapsedSeconds)
             glyphs.setText(body, timer)
             var x = hud.x + hud.width - glyphs.width - hud.height * 1.35f
-            body.draw(batch, timer, x, baseline)
+            body.draw(batch, timer, x, capTop)
             assets.icon("hourglass")?.let {
                 batch.setColor(Color.WHITE)
                 batch.draw(it, x - iconSize * 1.15f, iconY, iconSize, iconSize)
@@ -1095,47 +1085,75 @@ class GameScreen(
                     batch.draw(it, x, iconY, iconSize, iconSize)
                     x += iconSize + gap * 0.4f
                 }
-                body.draw(batch, value, x, baseline)
+                body.draw(batch, value, x, capTop)
                 glyphs.setText(body, value)
                 x += glyphs.width + gap * 1.6f
             }
 
             drawDiscard(batch, layout.aiDiscard, Side.AI)
             drawDiscard(batch, layout.youDiscard, Side.YOU)
-            if (layout.log.width > 0f) drawLog(batch)
             body.color = Color.WHITE
         }
 
+        /**
+         * Сброс стороны. Панель стоит вплотную к своему ряду, поэтому подпись
+         * короткая: чей это сброс, видно по положению, а не по тексту.
+         *
+         * Форма панели зависит от ориентации — в landscape она узкая и высокая,
+         * в portrait широкая и низкая, — поэтому миниатюры раскладываются в сетку,
+         * число колонок в которой считается от пропорций самой панели.
+         */
         private fun drawDiscard(batch: Batch, rect: Rectangle, side: Side) {
             val body = assets.bodyFont
             val discard = state.side(side).discard
-            val padX = rect.width * 0.055f
-            val padY = rect.height * 0.16f
+            val padX = rect.width * 0.07f
+            val padY = rect.height * 0.09f
 
-            // Подпись держим внутри рамки и уменьшаем — панель низкая,
-            // а сверху и снизу у неё резной кант.
-            val caption = "${Strings["hud.discard"]} — ${if (side == Side.YOU) Strings["hud.you"] else Strings["hud.ai"]}"
-            val captionScale = (rect.height * 0.17f / body.capHeight).coerceAtMost(1f)
+            val captionHeight = rect.height * 0.16f
+            val captionScale = (captionHeight * 0.62f / body.capHeight).coerceAtMost(0.8f)
             body.data.setScale(captionScale)
             body.color = Palette.TEXT_MUTED
-            body.draw(batch, caption, rect.x + padX, rect.y + rect.height - padY * 1.55f)
+            body.draw(batch, Strings["hud.discard"], rect.x + padX, rect.y + rect.height - padY)
             body.data.setScale(1f)
 
-            // Урна слева — в неё «падают» карты, дальше идут миниатюры по буквам.
-            val height = (rect.height - padY * 3.1f).coerceAtLeast(24f)
-            val width = height * (2f / 3f)
-            var x = rect.x + padX
+            val contentTop = rect.y + rect.height - captionHeight - padY
+            val contentHeight = (contentTop - rect.y - padY).coerceAtLeast(16f)
+            val contentWidth = rect.width - padX * 2f
+
+            // Урна — якорь панели: в неё летят карты в анимации сброса. Рисуется
+            // приглушённо: это служебный предмет, он не должен спорить с картами
+            // за внимание (иерархия яркости, §10.1 промпт-бука).
+            var contentX = rect.x + padX
             assets.uiRegion("discard_urn")?.let { urn ->
-                val urnHeight = height * 0.92f
+                val urnHeight = (contentHeight * 0.42f).coerceAtMost(contentWidth * 0.5f)
                 val urnWidth = urnHeight * urn.regionWidth / urn.regionHeight
-                batch.setColor(Color.WHITE)
-                batch.draw(urn, x, rect.y + padY * 0.9f, urnWidth, urnHeight)
-                x += urnWidth * 1.1f
+                batch.setColor(URN_TINT)
+                batch.draw(urn, contentX, contentTop - urnHeight, urnWidth, urnHeight)
+                contentX += urnWidth * 1.15f
             }
-            val y = rect.y + padY * 0.9f
-            for (letter in Letter.ALL) {
-                val count = discard.count { it == letter }
-                if (count == 0) continue
+
+            val entries = Letter.ALL.map { it to discard.count { card -> card == it } }.filter { it.second > 0 }
+            if (entries.isEmpty()) {
+                body.color = Palette.TEXT
+                return
+            }
+
+            // В узкой высокой панели миниатюры идут в два ряда, в широкой низкой — в один.
+            val available = rect.x + rect.width - padX - contentX
+            val rows = if (rect.height > rect.width) 2 else 1
+            val columns = ((entries.size + rows - 1) / rows).coerceAtLeast(1)
+            val gap = 0.12f
+            val byWidth = available / (columns + (columns - 1) * gap)
+            val byHeight = contentHeight / (rows + (rows - 1) * gap) * (2f / 3f)
+            val width = minOf(byWidth, byHeight).coerceAtLeast(8f)
+            val height = width * (3f / 2f)
+
+            for ((index, entry) in entries.withIndex()) {
+                val (letter, count) = entry
+                val column = index % columns
+                val row = index / columns
+                val x = contentX + column * width * (1f + gap)
+                val y = contentTop - height - row * height * (1f + gap)
                 batch.setColor(Color.WHITE)
                 batch.draw(assets.cardFace(letter), x, y, width, height)
                 if (count > 1) {
@@ -1146,45 +1164,10 @@ class GameScreen(
                     body.draw(batch, glyphs, x + width - glyphs.width, y + glyphs.height + 2f)
                     body.data.setScale(1f)
                 }
-                x += width * 1.12f
             }
             body.color = Palette.TEXT
         }
 
-        /**
-         * Журнал: новое сверху, сразу под заголовком. Старые строки бледнеют —
-         * так свежие события видны с одного взгляда, а история не мешает.
-         */
-        private fun drawLog(batch: Batch) {
-            // На пергаменте берём шрифт со светлой обводкой, иначе тёмное по тёмному.
-            val body = if (theme.parchmentLog) assets.bodyInkFont else assets.bodyFont
-            val scale = 0.78f
-            body.data.setScale(scale)
-            val rect = layout.log
-            val padX = rect.width * 0.09f
-            val padTop = rect.height * 0.055f
-            val ink = if (theme.parchmentLog) INK else Palette.TEXT
-            val inkMuted = if (theme.parchmentLog) INK_MUTED else Palette.TEXT_MUTED
-
-            body.color = inkMuted
-            body.draw(batch, Strings["hud.log"], rect.x + padX, rect.y + rect.height - padTop * 1.6f)
-
-            val width = rect.width - padX * 2f
-            val floor = rect.y + padTop
-            var y = rect.y + rect.height - padTop * 1.6f - body.lineHeight * 1.2f
-
-            for ((index, line) in logLines.asReversed().withIndex()) {
-                // Строки переносятся по ширине, поэтому высоту каждой меряем отдельно.
-                val fade = (1f - index * 0.11f).coerceAtLeast(0.35f)
-                body.color = Palette.rgba(ink, fade)
-                glyphs.setText(body, line, body.color, width, com.badlogic.gdx.utils.Align.left, true)
-                if (y - glyphs.height < floor) break
-                body.draw(batch, glyphs, rect.x + padX, y)
-                y -= glyphs.height + body.lineHeight * 0.25f
-            }
-            body.data.setScale(1f)
-            body.color = Palette.TEXT
-        }
 
         private fun formatTime(seconds: Float): String {
             val total = seconds.toInt()
@@ -1196,11 +1179,14 @@ class GameScreen(
         const val WORLD_WIDTH = 1280f
         const val WORLD_HEIGHT = 720f
         const val AI_THINK_TIME = 0.65f
-        const val HOVER_LIFT = 14f
-        const val LOG_CAPACITY = 40
 
-        /** Чернила по пергаменту. */
-        val INK: Color = Color.valueOf("2E2013")
-        val INK_MUTED: Color = Color.valueOf("6B5433")
+        /** Паузы между событиями, в секундах до умножения на настройку скорости. */
+        const val BEAT_SHORT = 0.12f
+        const val BEAT_PLAY = 0.22f
+        const val BEAT_ABILITY = 0.5f
+        const val HOVER_LIFT = 14f
+
+        /** Урна сброса — служебный предмет, гасится до 78% яркости (§10.1 бука). */
+        val URN_TINT: Color = Color(0.78f, 0.78f, 0.78f, 1f)
     }
 }

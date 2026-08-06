@@ -20,14 +20,17 @@ class Theme(val assets: Assets) {
 
     // Резные углы и рамки нельзя растягивать целиком — они превращаются в кашу.
     // Растягивается только середина, поля задаются долей от размера спрайта.
-    val panel: Drawable = stretchable("panel_wood", 0.22f, 0.30f, assets.panel)
-    val panelStone: Drawable = stretchable("panel_stone", 0.22f, 0.30f, assets.panelStone)
+    // Панели из COMPACT приходят из упаковщика уже обрезанными до канта с углами:
+    // у них кант занимает ровно 45% стороны, и линия разреза должна совпадать,
+    // иначе в растяжку попадёт угловая накладка.
+    // Панель руки — единственная с заметной текстурой, поэтому она не сжимается,
+    // а растягивается мягко: нерастяжимыми остаются только кант с углами, а середина
+    // занимает большую часть спрайта и тянется примерно в полтора раза.
+    val panel: Drawable = stretchable("panel_wood", 0.06f, 0.17f, assets.panel)
+    val panelStone: Drawable = stretchable("panel_stone", COMPACT_SPLIT, COMPACT_SPLIT, assets.panelStone)
     val panelParchment: Drawable = stretchable("panel_parchment", 0.22f, 0.30f, assets.panelStone)
-    val modalFrame: Drawable = stretchable("modal_frame", 0.22f, 0.30f, assets.panel)
+    val modalFrame: Drawable = stretchable("modal_frame", COMPACT_SPLIT, COMPACT_SPLIT, assets.panel)
     val slot: Drawable = stretchable("slot_card", 0.30f, 0.30f, assets.slot)
-
-    /** Журнал рисуется на пергаменте — значит, текст в нём должен быть тёмным. */
-    val parchmentLog: Boolean = assets.uiRegion("panel_parchment") != null
 
     val titleLarge = Label.LabelStyle(assets.titleLargeFont, Color.WHITE)
     val title = Label.LabelStyle(assets.titleFont, Color.WHITE)
@@ -71,4 +74,12 @@ class Theme(val assets: Assets) {
     fun dim(alpha: Float): Drawable = TextureRegionDrawable(assets.white).tint(Palette.rgba(Palette.SHADOW, alpha))
 
     fun tinted(color: Color): Drawable = TextureRegionDrawable(assets.white).tint(color)
+
+    private companion object {
+        /**
+         * Линия разреза для панелей, которые упаковщик сжимает до канта с углами
+         * (список COMPACT в AtlasPacker). Число задано там же при сборке спрайта.
+         */
+        const val COMPACT_SPLIT = 0.45f
+    }
 }
