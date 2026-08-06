@@ -60,6 +60,7 @@ REFS: dict[str, list[str]] = {
     "2.2": [CONCEPT, "anchor/card_F_anchor_v2.png"],
     "2.3": ["anchor/card_F_anchor_v2.png", CONCEPT],
     "4.8": [CONCEPT, UI_ANCHOR, "cards/card_back.png"],
+    "5.5": [CONCEPT, "bg/bg_menu.jpg"],
 }
 REFS_BY_CHAPTER: dict[str, list[str]] = {
     "3": [CARD_ANCHOR],

@@ -1005,6 +1005,42 @@ Full-bleed widescreen landscape, aspect ratio 16:9, size 1920x1080.
 
 Сохранить как `assets_src/bg/bg_loading.jpg`.
 
+### 5.5 Фон главного меню, вертикальный
+
+Горизонтальный фон меню в вертикальной ориентации обрезается втрое: на экране
+помещается лишь 32% его ширины, и композиция §5.3 разрушается — либо пропадает
+алтарь, либо кнопки оказываются на светлом. Поэтому у портрета свой фон.
+
+Блок меню в вертикальной раскладке занимает левую треть по ширине и середину
+по высоте — именно там фон должен быть тёмным и простым.
+
+```text
+The approved 16:9 UI direction and the existing horizontal menu background are attached. Keep the same underground arcane sanctum, the same near-black blue-charcoal stone, the same restrained warm candlelight and the same painterly manner. Ignore and do not reproduce any text, buttons, logo or icons visible in the references.
+
+Create a full-bleed vertical main-menu background for the same game, recomposed for a tall phone screen rather than cropped from the wide one.
+
+Subject: the same sanctum seen along a tall vertical corridor. Massive dark stone arches rise from the bottom of the frame and recede upward and to the right, toward one small distant altar lit by a single soft warm golden light. A few candles on simple iron stands stand along the right side. The floor of dark charcoal stone fills the lower fifth.
+
+Composition is essential:
+— the left third of the image is very dark, simple and low-detail from top to bottom: the game title and four menu buttons sit there;
+— the vertical middle band of that left third must be especially quiet — no candle, crack, column edge or ornament behind the future buttons;
+— the brightest point is the distant altar, placed around 70% of the image width and 30% of the height, well above and to the right of the menu area;
+— no second competing bright focal point;
+— natural vignette and soft atmospheric depth, not foggy bloom.
+
+Palette: near-black blue-charcoal stone, dark bronze, tiny warm candle accents and one distant muted-gold focal light. The image remains mostly dark and desaturated.
+
+Painterly premium fantasy illustration with visible but soft brushwork. No characters, creatures, weapons, cards, UI frames or built-in buttons.
+
+No text, letters, numbers, logo, watermark or signature.
+
+Avoid: bright left side, dozens of candles, uniformly lit cathedral, strong cyan runes, shiny gold architecture, orange overall colour cast, clutter behind the menu area, photorealism, CGI, 3D render, anime, pixel art, flat vector art.
+
+Full-bleed tall portrait, aspect ratio 9:16, size 1080x1920.
+```
+
+Сохранить как `assets_src/bg/bg_menu_portrait.jpg`.
+
 ---
 
 ## 6. Визуальные эффекты
