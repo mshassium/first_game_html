@@ -1,48 +1,48 @@
 
 cards.png
-size: 1446, 1544
+size: 2048, 1024
 format: RGBA8888
-filter: Linear, Linear
+filter: MipMapLinearLinear, Linear
 repeat: none
 card_F
   rotate: false
-  xy: 2, 774
-  size: 497, 768
-  orig: 497, 768
+  xy: 8, 8
+  size: 332, 512
+  orig: 332, 512
   offset: 0, 0
   index: -1
 card_I
   rotate: false
-  xy: 503, 774
-  size: 459, 768
-  orig: 459, 768
+  xy: 1693, 8
+  size: 306, 512
+  orig: 306, 512
   offset: 0, 0
   index: -1
 card_R
   rotate: false
-  xy: 966, 774
-  size: 477, 768
-  orig: 477, 768
+  xy: 703, 8
+  size: 318, 512
+  orig: 318, 512
   offset: 0, 0
   index: -1
 card_S
   rotate: false
-  xy: 2, 2
-  size: 472, 768
-  orig: 472, 768
+  xy: 1037, 8
+  size: 314, 512
+  orig: 314, 512
   offset: 0, 0
   index: -1
 card_T
   rotate: false
-  xy: 478, 2
-  size: 496, 768
-  orig: 496, 768
+  xy: 356, 8
+  size: 331, 512
+  orig: 331, 512
   offset: 0, 0
   index: -1
 card_back
   rotate: false
-  xy: 978, 2
-  size: 466, 768
-  orig: 466, 768
+  xy: 1367, 8
+  size: 310, 512
+  orig: 310, 512
   offset: 0, 0
   index: -1
