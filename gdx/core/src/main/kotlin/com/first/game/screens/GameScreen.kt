@@ -110,8 +110,11 @@ class GameScreen(
      * тогда, когда его анимация отыграла. Доска рисуется из состояния с поправкой
      * на эти списки.
      */
-    private val pendingHand = mutableListOf<Letter>()
-    private val leavingHand = mutableListOf<Letter>()
+    private val pendingHandOps = mutableListOf<HandOp>()
+
+    /** Карты руки игрока в порядке раскладки: события адресуют их по индексу. */
+    private val handActors = mutableListOf<CardActor>()
+
     private val pendingSpace = mutableListOf<Pair<Side, Letter>>()
     private val leavingSpace = mutableListOf<Pair<Side, Letter>>()
     private val pendingDiscard = mutableListOf<Pair<Side, Letter>>()
@@ -385,8 +388,11 @@ class GameScreen(
     private fun release(event: GameEvent) = shift(event, reserve = false)
 
     private fun shift(event: GameEvent, reserve: Boolean) {
-        fun hand(list: MutableList<Letter>, letter: Letter) {
-            if (reserve) list += letter else list.remove(letter)
+        // Отпускаются события в том же порядке, в каком резервировались, поэтому
+        // снимаем первое совпадение: оно и есть самое раннее неотыгранное.
+        fun hand(side: Side, op: HandOp) {
+            if (side != Side.YOU) return
+            if (reserve) pendingHandOps += op else pendingHandOps.remove(op)
         }
 
         fun zone(list: MutableList<Pair<Side, Letter>>, side: Side, letter: Letter) {
@@ -394,27 +400,27 @@ class GameScreen(
         }
 
         when (event) {
-            is GameEvent.CardDealt -> if (event.side == Side.YOU) hand(pendingHand, event.letter)
-            is GameEvent.CardDrawn -> if (event.side == Side.YOU) hand(pendingHand, event.letter)
-            is GameEvent.CardRecovered -> if (event.side == Side.YOU) hand(pendingHand, event.letter)
+            is GameEvent.CardDealt -> hand(event.side, HandOp.Added(event.letter))
+            is GameEvent.CardDrawn -> hand(event.side, HandOp.Added(event.letter))
+            is GameEvent.CardRecovered -> hand(event.side, HandOp.Added(event.letter))
 
             is GameEvent.CardPlayed -> {
-                if (event.side == Side.YOU) hand(leavingHand, event.letter)
+                hand(event.side, HandOp.Removed(event.handIndex, event.letter))
                 zone(pendingSpace, event.side, event.letter)
             }
 
             is GameEvent.HandOverflow -> {
-                if (event.side == Side.YOU) hand(leavingHand, event.letter)
+                hand(event.side, HandOp.Removed(event.handIndex, event.letter))
                 zone(pendingDiscard, event.side, event.letter)
             }
 
             is GameEvent.CardForbidden -> {
-                if (event.side == Side.YOU) hand(leavingHand, event.letter)
+                hand(event.side, HandOp.Removed(event.handIndex, event.letter))
                 zone(pendingDiscard, event.side, event.letter)
             }
 
             is GameEvent.TrapTriggered -> {
-                if (event.side == Side.YOU) hand(leavingHand, event.letter)
+                hand(event.side, HandOp.Removed(event.handIndex, event.letter))
                 zone(pendingDiscard, event.side, event.letter)
             }
 
@@ -427,11 +433,21 @@ class GameScreen(
         }
     }
 
-    /** Рука игрока такой, какой её уже показали: без ещё летящих и с ещё не улетевшими. */
+    /**
+     * Рука игрока такой, какой её уже показали: без ещё летящих и с ещё не улетевшими.
+     *
+     * Состояние движка — итог всей пачки, поэтому неотыгранные операции откатываются
+     * с конца: индекс ушедшей карты задан относительно руки, какой она была перед
+     * этим уходом, и вернуть её на место можно только после более поздних откатов.
+     */
     private fun visualHand(): List<Letter> =
         state.you.hand.toMutableList().apply {
-            pendingHand.forEach { remove(it) }
-            addAll(leavingHand)
+            for (op in pendingHandOps.asReversed()) {
+                when (op) {
+                    is HandOp.Added -> if (isNotEmpty()) removeAt(lastIndex)
+                    is HandOp.Removed -> add(op.index.coerceIn(0, size), op.letter)
+                }
+            }
         }
 
     private fun visualSpace(side: Side): List<Letter> =
@@ -530,8 +546,9 @@ class GameScreen(
                 done = done,
             )
 
-            is GameEvent.CardPlayed -> flyCard(
-                from = handSlotFor(event.side, event.letter),
+            is GameEvent.CardPlayed -> flyFromHand(
+                side = event.side,
+                handIndex = event.handIndex,
                 to = spaceSlotFor(event.side, event.letter),
                 letter = event.letter,
                 sound = SoundManager.Sfx.CARD_PLACE,
@@ -544,8 +561,9 @@ class GameScreen(
 
             is GameEvent.CardForbidden -> {
                 game.sound.play(SoundManager.Sfx.FORBID_TRIGGER)
-                flyCard(
-                    from = handSlotFor(event.side, event.letter),
+                flyFromHand(
+                    side = event.side,
+                    handIndex = event.handIndex,
                     to = discardTarget(event.side),
                     letter = event.letter,
                     sound = null,
@@ -612,8 +630,9 @@ class GameScreen(
 
             is GameEvent.TrapTriggered -> {
                 game.sound.play(SoundManager.Sfx.TRAP_SNAP)
-                flyCard(
-                    from = handSlotFor(event.side, event.letter),
+                flyFromHand(
+                    side = event.side,
+                    handIndex = event.handIndex,
                     to = discardTarget(event.side),
                     letter = event.letter.takeIf { event.side == Side.YOU },
                     sound = null,
@@ -623,8 +642,9 @@ class GameScreen(
                 )
             }
 
-            is GameEvent.HandOverflow -> flyCard(
-                from = handSlotFor(event.side, event.letter),
+            is GameEvent.HandOverflow -> flyFromHand(
+                side = event.side,
+                handIndex = event.handIndex,
                 to = discardTarget(event.side),
                 letter = event.letter.takeIf { event.side == Side.YOU },
                 sound = SoundManager.Sfx.CARD_DISCARD,
@@ -669,6 +689,31 @@ class GameScreen(
             ?.isVisible = false
     }
 
+    /**
+     * Полёт карты, покидающей руку игрока.
+     *
+     * Стартовая точка берётся у карты с индексом из события, а не у первой карты
+     * с такой буквой: одинаковых букв в руке бывает несколько, и поиск по букве
+     * уносил со стола не ту карту, на которую нажали.
+     */
+    private fun flyFromHand(
+        side: Side,
+        handIndex: Int,
+        to: Rectangle,
+        letter: Letter?,
+        sound: SoundManager.Sfx?,
+        seconds: Float,
+        shake: Boolean = false,
+        done: () -> Unit,
+    ) {
+        val card = handCard(side, handIndex)
+        val from = card?.let { Rectangle(it.x, it.y, it.width, it.height) } ?: handTarget(side)
+        // Прячем именно этого актёра: в руке карты наезжают друг на друга, и поиск
+        // по координате точки вылета может попасть в соседнюю.
+        card?.isVisible = false
+        flyCard(from, to, letter, sound, seconds, shake, hideSource = false, done = done)
+    }
+
     /** Ghost-карта, летящая между зонами. Сами актёры доски не двигаются. */
     private fun flyCard(
         from: Rectangle,
@@ -677,13 +722,14 @@ class GameScreen(
         sound: SoundManager.Sfx?,
         seconds: Float,
         shake: Boolean = false,
+        hideSource: Boolean = true,
         done: () -> Unit,
     ) {
         sound?.let(game.sound::play)
         val duration = director.duration(seconds)
         // Карта на доске, стоящая в точке вылета, прячется: без этого во время
         // полёта видны обе — оригинал в руке и летящий призрак.
-        hideCardAt(from)
+        if (hideSource) hideCardAt(from)
         val ghost = CardActor(assets, letter, faceUp = letter != null)
         ghost.setBounds(from.x, from.y, from.width, from.height, centerOrigin = true)
         fxGroup.addActor(ghost)
@@ -1025,6 +1071,7 @@ class GameScreen(
         val hand = visualHand()
         val slots = layout.handSlots(hand.size)
         val playable = state.turn == Side.YOU && state.phase == Phase.AWAITING_PLAY && !state.isOver
+        handActors.clear()
         hand.forEachIndexed { index, letter ->
             val slot = slots[index]
             val card = CardActor(assets, letter)
@@ -1047,6 +1094,7 @@ class GameScreen(
                     }
                 })
             }
+            handActors += card
             cardGroup.addActor(card)
         }
     }
@@ -1357,15 +1405,13 @@ class GameScreen(
         return layout.handSlots(hand.size).last()
     }
 
-    /** Место карты этой буквы в руке игрока; если её там нет — центр панели. */
-    private fun handSlotFor(side: Side, letter: Letter): Rectangle {
-        if (side == Side.AI) return handTarget(side)
-        val actor = cardGroup.children
-            .filterIsInstance<CardActor>()
-            .firstOrNull { it.isVisible && it.letter == letter && it.y < layout.hand.y + layout.hand.height }
-            ?: return handTarget(side)
-        return Rectangle(actor.x, actor.y, actor.width, actor.height)
-    }
+    /**
+     * Карта руки игрока по её месту в руке; null — если карты там уже нет.
+     *
+     * Рука ИИ не разложена по карте на карту, поэтому для неё показывать нечего.
+     */
+    private fun handCard(side: Side, index: Int): CardActor? =
+        if (side == Side.AI) null else handActors.getOrNull(index)?.takeIf { it.isVisible }
 
 
     // ------------------------------------------------------------- слои фона
@@ -1645,6 +1691,23 @@ class GameScreen(
             val total = seconds.toInt()
             return "%02d:%02d".format(total / 60, total % 60)
         }
+    }
+
+    /**
+     * Отложенное изменение руки игрока.
+     *
+     * Хранится позиция, а не только буква: одинаковых букв в руке бывает несколько,
+     * и по букве нельзя понять, какая из них ушла — а от этого зависит и порядок
+     * оставшихся карт, и то, какая карта вылетит в анимации.
+     */
+    private sealed interface HandOp {
+        val letter: Letter
+
+        /** Карта пришла в руку. Движок всегда кладёт её в конец. */
+        data class Added(override val letter: Letter) : HandOp
+
+        /** Карта ушла из руки с места [index] — индекс в руке до этого события. */
+        data class Removed(val index: Int, override val letter: Letter) : HandOp
     }
 
     private companion object {

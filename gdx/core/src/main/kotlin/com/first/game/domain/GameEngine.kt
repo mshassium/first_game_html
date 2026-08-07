@@ -101,12 +101,12 @@ class GameEngine(private val rng: Rng) {
             next = next
                 .withSide(side) { it.copy(discard = it.discard + letter) }
                 .copy(traps = next.traps.withForbidOn(side, null))
-            events += GameEvent.CardForbidden(side, letter)
+            events += GameEvent.CardForbidden(side, letter, handIndex)
             return EngineResult(finishTurn(next, side, events), events)
         }
 
         next = next.withSide(side) { it.copy(space = it.space + letter) }
-        events += GameEvent.CardPlayed(side, letter)
+        events += GameEvent.CardPlayed(side, letter, handIndex)
 
         // Победа проверяется до разрешения эффекта: иначе игрок, уже собравший набор,
         // получал бы бессмысленную модалку выбора. В старой HTML-версии проверка шла
@@ -222,7 +222,7 @@ class GameEngine(private val rng: Rng) {
                 }
                 val left = (next.traps.trapsOn(side) - 1).coerceAtLeast(0)
                 next = next.copy(traps = next.traps.withTrapsOn(side, left))
-                events += GameEvent.TrapTriggered(side, option.letter, left)
+                events += GameEvent.TrapTriggered(side, option.letter, option.index, left)
                 // Ловушка не завершает ход: сторона всё равно разыгрывает карту.
                 return EngineResult(continueAfterTrap(next, side, events), events)
             }
@@ -308,11 +308,12 @@ class GameEngine(private val rng: Rng) {
     ): GameState {
         var next = state
         while (next.side(side).hand.size > Rules.HAND_LIMIT) {
-            val overflow = next.side(side).hand.last()
+            val overflowIndex = next.side(side).hand.lastIndex
+            val overflow = next.side(side).hand[overflowIndex]
             next = next.withSide(side) {
                 it.copy(hand = it.hand.dropLast(1), discard = it.discard + overflow)
             }
-            events += GameEvent.HandOverflow(side, overflow)
+            events += GameEvent.HandOverflow(side, overflow, overflowIndex)
         }
         return next
     }

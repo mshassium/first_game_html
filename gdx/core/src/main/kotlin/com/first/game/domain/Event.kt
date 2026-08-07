@@ -19,11 +19,16 @@ sealed interface GameEvent {
 
     data class CardDrawn(val side: Side, val letter: Letter, val deckLeft: Int) : GameEvent
 
-    /** Рука переполнена — карта ушла в сброс. */
-    data class HandOverflow(val side: Side, val letter: Letter) : GameEvent
+    /** Рука переполнена — карта ушла в сброс. [handIndex] — её место в руке до сброса. */
+    data class HandOverflow(val side: Side, val letter: Letter, val handIndex: Int) : GameEvent
 
-    /** Ловушка сработала: сторона сбросила карту. */
-    data class TrapTriggered(val side: Side, val letter: Letter, val trapsLeft: Int) : GameEvent
+    /** Ловушка сработала: сторона сбросила карту с места [handIndex] в руке. */
+    data class TrapTriggered(
+        val side: Side,
+        val letter: Letter,
+        val handIndex: Int,
+        val trapsLeft: Int,
+    ) : GameEvent
 
     /** Ловушка не сработала: рука была пуста. */
     data class TrapFizzled(val side: Side, val trapsLeft: Int) : GameEvent
@@ -31,10 +36,16 @@ sealed interface GameEvent {
     /** Ход пропущен: разыгрывать нечем. */
     data class TurnSkipped(val side: Side) : GameEvent
 
-    data class CardPlayed(val side: Side, val letter: Letter) : GameEvent
+    /**
+     * Карта разыграна. [handIndex] — место, с которого она ушла из руки.
+     *
+     * Индекс нужен именно презентации: одинаковых букв в руке бывает несколько,
+     * и без него на стол улетает первая попавшаяся, а не та, на которую нажали.
+     */
+    data class CardPlayed(val side: Side, val letter: Letter, val handIndex: Int) : GameEvent
 
     /** Запрет сработал: карта ушла в свой сброс, эффект не выполнен. */
-    data class CardForbidden(val side: Side, val letter: Letter) : GameEvent
+    data class CardForbidden(val side: Side, val letter: Letter, val handIndex: Int) : GameEvent
 
     /** F: запрет наложен стороной [by] на её оппонента. */
     data class ForbidSet(val by: Side, val letter: Letter) : GameEvent
