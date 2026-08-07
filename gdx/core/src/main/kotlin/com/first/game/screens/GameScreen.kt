@@ -1388,6 +1388,20 @@ class GameScreen(
             theme.panelStone.draw(
                 batch, layout.youDiscard.x, layout.youDiscard.y, layout.youDiscard.width, layout.youDiscard.height,
             )
+            // Резной разделитель обозначает границу сторон там, где зоны идут
+            // одна над другой. В ландшафте они и так разнесены, там его нет.
+            if (layout.divider.width > 0f) {
+                assets.uiRegion("divider_ornament")?.let { ornament ->
+                    val rect = layout.divider
+                    // Рисуем в натуральных пропорциях по центру: растянутый во всю
+                    // ширину орнамент вырождается в бледную черту.
+                    val height = rect.height
+                    val width = minOf(rect.width, height * ornament.regionWidth / ornament.regionHeight)
+                    batch.draw(
+                        ornament, rect.x + (rect.width - width) / 2f, rect.y, width, height,
+                    )
+                }
+            }
             batch.setColor(Color.WHITE)
         }
 

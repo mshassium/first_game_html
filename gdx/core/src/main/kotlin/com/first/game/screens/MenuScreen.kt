@@ -173,7 +173,8 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
             game.startGame()
             return
         }
-        overlay.show(Strings["newgame.title"]) { content, width ->
+        overlay.show(Strings["newgame.title"]) { content, page ->
+            val width = page.width
             val gap = stage.viewport.worldHeight * 0.02f
             content.add(overlay.wrapped(Strings["newgame.body"])).width(width).left().padTop(gap).row()
             val buttonHeight = (stage.viewport.worldHeight * 0.085f).coerceIn(44f, 70f)
@@ -265,7 +266,8 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
      * по его минимальной ширине — то есть в один символ на строку.
      */
 
-    private fun showSettings(): Unit = overlay.show(Strings["settings.title"]) { content, width ->
+    private fun showSettings(): Unit = overlay.show(Strings["settings.title"]) { content, page ->
+        val width = page.width
         val buttonWidth = width * 0.86f
         val buttonHeight = (stage.viewport.worldHeight * 0.085f).coerceIn(44f, 70f)
         val gap = stage.viewport.worldHeight * 0.02f

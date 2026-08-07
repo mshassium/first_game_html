@@ -35,6 +35,9 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
 
     /** Кнопка правил — под колодой, в той же колонке. */
     val rulesButton = Rectangle()
+
+    /** Резной разделитель между зонами SPACE. Только в портрете, иначе нулевой. */
+    val divider = Rectangle()
     val aiPortrait = Rectangle()
     val youPortrait = Rectangle()
 
@@ -54,6 +57,7 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
 
         // Колонка сброса заметно уже прежней: журнала в ней больше нет, а стопке
         // урны с миниатюрами карт хватает узкой полосы. Освободившееся уходит столу.
+        divider.set(0f, 0f, 0f, 0f)
         val sideWidth = (worldWidth * 0.13f).coerceIn(140f, 230f)
         val boardWidth = worldWidth - sideWidth - pad * 3f
         val boardHeight = worldHeight - hudHeight - pad * 4f
@@ -108,11 +112,9 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
         val boardWidth = worldWidth - pad * 2
 
         // Размер карты задаётся шириной: пять карт встают в строку без наложения,
-        // шестая и седьмая ложатся внахлёст. Прежде в строку загонялись все семь,
-        // и карта выходила вдвое мельче, чем позволяет высота ряда — под каждой
-        // оставалась пустая полоса в её же рост.
+        // шестая и седьмая ложатся внахлёст. Если загонять в строку все семь,
+        // карта выходит вдвое мельче, чем позволяет высота ряда.
         val byWidth = boardWidth / (PORTRAIT_COLUMNS + (PORTRAIT_COLUMNS - 1) * SLOT_GAP)
-        // Сверху ограничиваем высотой, чтобы три ряда и две полосы сброса влезли.
         val budget = worldHeight - hudHeight - pad * 6
         val byHeight = budget / (3f * ROW_FILL + 2f * DISCARD_FILL)
         cardHeight = minOf(byWidth * CARD_ASPECT_INVERSE, byHeight)
@@ -121,10 +123,10 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
         val rowHeight = cardHeight * ROW_FILL
         val discardHeight = cardHeight * DISCARD_FILL
 
-        // Полоса сброса прижата к своей зоне, а свободная высота уходит в зазоры
-        // между тремя группами: противник, игрок, рука.
-        val used = hudHeight + rowHeight * 3f + discardHeight * 2f + pad * 2f
-        val gap = ((worldHeight - used - pad) / 3f).coerceAtLeast(pad)
+        // Свободная высота делится поровну между всеми пятью блоками. Прежде она
+        // уходила в три больших зазора, и над рукой оставался заметный провал.
+        val used = hudHeight + rowHeight * 3f + discardHeight * 2f + pad
+        val gap = ((worldHeight - used) / 5f).coerceAtLeast(pad)
 
         val portraitSize = minOf(rowHeight * 0.5f, boardWidth * 0.13f)
         val zoneX = pad + portraitSize + pad
@@ -132,19 +134,27 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
 
         var y = worldHeight - hudHeight - gap - discardHeight
         aiDiscard.set(pad, y, boardWidth, discardHeight)
-        y -= pad + rowHeight
+
+        y -= gap + rowHeight
         aiSpace.set(zoneX, y, zoneWidth, rowHeight)
         aiPortrait.set(pad, y + (rowHeight - portraitSize) / 2f, portraitSize, portraitSize)
 
         y -= gap + rowHeight
         youSpace.set(zoneX, y, zoneWidth, rowHeight)
         youPortrait.set(pad, y + (rowHeight - portraitSize) / 2f, portraitSize, portraitSize)
-        y -= pad + discardHeight
+        // Разделитель по центру зазора между зонами: он обозначает границу сторон.
+        val dividerHeight = gap * 0.8f
+        divider.set(
+            zoneX, aiSpace.y - gap / 2f - dividerHeight / 2f,
+            zoneWidth, dividerHeight,
+        )
+
+        y -= gap + discardHeight
         youDiscard.set(pad, y, boardWidth, discardHeight)
 
         // Колода и кнопка правил — своей колонкой справа, панель руки на неё сужается.
         val buttonHeight = (rowHeight * 0.24f).coerceIn(34f, 50f)
-        val deckHeight = minOf(cardHeight * 0.72f, rowHeight - buttonHeight - pad * 3f)
+        val deckHeight = minOf(cardHeight * 0.72f, rowHeight * 0.58f)
         val deckWidth = deckHeight * CARD_ASPECT
         y -= gap + rowHeight
         hand.set(pad, y, boardWidth - (deckWidth + pad * 3f), rowHeight)
@@ -192,8 +202,17 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
      * Позиция закреплена за буквой, поэтому пустое гнездо сразу показывает, чего
      * не хватает до набора F-I-R-S-T. Это понятнее, чем сдвигающийся ряд карт.
      */
-    fun spaceSlots(zone: Rectangle): List<Rectangle> =
-        rowSlots(zone, Letter.ALL.size, cardWidth * 0.92f, cardHeight * 0.92f)
+    fun spaceSlots(zone: Rectangle): List<Rectangle> {
+        // Гнёзда кладутся внутрь резной рамки панели, а не в её габарит: иначе
+        // крайние карты наезжают на угловые накладки и кант.
+        val inset = zone.height * ZONE_INSET
+        val inner = Rectangle(
+            zone.x + inset, zone.y + inset,
+            zone.width - inset * 2f, zone.height - inset * 2f,
+        )
+        val height = minOf(cardHeight * 0.92f, inner.height)
+        return rowSlots(inner, Letter.ALL.size, height * CARD_ASPECT, height)
+    }
 
     private fun rowSlots(
         zone: Rectangle,
@@ -224,6 +243,9 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
         /** Отступ карт руки от края панели, в долях её высоты — под резной кант. */
         const val HAND_INSET = 0.08f
 
+        /** То же для зон SPACE: гнёзда не должны залезать на кант панели. */
+        const val ZONE_INSET = 0.06f
+
         /** Сколько карт помещается в строку портрета без наложения. */
         const val PORTRAIT_COLUMNS = 5f
 
@@ -231,8 +253,8 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
         const val SLOT_GAP = 0.12f
 
         /** Во сколько раз ряд выше карты и во сколько раз полоса сброса ниже её. */
-        const val ROW_FILL = 1.12f
-        const val DISCARD_FILL = 0.5f
+        const val ROW_FILL = 1.15f
+        const val DISCARD_FILL = 0.62f
         const val CARD_ASPECT_INVERSE = 3f / 2f
     }
 }
