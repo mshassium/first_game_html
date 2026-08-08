@@ -877,6 +877,38 @@ Square image, aspect ratio 1:1, size 1024x1024.
 
 Сохранить как `assets_src/ui/icon_lang.png`.
 
+### 4.17 Флаг запрета
+
+Висит у карты F, пока держится наложенный ею запрет. Полотнище красится в коде в цвет
+запрещённой школы, поэтому сам спрайт обязан быть бесцветным: любой тёплый бронзовый
+подтон после умножения на розовый или зелёный даёт грязь.
+
+```text
+Two reference images are attached. The approved 16:9 battle-screen direction is the PRIMARY reference for scale and restraint. The UI material anchor is the reference for restrained metal and woven cloth. Ignore and do not reproduce any text, numbers or labels visible in the references.
+
+Create one narrow vertical hanging banner for a dark fantasy game board, seen perfectly flat and straight on with no perspective.
+
+Purpose: the banner hangs beside a card and marks an active magical ban. It will be tinted in code to five different colours, so the banner itself must be COLOURLESS — neutral light grey cloth and cool grey steel fittings, with no bronze, no gold, no blue and no other hue anywhere.
+
+Construction, top to bottom:
+— one small closed suspension ring of cool grey steel at the very top;
+— a short horizontal crossbar with two tiny steel finials, no wider than the cloth;
+— one long narrow cloth panel hanging from the crossbar, about four times taller than wide, with a swallow-tail notch cut into its bottom edge;
+— down the upper third of the cloth a vertical column of small abstract woven stitch marks, embroidered in a slightly darker grey than the cloth, not readable letters;
+— the lower two thirds of the cloth left completely empty and even in tone: a letter will be drawn there in code;
+— a narrow woven border along both long edges of the cloth.
+
+The cloth is light neutral grey, evenly lit, with only soft shallow folds, and must stay bright enough to take a colour tint. Contrast between cloth and embroidery stays low. No glow, no magic, no sparks, no tassels, no heraldry, no emblem.
+
+Isolated object centred on a plain flat pure-white background. Leave 12% empty margin on all sides. No text, no letters, no numbers, no symbols, no watermark or signature.
+
+Avoid: bronze, gold, brass, coloured cloth, blue, red, purple, heraldic charge, coat of arms, glowing runes, tassels, fringe, torn or burnt cloth, waving in wind, strong perspective, tilt, drop shadow on the background, photorealism, CGI, 3D render, anime, pixel art, vector art.
+
+Portrait orientation, aspect ratio 2:3, size 1024x1536.
+```
+
+Сохранить как `assets_src/ui/forbid_banner.png`.
+
 ---
 ## 5. Фоны
 

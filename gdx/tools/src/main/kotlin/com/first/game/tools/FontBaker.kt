@@ -30,7 +30,9 @@ private const val CYRILLIC = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧ
 private const val EXTRA = "«»—–…×✦№°•→←"
 
 private val FULL_CHARSET = (LATIN + CYRILLIC + EXTRA).toSortedSet().joinToString("")
-private val CARD_CHARSET = " FIRST0123456789×".toSortedSet().joinToString("")
+// Вопрос — для флага чужого запрета: буква скрыта, а знак на её месте рисуется
+// тем же резным шрифтом, что и буквы карт.
+private val CARD_CHARSET = " FIRST0123456789×?".toSortedSet().joinToString("")
 
 /** Описание одного растрового шрифта. */
 private data class FontSpec(

@@ -214,6 +214,7 @@ class GameEngine(private val rng: Rng) {
                     it.copy(space = it.space.removeAt(option.index), discard = it.discard + option.letter)
                 }
                 events += GameEvent.CardStolen(victim, option.letter, option.index)
+                next = breakForbidWithoutCard(next, victim, events)
             }
 
             ChoiceKind.TRAP_DISCARD -> {
@@ -229,6 +230,27 @@ class GameEngine(private val rng: Rng) {
         }
 
         return EngineResult(finishTurn(next, side, events), events)
+    }
+
+    /**
+     * Снимает запрет, который держался на карте F, если этой карты в SPACE
+     * стороны [caster] больше не осталось.
+     *
+     * Запрет живёт на самой карте: она лежит в SPACE наложившей стороны и служит
+     * зримым напоминанием о названной букве. Отправить её в сброс эффектом S —
+     * значит снять запрет, и это единственный способ его отменить, кроме
+     * срабатывания. Пока в SPACE лежит хотя бы одна F, запрету есть на чём висеть.
+     */
+    private fun breakForbidWithoutCard(
+        state: GameState,
+        caster: Side,
+        events: MutableList<GameEvent>,
+    ): GameState {
+        if (state.side(caster).space.any { it == Letter.F }) return state
+        val victim = caster.other
+        val forbidden = state.traps.forbidOn(victim) ?: return state
+        events += GameEvent.ForbidBroken(victim, forbidden)
+        return state.copy(traps = state.traps.withForbidOn(victim, null))
     }
 
     // ------------------------------------------------------------------- ход

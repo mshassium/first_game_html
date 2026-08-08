@@ -22,9 +22,6 @@ class CardActor(
     /** Показать «×N» в углу — для стопки одинаковых букв в SPACE. */
     var stackCount: Int = 1
 
-    /** Подсветка: карта под запретом или выбрана. */
-    var highlight: Color? = null
-
     /**
      * Приглушить недоступную для розыгрыша карту.
      *
@@ -39,16 +36,6 @@ class CardActor(
         val region = if (faceUp) letter?.let(assets::cardFace) ?: assets.cardBack else assets.cardBack
         val alpha = color.a * parentAlpha
         val shade = if (dimmed) DIMMED_SHADE else 1f
-
-        highlight?.let { tint ->
-            val glow = assets.glow
-            batch.setColor(tint.r, tint.g, tint.b, alpha * 0.75f)
-            val pad = width * 0.28f
-            batch.draw(
-                glow, x - pad, y - pad, originX + pad, originY + pad,
-                width + pad * 2, height + pad * 2, scaleX, scaleY, rotation,
-            )
-        }
 
         batch.setColor(color.r * shade, color.g * shade, color.b * shade, alpha)
         batch.draw(

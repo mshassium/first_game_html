@@ -50,6 +50,12 @@ sealed interface GameEvent {
     /** F: запрет наложен стороной [by] на её оппонента. */
     data class ForbidSet(val by: Side, val letter: Letter) : GameEvent
 
+    /**
+     * F: запрет, висевший на стороне [on], снят досрочно — карта F, которая его
+     * держала, ушла из SPACE наложившей стороны.
+     */
+    data class ForbidBroken(val on: Side, val letter: Letter) : GameEvent
+
     /** R: карта возвращена из сброса в руку. */
     data class CardRecovered(val side: Side, val letter: Letter) : GameEvent
 

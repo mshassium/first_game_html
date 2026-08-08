@@ -1,5 +1,6 @@
 package com.first.game.domain
 
+import com.first.game.domain.Fixtures.first
 import com.first.game.domain.Fixtures.has
 import com.first.game.domain.Fixtures.optionIndexOf
 import com.first.game.domain.Letter.F
@@ -171,6 +172,52 @@ class StealTest {
 
         assertEquals(3, chosen.state.you.distinctInSpace)
         assertNull(chosen.state.outcome)
+    }
+
+    @Test
+    fun `кража карты F снимает наложенный ею запрет`() {
+        val start = Fixtures.state(
+            youHand = "S",
+            aiSpace = "F",
+            traps = Traps(forbidOnYou = R),
+        )
+        val played = engine.apply(start, Command.PlayCard(0))
+        val chosen = engine.apply(played.state, Command.ChooseOption(0))
+
+        assertNull(chosen.state.traps.forbidOnYou, "карты F не осталось — держать запрет нечему")
+        assertTrue(chosen.events.has<GameEvent.ForbidBroken>())
+        assertEquals(R, chosen.events.first<GameEvent.ForbidBroken>().letter)
+        assertEquals(Side.YOU, chosen.events.first<GameEvent.ForbidBroken>().on)
+    }
+
+    @Test
+    fun `пока в SPACE осталась вторая F, запрет держится`() {
+        val start = Fixtures.state(
+            youHand = "S",
+            aiSpace = "FF",
+            traps = Traps(forbidOnYou = R),
+        )
+        val played = engine.apply(start, Command.PlayCard(0))
+        val chosen = engine.apply(played.state, Command.ChooseOption(0))
+
+        assertEquals(listOf(F), chosen.state.ai.space)
+        assertEquals(R, chosen.state.traps.forbidOnYou)
+        assertTrue(chosen.events.none { it is GameEvent.ForbidBroken })
+    }
+
+    @Test
+    fun `кража чужой F не трогает запрет, наложенный другой стороной`() {
+        val start = Fixtures.state(
+            youHand = "S",
+            aiSpace = "F",
+            youSpace = "F",
+            traps = Traps(forbidOnAi = R),
+        )
+        val played = engine.apply(start, Command.PlayCard(0))
+        val chosen = engine.apply(played.state, Command.ChooseOption(0))
+
+        assertEquals(R, chosen.state.traps.forbidOnAi, "запрет держит карта F в SPACE игрока")
+        assertTrue(chosen.events.none { it is GameEvent.ForbidBroken })
     }
 }
 

@@ -40,6 +40,7 @@ import com.first.game.i18n.Strings
 import com.first.game.ui.AnimationDirector
 import com.first.game.ui.BoardLayout
 import com.first.game.ui.CardActor
+import com.first.game.ui.ForbidBanner
 import com.first.game.ui.GlowActor
 import com.first.game.ui.Palette
 import com.first.game.ui.drawCover
@@ -119,10 +120,28 @@ class GameScreen(
     private val leavingSpace = mutableListOf<Pair<Side, Letter>>()
     private val pendingDiscard = mutableListOf<Pair<Side, Letter>>()
 
+    /**
+     * Длящиеся эффекты в том виде, в каком они уже показаны на столе.
+     *
+     * Из состояния их взять нельзя по той же причине, что и руку: движок применяет
+     * ход целиком, и печать запрета появилась бы в тот кадр, когда карту F только
+     * понесли на стол, а исчезла бы раньше, чем запрещённая карта дёрнулась и
+     * улетела в сброс. Ключ — сторона, на которой эффект висит.
+     */
+    private val shownForbid = mutableMapOf<Side, Letter>()
+
+    /** Печать появилась только что — при сборке доски ей добавляется «хлопок». */
+    private var forbidPopOn: Side? = null
+
     init {
         val start = engine.newGame()
         state = resumed?.state ?: start.state
         elapsedSeconds = resumed?.elapsedSeconds ?: 0f
+        // Отложенная партия открывается без событий, поэтому висящие эффекты
+        // берутся прямо из состояния: показывать их нечему было бы.
+        for (side in Side.entries) {
+            state.traps.forbidOn(side)?.let { shownForbid[side] = it }
+        }
         stage.addActor(boardGroup)
         stage.addActor(cardGroup)
         stage.addActor(fxGroup)
@@ -417,6 +436,8 @@ class GameScreen(
             is GameEvent.CardForbidden -> {
                 hand(event.side, HandOp.Removed(event.handIndex, event.letter))
                 zone(pendingDiscard, event.side, event.letter)
+                // Печать снимается только после того, как карта дёрнулась и улетела.
+                if (!reserve) shownForbid.remove(event.side)
             }
 
             is GameEvent.TrapTriggered -> {
@@ -427,6 +448,16 @@ class GameScreen(
             is GameEvent.CardStolen -> {
                 zone(leavingSpace, event.victim, event.letter)
                 zone(pendingDiscard, event.victim, event.letter)
+            }
+
+            // Флаг снимается вместе с картой, которая его держала.
+            is GameEvent.ForbidBroken -> if (!reserve) shownForbid.remove(event.on)
+
+            // Запрет ложится на оппонента того, кто разыграл F, а печать встаёт
+            // на его карту F — то есть в SPACE наложившей стороны.
+            is GameEvent.ForbidSet -> if (!reserve) {
+                shownForbid[event.by.other] = event.letter
+                forbidPopOn = event.by.other
             }
 
             else -> Unit
@@ -512,6 +543,7 @@ class GameScreen(
      */
     private fun beatAfter(event: GameEvent): Float = when (event) {
         is GameEvent.ForbidSet,
+        is GameEvent.ForbidBroken,
         is GameEvent.TrapSet,
         is GameEvent.TrapTriggered,
         is GameEvent.CardStolen,
@@ -561,6 +593,9 @@ class GameScreen(
 
             is GameEvent.CardForbidden -> {
                 game.sound.play(SoundManager.Sfx.FORBID_TRIGGER)
+                // Печать отработала и сейчас пропадёт: без вспышки её исчезновение
+                // происходит где-то сбоку от летящей карты и остаётся незамеченным.
+                flashBanner(event.side)
                 flyFromHand(
                     side = event.side,
                     handIndex = event.handIndex,
@@ -651,6 +686,13 @@ class GameScreen(
                 seconds = 0.45f,
                 done = done,
             )
+
+            // Карту F унесли в сброс — вместе с ней срывается и её флаг.
+            is GameEvent.ForbidBroken -> {
+                game.sound.play(SoundManager.Sfx.FORBID_TRIGGER)
+                flashBanner(event.on)
+                delay(0.3f, done)
+            }
 
             is GameEvent.TurnBegan -> {
                 if (event.side == Side.YOU) game.sound.play(SoundManager.Sfx.TURN_START, pitchVariation = false)
@@ -973,6 +1015,39 @@ class GameScreen(
         )
     }
 
+    /**
+     * Вспышка на месте флага запрета, висящего на стороне [victim].
+     *
+     * Флаг исчезает молча, при следующей пересборке доски, — а исчезает он ровно
+     * тогда, когда взгляд занят летящей в сброс картой. Вспышка привязывает одно
+     * к другому: стало видно, из-за чего карта улетела.
+     */
+    private fun flashBanner(victim: Side) {
+        val rect = forbidBannerRect(victim)
+        val letter = shownForbid[victim] ?: Letter.F
+        val region = assets.vfxRegion("fx_burst_star") ?: return
+        val duration = director.duration(0.5f)
+        addGlow(
+            region,
+            rect.x + rect.width / 2f,
+            rect.y + rect.height / 2f,
+            rect.width * 3f,
+            1f,
+            Palette.rgba(Palette.school(letter), 1f).lerp(Color.WHITE, 0.5f),
+        ) { actor ->
+            actor.setScale(0.4f)
+            actor.addAction(
+                Actions.sequence(
+                    Actions.parallel(
+                        Actions.scaleTo(1.3f, 1.3f, duration, Interpolation.pow3Out),
+                        Actions.fadeOut(duration, Interpolation.pow2In),
+                    ),
+                    Actions.run { actor.remove() },
+                ),
+            )
+        }
+    }
+
     private fun animateDice(event: GameEvent.GameStarted, done: () -> Unit) {
         game.sound.play(SoundManager.Sfx.DICE_ROLL, pitchVariation = false)
         val duration = director.duration(1.1f)
@@ -1022,6 +1097,7 @@ class GameScreen(
 
         addSpaceCards(Side.AI)
         addSpaceCards(Side.YOU)
+        addForbidBanners()
         addHandCards()
 
         // Колода одна на обе стороны: рисуем её, пока хоть у кого-то остались карты.
@@ -1057,11 +1133,48 @@ class GameScreen(
             val card = CardActor(assets, letter)
             card.stackCount = count
             card.setBounds(slot.x, slot.y, slot.width, slot.height, centerOrigin = true)
-            if (state.traps.forbidOn(side) != null && letter == Letter.F) {
-                card.highlight = Palette.school(Letter.F)
-            }
             cardGroup.addActor(card)
         }
+    }
+
+    /** Флаги запрета — единственное, что висит на столе между ходами. */
+    private fun addForbidBanners() {
+        for (side in Side.entries) {
+            shownForbid[side]?.let { addForbidBanner(side, it) }
+        }
+    }
+
+    /**
+     * Флаг у карты F стороны, наложившей запрет на [victim].
+     *
+     * Свою названную букву игрок видит, чужую — нет: скрытая информация здесь
+     * часть правил (01-rules-spec §5.1), а не недоделка интерфейса.
+     */
+    private fun addForbidBanner(victim: Side, letter: Letter) {
+        val rect = forbidBannerRect(victim)
+        val banner = ForbidBanner(assets, letter.takeIf { victim == Side.AI }) { elapsedSeconds }
+        banner.setBounds(rect.x, rect.y, rect.width, rect.height)
+        banner.setOrigin(rect.width / 2f, rect.height)
+        cardGroup.addActor(banner)
+        if (forbidPopOn == victim) {
+            forbidPopOn = null
+            unfurl(banner)
+        }
+    }
+
+    /**
+     * Разворачивание флага: он появляется между ходами, и без движения его не заметить.
+     * Растёт от кольца вниз — точка отсчёта у актёра стоит на верхней кромке.
+     */
+    private fun unfurl(actor: Actor) {
+        actor.setScale(1f, 0f)
+        actor.color.a = 0f
+        actor.addAction(
+            Actions.parallel(
+                Actions.scaleTo(1f, 1f, director.duration(0.4f), Interpolation.swingOut),
+                Actions.fadeIn(director.duration(0.25f)),
+            ),
+        )
     }
 
     private fun addHandCards() {
@@ -1403,6 +1516,12 @@ class GameScreen(
         val hand = state.you.hand
         if (hand.isEmpty()) return handTarget(side)
         return layout.handSlots(hand.size).last()
+    }
+
+    /** Место флага: полоса слева от гнезда F в SPACE стороны, наложившей запрет. */
+    private fun forbidBannerRect(victim: Side): Rectangle {
+        val caster = victim.other
+        return layout.forbidBannerSlot(if (caster == Side.AI) layout.aiSpace else layout.youSpace)
     }
 
     /**

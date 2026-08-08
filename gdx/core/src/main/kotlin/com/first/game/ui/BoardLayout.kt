@@ -203,15 +203,46 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
      * не хватает до набора F-I-R-S-T. Это понятнее, чем сдвигающийся ряд карт.
      */
     fun spaceSlots(zone: Rectangle): List<Rectangle> {
-        // Гнёзда кладутся внутрь резной рамки панели, а не в её габарит: иначе
-        // крайние карты наезжают на угловые накладки и кант.
+        val inner = spaceInner(zone)
+        val height = minOf(cardHeight * 0.92f, inner.height)
+        // Полоса под флаг запрета отдаётся ряду всегда, а не только пока флаг висит:
+        // иначе его появление и снятие двигали бы все пять карт ряда. В портрете
+        // гнёзда иначе встают вплотную к краям панели, и флагу пришлось бы лечь на
+        // карту поверх медальона буквы.
+        val lane = height * BANNER_HEIGHT * BANNER_ASPECT * (1f + BANNER_GAP)
+        val row = Rectangle(inner.x + lane, inner.y, inner.width - lane, inner.height)
+        return rowSlots(row, Letter.ALL.size, height * CARD_ASPECT, height)
+    }
+
+    /**
+     * Флаг запрета: висит слева от гнезда буквы F, в отведённой ему полосе.
+     *
+     * Размер считается от настоящего гнезда, а не от расчётной высоты карты: в
+     * портрете ряд ужимается, и флаг обязан ужаться вместе с ним.
+     */
+    fun forbidBannerSlot(zone: Rectangle): Rectangle {
+        val slot = spaceSlots(zone).firstOrNull() ?: return Rectangle()
+        val height = slot.height * BANNER_HEIGHT
+        val width = height * BANNER_ASPECT
+        return Rectangle(
+            slot.x - width * (1f + BANNER_GAP),
+            slot.y + slot.height - height,
+            width, height,
+        )
+    }
+
+    /**
+     * Внутренняя область зоны SPACE: габарит за вычетом резного канта панели.
+     *
+     * Гнёзда кладутся сюда, а не в габарит: иначе крайние карты наезжают на угловые
+     * накладки. Наружу отсюда не должно выходить ничего, что положено в зону.
+     */
+    fun spaceInner(zone: Rectangle): Rectangle {
         val inset = zone.height * ZONE_INSET
-        val inner = Rectangle(
+        return Rectangle(
             zone.x + inset, zone.y + inset,
             zone.width - inset * 2f, zone.height - inset * 2f,
         )
-        val height = minOf(cardHeight * 0.92f, inner.height)
-        return rowSlots(inner, Letter.ALL.size, height * CARD_ASPECT, height)
     }
 
     private fun rowSlots(
@@ -251,6 +282,14 @@ class BoardLayout(val worldWidth: Float, val worldHeight: Float) {
 
         /** Зазор между гнёздами в долях ширины карты. */
         const val SLOT_GAP = 0.12f
+
+        /**
+         * Флаг запрета: высота в долях высоты гнезда, пропорции спрайта
+         * `forbid_banner` (промпт-бук §4.17) и зазор до карты в долях ширины флага.
+         */
+        const val BANNER_HEIGHT = 0.98f
+        const val BANNER_ASPECT = 89f / 384f
+        const val BANNER_GAP = 0.22f
 
         /** Во сколько раз ряд выше карты и во сколько раз полоса сброса ниже её. */
         const val ROW_FILL = 1.15f
