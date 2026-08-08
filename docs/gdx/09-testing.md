@@ -6,10 +6,11 @@
 
 | Уровень | Инструмент | Что покрывает | Где |
 |---|---|---|---|
-| Unit | JUnit 5 + Kotest assertions | `GameEngine`, эффекты, условия победы, лимиты | `core/src/test/kotlin/domain/` |
-| Сценарные | JUnit 5, детерминированный `Rng(seed)` | Партии целиком по заданным колодам | `core/src/test/kotlin/scenarios/` |
-| Свойства (property-based) | Kotest property testing | Инварианты на 10 000 случайных партий | `core/src/test/kotlin/invariants/` |
-| ИИ | JUnit 5 | ИИ никогда не выбирает недопустимый ход; Hard бьёт Easy в ≥70 % из 1000 партий | `core/src/test/kotlin/ai/` |
+| Unit | `kotlin.test`, запуск на JVM (JUnit 5) и на Node | `GameEngine`, эффекты, условия победы, лимиты | `rules/src/commonTest/kotlin/domain/` |
+| Сценарные | `kotlin.test`, детерминированный `Rng(seed)` | Партии целиком по заданным колодам | `rules/src/commonTest/kotlin/domain/` |
+| Свойства (property-based) | `kotlin.test` | Инварианты на 200 случайных партиях | `rules/src/commonTest/kotlin/domain/InvariantTest.kt` |
+| ИИ | `kotlin.test` | ИИ никогда не выбирает недопустимый ход; Hard бьёт Easy в ≥70 % из 1000 партий | `rules/src/commonTest/kotlin/domain/ai/` |
+| Сохранение | JUnit 5 | Кодирование и разбор отложенной партии | `core/src/test/kotlin/com/first/game/SaveGameTest.kt` |
 | Ручные | чек-лист | UI, анимации, звук, платформы | `docs/gdx/CHECKLIST-manual.md` (создаётся на M5) |
 
 Тесты презентационного слоя автоматически **не** пишем: цена поддержки выше пользы. Визуал проверяется руками по чек-листу.

@@ -18,7 +18,8 @@ first_game_html/
     ├── settings.gradle
     ├── build.gradle
     ├── assets/          # то, что реально идёт в сборку (атласы, шрифты, звук, i18n)
-    ├── core/            # вся игра, кроссплатформенно
+    ├── rules/           # правила и ИИ, Kotlin Multiplatform (jvm + js)
+    ├── core/            # презентация игры, кроссплатформенно
     ├── lwjgl3/          # desktop
     ├── android/
     ├── ios/             # RoboVM
@@ -27,21 +28,28 @@ first_game_html/
 
 Генерация каркаса — **gdx-liftoff** (актуальная замена устаревшему gdx-setup). Проверить на момент старта актуальные версии: libGDX 1.13.x, Kotlin 2.1.x, Gradle 8.x, `gdx-teavm` 1.3.x, RoboVM 2.3.x.
 
-## 2. Модули `core`
+## 2. Модули `rules` и `core`
+
+Домен вынесен в отдельный мультиплатформенный модуль: тот же исходник компилируется
+в JVM-байткод для игры и в JS для серверной функции мультиплеера (см.
+[11-multiplayer-spec.md](11-multiplayer-spec.md)). Пакет остался прежним —
+`com.first.game.domain`, импорты в игре от переезда не изменились.
 
 ```
+rules/src/commonMain/kotlin/com/first/game/
+└── domain/            # ЧИСТЫЙ Kotlin, ноль импортов com.badlogic.* и java.*
+    ├── Model.kt       # Letter, Side, SideState, GameState, Traps
+    ├── Command.kt     # PlayCard, ChooseOption
+    ├── Event.kt       # GameEvent — что произошло, для анимации и лога
+    ├── GameEngine.kt  # (GameState, Command) -> Result(GameState, List<GameEvent>)
+    ├── Rng.kt         # интерфейс + seedable-реализация (для детерминированных тестов)
+    └── ai/
+        ├── AiPolicy.kt        # интерфейс: (GameState) -> Command
+        ├── EasyAi.kt          # текущая эвристика
+        ├── NormalAi.kt        # + защита от победы игрока
+        └── HardAi.kt          # 1-плай перебор с оценкой
+
 core/src/main/kotlin/com/first/game/
-├── domain/            # ЧИСТЫЙ Kotlin, ноль импортов com.badlogic.*
-│   ├── Model.kt       # Letter, Side, SideState, GameState, Traps
-│   ├── Command.kt     # PlayCard, ChooseForbid, ChooseRecover, ChooseSteal, DiscardForTrap, RollDice
-│   ├── Event.kt       # GameEvent — что произошло, для анимации и лога
-│   ├── GameEngine.kt  # (GameState, Command) -> Result(GameState, List<GameEvent>)
-│   ├── Rng.kt         # интерфейс + seedable-реализация (для детерминированных тестов)
-│   └── ai/
-│       ├── AiPolicy.kt        # интерфейс: (GameState) -> Command
-│       ├── EasyAi.kt          # текущая эвристика
-│       ├── NormalAi.kt        # + защита от победы игрока
-│       └── HardAi.kt          # 1-плай перебор с оценкой
 ├── presentation/
 │   ├── screens/       # SplashScreen, MenuScreen, RulesScreen, GameScreen, SettingsScreen
 │   ├── actors/        # CardActor, SpaceZoneActor, DiscardPileActor, HandActor, HudActor, DieActor
@@ -53,7 +61,7 @@ core/src/main/kotlin/com/first/game/
 └── FirstGame.kt       # KtxGame, точка входа
 ```
 
-**Правило зависимостей:** `presentation` → `domain` (односторонне). `domain` не знает ни о libGDX, ни об экранах. Нарушение этого правила ломает главное преимущество архитектуры и должно ловиться на ревью.
+**Правило зависимостей:** `presentation` → `domain` (односторонне). `domain` не знает ни о libGDX, ни об экранах. С выносом домена в отдельный модуль правило держит уже сборка: `core` зависит от `:rules`, обратной зависимости не существует, а общий код `:rules` вообще не видит ни libGDX, ни JDK-классов — иначе не соберётся JS-таргет.
 
 ## 3. Движок как редьюсер + поток событий
 

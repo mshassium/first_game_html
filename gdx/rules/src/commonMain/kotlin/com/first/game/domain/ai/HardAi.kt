@@ -162,5 +162,7 @@ data class HardAiWeights(
     val deviationMargin: Double = 12.0,
 ) {
     override fun equals(other: Any?): Boolean = this === other
-    override fun hashCode(): Int = System.identityHashCode(this)
+    // Веса сравниваются по ссылке: массивы внутри data class иначе дали бы
+    // сравнение по идентичности в equals и по содержимому в hashCode.
+    override fun hashCode(): Int = super.hashCode()
 }

@@ -7,6 +7,10 @@ val ktxVersion: String by project
 val junitVersion: String by project
 
 dependencies {
+    // Правила игры живут отдельным мультиплатформенным модулем: тот же код
+    // компилируется в JS для сервера мультиплеера.
+    api(project(":rules"))
+
     api("com.badlogicgames.gdx:gdx:$gdxVersion")
     api("io.github.libktx:ktx-app:$ktxVersion")
     api("io.github.libktx:ktx-actors:$ktxVersion")
