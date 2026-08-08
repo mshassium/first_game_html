@@ -2,8 +2,10 @@ package com.first.game
 
 import com.first.game.domain.ChoiceKind
 import com.first.game.domain.ChoiceOption
+import com.first.game.domain.EndReason
 import com.first.game.domain.GameState
 import com.first.game.domain.Letter
+import com.first.game.domain.Outcome
 import com.first.game.domain.PendingChoice
 import com.first.game.domain.Phase
 import com.first.game.domain.Side
@@ -65,12 +67,22 @@ class SaveGameTest {
 
     @Test
     fun `сохранение чужой версии отбрасывается, а не роняет игру`() {
-        val alien = SaveGame.encode(state, 1f).replaceFirst("1", "99")
+        val alien = "99\n" + SaveGame.encode(state, 1f).substringAfter('\n')
         assertNull(SaveGame.decode(alien))
     }
 
     @Test
     fun `испорченная строка не проходит разбор`() {
-        assertNull(runCatching { SaveGame.decode("1\nмусор") }.getOrNull())
+        assertNull(SaveGame.decode("2\nмусор"))
+    }
+
+    @Test
+    fun `законченная партия восстанавливается вместе с исходом`() {
+        val finished = state.copy(
+            phase = Phase.GAME_OVER,
+            pending = null,
+            outcome = Outcome(Side.AI, EndReason.DECK_OUT),
+        )
+        assertEquals(finished, SaveGame.decode(SaveGame.encode(finished, 1f))?.state)
     }
 }

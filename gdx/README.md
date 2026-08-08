@@ -23,7 +23,8 @@
 ## Структура
 
 ```
-core/     вся игра: домен (правила, ИИ) + презентация (экраны, актёры, анимации)
+rules/    правила и ИИ: Kotlin Multiplatform, таргеты jvm и js
+core/     презентация: экраны, актёры, анимации, ассеты, звук
 lwjgl3/   десктопная сборка
 teavm/    веб-сборка
 android/  Android-сборка
@@ -32,13 +33,23 @@ tools/    генераторы ассетов: растровые шрифты �
 assets/   то, что попадает в сборку
 ```
 
-Домен (`core/.../domain`) не зависит от libGDX — правила проверяются обычными
-JVM-тестами, включая инварианты на 200 полных партиях.
+Домен (`rules/.../domain`) не зависит от libGDX — правила проверяются обычными
+тестами, включая инварианты на 200 полных партиях. Модуль мультиплатформенный,
+потому что тот же движок будет считать сетевые партии на сервере: он собирается
+и в JVM-байткод для игры, и в JS для serverless-функции. См.
+[docs/gdx/11-multiplayer-spec.md](../docs/gdx/11-multiplayer-spec.md).
 
 ## Частые команды
 
 ```bash
-./gradlew core:test                          # 38 тестов домена
+./gradlew :rules:jvmTest                     # тесты домена и сетевого слоя на JVM
+./gradlew :rules:jsNodeTest                  # те же тесты на Node
+./gradlew :rules:allTests                    # оба таргета сразу
+./gradlew core:test                          # тесты презентационного слоя
+
+# JS-библиотека правил для сервера мультиплеера + дымовая проверка фасада
+./gradlew :rules:jsNodeProductionLibraryDistribution
+node rules/smoke/facade-smoke.cjs
 ./gradlew lwjgl3:run                         # запустить игру
 ./gradlew tools:bakeFonts                    # перепечь шрифты из assets_src/fonts
 ./gradlew tools:bakeIcons                    # перегенерировать иконки приложения
