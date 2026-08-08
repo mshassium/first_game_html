@@ -6,357 +6,364 @@ filter: MipMapLinearLinear, Linear
 repeat: none
 btn_primary_disabled
   rotate: false
-  xy: 8, 39
+  xy: 8, 46
   size: 384, 138
   orig: 384, 138
   offset: 0, 0
   index: -1
 btn_primary_down
   rotate: false
-  xy: 1136, 1494
+  xy: 1136, 1501
   size: 384, 136
   orig: 384, 136
   offset: 0, 0
   index: -1
 btn_primary_hover
   rotate: false
-  xy: 1136, 1343
+  xy: 1136, 1350
   size: 384, 135
   orig: 384, 135
   offset: 0, 0
   index: -1
 btn_primary_up
   rotate: false
-  xy: 1101, 888
+  xy: 1101, 895
   size: 384, 135
   orig: 384, 135
   offset: 0, 0
   index: -1
 btn_round_disabled
   rotate: false
-  xy: 1879, 8
+  xy: 1920, 311
   size: 120, 105
   orig: 120, 105
   offset: 0, 0
   index: -1
 btn_round_down
   rotate: false
-  xy: 1383, 662
+  xy: 1415, 669
   size: 209, 210
   orig: 209, 210
   offset: 0, 0
   index: -1
 btn_round_up
   rotate: false
-  xy: 755, 724
+  xy: 755, 471
   size: 212, 214
   orig: 212, 214
   offset: 0, 0
   index: -1
 btn_secondary_down
   rotate: false
-  xy: 1101, 1191
+  xy: 1101, 1198
   size: 384, 136
   orig: 384, 136
   offset: 0, 0
   index: -1
 btn_secondary_up
   rotate: false
-  xy: 1101, 1039
+  xy: 1101, 1046
   size: 384, 136
   orig: 384, 136
   offset: 0, 0
   index: -1
 checkbox_checked
   rotate: false
-  xy: 1884, 458
+  xy: 1129, 26
   size: 150, 151
   orig: 150, 151
   offset: 0, 0
   index: -1
 checkbox_empty
   rotate: false
-  xy: 1884, 291
+  xy: 1759, 432
   size: 149, 151
   orig: 149, 151
   offset: 0, 0
   index: -1
 deck_stack
   rotate: false
-  xy: 408, 1393
+  xy: 408, 1400
   size: 365, 384
   orig: 365, 384
   offset: 0, 0
   index: -1
 die_1
   rotate: false
-  xy: 408, 993
+  xy: 408, 1000
   size: 331, 384
   orig: 331, 384
   offset: 0, 0
   index: -1
 die_2
   rotate: false
-  xy: 393, 593
+  xy: 393, 600
   size: 331, 384
   orig: 331, 384
   offset: 0, 0
   index: -1
 die_3
   rotate: false
-  xy: 8, 193
+  xy: 8, 200
   size: 332, 384
   orig: 332, 384
   offset: 0, 0
   index: -1
 die_4
   rotate: false
-  xy: 755, 954
+  xy: 755, 961
   size: 330, 384
   orig: 330, 384
   offset: 0, 0
   index: -1
 die_5
   rotate: false
-  xy: 356, 193
+  xy: 356, 200
   size: 331, 384
   orig: 331, 384
   offset: 0, 0
   index: -1
 die_6
   rotate: false
-  xy: 789, 1354
+  xy: 789, 1361
   size: 331, 384
   orig: 331, 384
   offset: 0, 0
   index: -1
 discard_urn
   rotate: false
-  xy: 792, 1754
+  xy: 792, 1761
   size: 384, 276
   orig: 384, 276
   offset: 0, 0
   index: -1
 divider_ornament
   rotate: false
-  xy: 1608, 625
+  xy: 983, 641
   size: 384, 39
   orig: 384, 39
   offset: 0, 0
   index: -1
 dropdown_closed
   rotate: false
-  xy: 983, 689
+  xy: 1015, 696
   size: 384, 83
   orig: 384, 83
   offset: 0, 0
   index: -1
 dropdown_focus
   rotate: false
-  xy: 983, 788
+  xy: 1015, 795
   size: 384, 84
   orig: 384, 84
   offset: 0, 0
   index: -1
 emblem_first
   rotate: false
-  xy: 1192, 1646
+  xy: 1192, 1653
   size: 281, 384
   orig: 281, 384
   offset: 0, 0
   index: -1
+forbid_banner
+  rotate: false
+  xy: 1501, 950
+  size: 89, 384
+  orig: 89, 384
+  offset: 0, 0
+  index: -1
 frame_portrait
   rotate: false
-  xy: 8, 593
+  xy: 8, 600
   size: 369, 384
   orig: 369, 384
   offset: 0, 0
   index: -1
 icon_back
   rotate: false
-  xy: 944, 449
+  xy: 1377, 287
   size: 172, 175
   orig: 172, 175
   offset: 0, 0
   index: -1
 icon_close
   rotate: false
-  xy: 1132, 449
+  xy: 1189, 209
   size: 172, 175
   orig: 172, 175
   offset: 0, 0
   index: -1
 icon_deck
   rotate: false
-  xy: 1320, 449
+  xy: 1377, 96
   size: 172, 175
   orig: 172, 175
   offset: 0, 0
   index: -1
 icon_duel
   rotate: false
-  xy: 1508, 435
+  xy: 755, 281
   size: 172, 174
   orig: 172, 174
   offset: 0, 0
   index: -1
 icon_hand
   rotate: false
-  xy: 1507, 245
+  xy: 1606, 979
   size: 171, 174
   orig: 171, 174
   offset: 0, 0
   index: -1
 icon_hourglass
   rotate: false
-  xy: 1694, 243
+  xy: 1572, 478
   size: 171, 175
   orig: 171, 175
   offset: 0, 0
   index: -1
 icon_info
   rotate: false
-  xy: 1696, 434
+  xy: 943, 193
   size: 172, 175
   orig: 172, 175
   offset: 0, 0
   index: -1
 icon_lang
   rotate: false
-  xy: 1608, 680
+  xy: 983, 384
   size: 190, 192
   orig: 190, 192
   offset: 0, 0
   index: -1
 icon_menu
   rotate: false
-  xy: 755, 341
+  xy: 1189, 400
   size: 172, 176
   orig: 172, 176
   offset: 0, 0
   index: -1
 icon_music_off
   rotate: false
-  xy: 943, 257
+  xy: 1565, 286
   size: 172, 176
   orig: 172, 176
   offset: 0, 0
   index: -1
 icon_music_on
   rotate: false
-  xy: 1693, 53
+  xy: 1640, 789
   size: 170, 174
   orig: 170, 174
   offset: 0, 0
   index: -1
 icon_restart
   rotate: false
-  xy: 1319, 258
+  xy: 755, 90
   size: 172, 175
   orig: 172, 175
   offset: 0, 0
   index: -1
 icon_rules
   rotate: false
-  xy: 1131, 257
+  xy: 1606, 1169
   size: 172, 176
   orig: 172, 176
   offset: 0, 0
   index: -1
 icon_rules_off
   rotate: false
-  xy: 755, 156
+  xy: 943, 8
   size: 170, 169
   orig: 170, 169
   offset: 0, 0
   index: -1
 icon_settings
   rotate: false
-  xy: 755, 533
+  xy: 1383, 478
   size: 173, 175
   orig: 173, 175
   offset: 0, 0
   index: -1
 icon_sound_off
   rotate: false
-  xy: 1319, 68
+  xy: 1793, 979
   size: 171, 174
   orig: 171, 174
   offset: 0, 0
   index: -1
 icon_sound_on
   rotate: false
-  xy: 1506, 55
+  xy: 1826, 789
   size: 171, 174
   orig: 171, 174
   offset: 0, 0
   index: -1
 icon_speed
   rotate: false
-  xy: 941, 67
+  xy: 1759, 599
   size: 170, 174
   orig: 170, 174
   offset: 0, 0
   index: -1
 modal_frame
   rotate: false
-  xy: 1501, 1083
+  xy: 755, 701
   size: 244, 244
   orig: 244, 244
   offset: 0, 0
   index: -1
 panel_parchment
   rotate: false
-  xy: 1489, 1646
+  xy: 1489, 1653
   size: 257, 384
   orig: 257, 384
   offset: 0, 0
   index: -1
 panel_stone
   rotate: false
-  xy: 1127, 117
+  xy: 1536, 1361
   size: 124, 124
   orig: 124, 124
   offset: 0, 0
   index: -1
 panel_wood
   rotate: false
-  xy: 8, 1793
+  xy: 8, 1800
   size: 768, 237
   orig: 768, 237
   offset: 0, 0
   index: -1
 portrait_ai
   rotate: false
-  xy: 8, 1393
+  xy: 8, 1400
   size: 384, 384
   orig: 384, 384
   offset: 0, 0
   index: -1
 portrait_player
   rotate: false
-  xy: 8, 993
+  xy: 8, 1000
   size: 384, 384
   orig: 384, 384
   offset: 0, 0
   index: -1
 slider_knob
   rotate: false
-  xy: 1881, 129
+  xy: 1759, 270
   size: 145, 146
   orig: 145, 146
   offset: 0, 0
   index: -1
 slider_track
   rotate: false
-  xy: 944, 640
+  xy: 983, 592
   size: 384, 33
   orig: 384, 33
   offset: 0, 0
   index: -1
 slot_card
   rotate: false
-  xy: 1762, 1646
+  xy: 1762, 1653
   size: 223, 384
   orig: 223, 384
   offset: 0, 0
