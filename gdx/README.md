@@ -50,6 +50,7 @@ JVM-тестами, включая инварианты на 200 полных п
 
 ```bash
 ./gradlew lwjgl3:run -Pfirst.boot=game              # сразу игровой стол
+./gradlew lwjgl3:run -Pfirst.boot=loading           # экран загрузки веб-сборки
 ./gradlew lwjgl3:run -Pfirst.autoplay=true          # обе стороны ведёт ИИ
 ./gradlew lwjgl3:run -Pfirst.size=720x1280          # портретное окно
 ./gradlew lwjgl3:run -Pfirst.shots=/tmp/shots -Pfirst.frames=90,600

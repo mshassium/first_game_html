@@ -33,6 +33,8 @@ object TeaVMLauncher {
             usePhysicalPixels = true
             preloadListener = WebAssetPreloadListener { }
         }
-        WebApplication(FirstGame(), config)
+        // Второй слушатель — экран загрузки. Без него бэкенд показывает свой:
+        // логотип libGDX и белую полосу на чёрном.
+        WebApplication(FirstGame(), WebLoadingScreen(), config)
     }
 }

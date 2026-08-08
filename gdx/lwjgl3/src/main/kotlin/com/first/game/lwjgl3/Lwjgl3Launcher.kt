@@ -10,6 +10,7 @@ import com.first.game.FirstGame
  *
  * Отладочные ключи:
  *   -Dfirst.boot=game            — открыть сразу игровой стол
+ *   -Dfirst.boot=loading         — показать экран загрузки веб-сборки
  *   -Dfirst.autoplay=true        — обе стороны ведёт ИИ (дымовой прогон)
  *   -Dfirst.shots=/tmp/shots     — снять кадры в указанную папку и выйти
  *   -Dfirst.size=1280x720        — размер окна
@@ -26,15 +27,22 @@ fun main() {
     val speed = System.getProperty("first.speed")?.let { name ->
         com.first.game.AnimationSpeed.entries.firstOrNull { it.name.equals(name, ignoreCase = true) }
     }
-    val game = FirstGame(bootToGame, autoPlay, System.getProperty("first.overlay"), speed)
+    // Экран загрузки живёт только в вебе и полторы секунды: без этого ключа
+    // посмотреть на него нечем.
+    val boot: ApplicationListener =
+        if (System.getProperty("first.boot") == "loading") {
+            LoadingPreview()
+        } else {
+            FirstGame(bootToGame, autoPlay, System.getProperty("first.overlay"), speed)
+        }
     val listener: ApplicationListener = if (shots != null) {
         ScreenshotRunner(
-            delegate = game,
+            delegate = boot,
             outputDir = shots,
             frames = parseFrames(System.getProperty("first.frames")),
         )
     } else {
-        game
+        boot
     }
 
     Lwjgl3ApplicationConfiguration().apply {
