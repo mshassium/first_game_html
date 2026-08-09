@@ -23,6 +23,7 @@ import com.first.game.net.Sockets
  *   -Dfirst.speed=instant        — скорость анимаций: normal | fast | instant
  *   -Dfirst.net=duel             — сетевой прогон: партия через настоящий сервер
  *   -Dfirst.net=poll             — то же, но без сокета: проверка работы опросом
+ *   -Dfirst.net=surrender        — партия со сдачей: проверка исхода на экране
  *   -Dfirst.net=host             — окно-хозяин: заводит комнату и играет само
  *   -Dfirst.net=guest            — окно-гость: входит в первую комнату и играет само
  *   -Dfirst.profile=b            — отдельные настройки: два окна как разные игроки
@@ -46,6 +47,7 @@ fun main() {
     // посмотреть на него нечем.
     val boot: ApplicationListener = when {
         System.getProperty("first.boot") == "loading" -> LoadingPreview()
+        System.getProperty("first.net") == "surrender" -> NetSmokeApp(surrenderAfter = 3)
         System.getProperty("first.net") in listOf("duel", "poll") -> NetSmokeApp()
         else -> FirstGame(
             bootToGame, autoPlay, System.getProperty("first.overlay"), speed,

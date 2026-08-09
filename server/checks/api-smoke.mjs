@@ -227,18 +227,54 @@ try {
   check(afterMatch.body.match?.status === 'finished', 'после конца партии виден её исход');
   check(afterMatch.body.match?.matchId === matchId, 'и это та самая партия');
 
-  console.log('6. Тайм-аут');
+  console.log('6. Сдача видна обоим');
+  const surrendered = await makeSurrenderedMatch(players, call, cleanup);
+  check(surrendered.response.status === 200, `сдача принята (${surrendered.response.status})`);
+  // Главное: соперник должен УВИДЕТЬ конец партии. Раньше сдача меняла только
+  // строку в базе, состояние оставалось «идущим», и соперник ждал хода вечно.
+  check(surrendered.rivalView?.state?.split('\n')[7]?.length > 0, 'у соперника партия закончена');
+  check(surrendered.rivalView?.version > surrendered.versionBefore, 'версия выросла — обновление дойдёт');
+  check(surrendered.rivalOutcome === 'YOU', `в перспективе соперника победил он (${surrendered.rivalOutcome})`);
+
+  console.log('7. Тайм-аут');
   const timeout = await makeTimedOutMatch(players, call, cleanup);
   check(timeout.claim.status === 200, `просрочка засчитана (${timeout.claim.status})`);
   check(timeout.finished.status === 'finished', 'партия закрыта');
   check(timeout.finished.end_reason === 'TIMEOUT', 'причина — тайм-аут');
   check(timeout.finished.winner_seat === timeout.waiting, `победил тот, кто ждал (${timeout.finished.winner_seat})`);
+  // Как и со сдачей: исход должен лежать в самом состоянии, иначе ждущий игрок
+  // просто не узнает, что партия кончилась.
+  check(timeout.winnerView?.state?.split('\n')[7]?.split(';')[0] === 'YOU', 'победитель видит исход в своём состоянии');
+  check(timeout.winnerView?.state?.split('\n')[7]?.split(';')[1] === 'TIMEOUT', 'и причину — тайм-аут');
 } finally {
   for (const step of cleanup.reverse()) await step().catch(() => {});
   if (server) server.close();
 }
 
 finish('проверка API');
+
+/** Партия, в которой одно место сдалось. Возвращает вид соперника после этого. */
+async function makeSurrenderedMatch(players, call, cleanup) {
+  const created = await call('/rooms', { token: players.A.token, method: 'POST', body: { name: 'проверка сдачи' } });
+  const roomId = created.body.id;
+  cleanup.push(async () => { await api(`/rest/v1/rooms?id=eq.${roomId}`, { method: 'DELETE' }); });
+
+  const joined = await call('/rooms/join', { token: players.B.token, method: 'POST', body: { roomId } });
+  const matchId = joined.body.matchId;
+  cleanup.push(async () => { await api(`/rest/v1/matches?id=eq.${matchId}`, { method: 'DELETE' }); });
+
+  const before = (await call('/matches/current', { token: players.B.token })).body.match;
+  const response = await call(`/matches/${matchId}/surrender`, { token: players.A.token, method: 'POST' });
+  const rivalView = (await call('/matches/current', { token: players.B.token })).body.match;
+
+  return {
+    response,
+    rivalView,
+    versionBefore: before?.version ?? -1,
+    // Последняя строка состояния — исход; в своей перспективе победитель это YOU.
+    rivalOutcome: rivalView?.state?.split('\n')[7]?.split(';')[0],
+  };
+}
 
 function actingSeatOf(state) {
   // В своей перспективе игрок всегда YOU; строка 4 — чей ход и кто ходил первым.
@@ -283,5 +319,6 @@ async function makeTimedOutMatch(players, call, cleanup) {
     method: 'POST',
   });
   const finished = (await api(`/rest/v1/matches?id=eq.${matchId}&select=status,end_reason,winner_seat`)).body[0];
-  return { claim, finished, waiting };
+  const winnerView = (await call('/matches/current', { token: players[waiting].token })).body.match;
+  return { claim, finished, waiting, winnerView };
 }

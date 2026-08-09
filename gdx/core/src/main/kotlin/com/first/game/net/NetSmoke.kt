@@ -1,6 +1,7 @@
 package com.first.game.net
 
 import com.badlogic.gdx.Gdx
+import com.first.game.domain.EndReason
 import com.first.game.domain.Side
 
 /**
@@ -14,7 +15,12 @@ import com.first.game.domain.Side
  *
  * Запуск: `./gradlew lwjgl3:run -Pfirst.net=duel`.
  */
-class NetSmoke(private val log: (String) -> Unit, private val onDone: (Boolean) -> Unit) {
+class NetSmoke(
+    private val log: (String) -> Unit,
+    /** После какого своего хода сдаться. Ноль и меньше — играть до конца. */
+    private val surrenderAfter: Int = -1,
+    private val onDone: (Boolean) -> Unit,
+) {
 
     private var client: MatchClient? = null
     private var realtime: Realtime? = null
@@ -122,9 +128,24 @@ class NetSmoke(private val log: (String) -> Unit, private val onDone: (Boolean) 
         busy = false
 
         if (view.state.isOver) {
-            val winner = view.state.outcome?.winner
-            log("партия окончена на ходу $moves, победа: ${if (winner == Side.YOU) "наша" else "соперника"}")
-            done(sawOpponentMove && (sawLiveSocket || realtime == null))
+            val outcome = view.state.outcome
+            val winner = if (outcome?.winner == Side.YOU) "наша" else "соперника"
+            log("партия окончена на ходу $moves, победа: $winner, причина: ${outcome?.reason}")
+            if (surrenderAfter > 0) {
+                // Сдались мы — значит победа обязана быть у соперника, и причина
+                // должна дойти до экрана, а не остаться в базе.
+                val correct = outcome?.winner == Side.AI && outcome.reason == EndReason.SURRENDER
+                if (!correct) log("ПРОВАЛ: исход после сдачи неверный: $outcome")
+                done(correct)
+            } else {
+                done(sawOpponentMove && (sawLiveSocket || realtime == null))
+            }
+            return
+        }
+
+        if (surrenderAfter > 0 && moves >= surrenderAfter && view.state.actingSide == Side.YOU) {
+            log("сдаёмся на ходу $moves")
+            client?.surrender()
             return
         }
 
@@ -205,13 +226,14 @@ class NetSmoke(private val log: (String) -> Unit, private val onDone: (Boolean) 
 }
 
 /** Обёртка приложения для прогона: держит [NetSmoke] живым и печатает ход дела. */
-class NetSmokeApp : com.badlogic.gdx.ApplicationAdapter() {
+class NetSmokeApp(private val surrenderAfter: Int = -1) : com.badlogic.gdx.ApplicationAdapter() {
 
     private var smoke: NetSmoke? = null
 
     override fun create() {
         smoke = NetSmoke(
             log = { message -> Gdx.app.log("netsmoke", message) },
+            surrenderAfter = surrenderAfter,
             onDone = { success ->
                 Gdx.app.log("netsmoke", if (success) "СЕТЕВОЙ ПРОГОН ПРОЙДЕН" else "СЕТЕВОЙ ПРОГОН ПРОВАЛЕН")
                 Gdx.app.exit()

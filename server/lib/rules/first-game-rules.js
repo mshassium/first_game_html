@@ -12,11 +12,11 @@
 }(function (_, kotlin_kotlin) {
   'use strict';
   //region block: imports
-  var protoOf = kotlin_kotlin.$_$.p1;
-  var initMetadataForClass = kotlin_kotlin.$_$.l1;
+  var protoOf = kotlin_kotlin.$_$.q1;
+  var initMetadataForClass = kotlin_kotlin.$_$.m1;
   var VOID = kotlin_kotlin.$_$.a;
-  var toString = kotlin_kotlin.$_$.q1;
-  var equals = kotlin_kotlin.$_$.k1;
+  var toString = kotlin_kotlin.$_$.r1;
+  var equals = kotlin_kotlin.$_$.l1;
   var ArrayList_init_$Create$ = kotlin_kotlin.$_$.c;
   var ArrayList_init_$Create$_0 = kotlin_kotlin.$_$.b;
   var Unit_instance = kotlin_kotlin.$_$.m;
@@ -24,52 +24,53 @@
   var emptyList = kotlin_kotlin.$_$.t;
   var collectionSizeOrDefault = kotlin_kotlin.$_$.r;
   var checkIndexOverflow = kotlin_kotlin.$_$.q;
-  var to = kotlin_kotlin.$_$.f2;
-  var noWhenBranchMatchedException = kotlin_kotlin.$_$.d2;
-  var coerceAtLeast = kotlin_kotlin.$_$.s1;
+  var to = kotlin_kotlin.$_$.g2;
+  var noWhenBranchMatchedException = kotlin_kotlin.$_$.e2;
+  var coerceAtLeast = kotlin_kotlin.$_$.t1;
   var Collection = kotlin_kotlin.$_$.n;
-  var isInterface = kotlin_kotlin.$_$.o1;
+  var isInterface = kotlin_kotlin.$_$.p1;
   var last = kotlin_kotlin.$_$.w;
   var get_lastIndex = kotlin_kotlin.$_$.v;
   var dropLast = kotlin_kotlin.$_$.s;
-  var plus = kotlin_kotlin.$_$.y;
-  var listOf = kotlin_kotlin.$_$.x;
-  var toMutableList = kotlin_kotlin.$_$.a1;
-  var toList = kotlin_kotlin.$_$.z;
-  var initMetadataForCompanion = kotlin_kotlin.$_$.m1;
-  var THROW_IAE = kotlin_kotlin.$_$.b2;
-  var enumEntries = kotlin_kotlin.$_$.b1;
-  var Enum = kotlin_kotlin.$_$.y1;
+  var plus = kotlin_kotlin.$_$.z;
+  var listOf = kotlin_kotlin.$_$.y;
+  var toMutableList = kotlin_kotlin.$_$.b1;
+  var toList = kotlin_kotlin.$_$.a1;
+  var initMetadataForCompanion = kotlin_kotlin.$_$.n1;
+  var THROW_IAE = kotlin_kotlin.$_$.c2;
+  var enumEntries = kotlin_kotlin.$_$.c1;
+  var Enum = kotlin_kotlin.$_$.z1;
   var checkCountOverflow = kotlin_kotlin.$_$.p;
   var NoSuchElementException_init_$Create$ = kotlin_kotlin.$_$.f;
-  var compareTo = kotlin_kotlin.$_$.i1;
-  var toString_0 = kotlin_kotlin.$_$.e2;
-  var Random = kotlin_kotlin.$_$.r1;
+  var compareTo = kotlin_kotlin.$_$.j1;
+  var toString_0 = kotlin_kotlin.$_$.f2;
+  var Random = kotlin_kotlin.$_$.s1;
   var _Char___init__impl__6a9atx = kotlin_kotlin.$_$.g;
-  var charArrayOf = kotlin_kotlin.$_$.f1;
-  var split = kotlin_kotlin.$_$.t1;
+  var charArrayOf = kotlin_kotlin.$_$.g1;
+  var split = kotlin_kotlin.$_$.u1;
   var IllegalArgumentException_init_$Create$ = kotlin_kotlin.$_$.e;
-  var toIntOrNull = kotlin_kotlin.$_$.v1;
+  var toIntOrNull = kotlin_kotlin.$_$.w1;
   var Companion_instance = kotlin_kotlin.$_$.l;
   var _Result___init__impl__xyqfz8 = kotlin_kotlin.$_$.i;
-  var createFailure = kotlin_kotlin.$_$.c2;
+  var createFailure = kotlin_kotlin.$_$.d2;
   var _Result___get_value__impl__bjfvqg = kotlin_kotlin.$_$.k;
-  var THROW_CCE = kotlin_kotlin.$_$.a2;
+  var THROW_CCE = kotlin_kotlin.$_$.b2;
   var _Result___get_isFailure__impl__jpiriv = kotlin_kotlin.$_$.j;
-  var initMetadataForObject = kotlin_kotlin.$_$.n1;
-  var toInt = kotlin_kotlin.$_$.w1;
+  var initMetadataForObject = kotlin_kotlin.$_$.o1;
+  var toInt = kotlin_kotlin.$_$.x1;
   var joinToString = kotlin_kotlin.$_$.u;
-  var charSequenceLength = kotlin_kotlin.$_$.h1;
-  var Long = kotlin_kotlin.$_$.z1;
-  var toLongOrNull = kotlin_kotlin.$_$.x1;
-  var charCodeAt = kotlin_kotlin.$_$.g1;
+  var charSequenceLength = kotlin_kotlin.$_$.i1;
+  var Long = kotlin_kotlin.$_$.a2;
+  var listOf_0 = kotlin_kotlin.$_$.x;
+  var toLongOrNull = kotlin_kotlin.$_$.y1;
+  var charCodeAt = kotlin_kotlin.$_$.h1;
   var Char__toInt_impl_vasixd = kotlin_kotlin.$_$.h;
-  var fromInt = kotlin_kotlin.$_$.d1;
-  var bitwiseXor = kotlin_kotlin.$_$.c1;
-  var multiply = kotlin_kotlin.$_$.e1;
+  var fromInt = kotlin_kotlin.$_$.e1;
+  var bitwiseXor = kotlin_kotlin.$_$.d1;
+  var multiply = kotlin_kotlin.$_$.f1;
   var StringBuilder_init_$Create$ = kotlin_kotlin.$_$.d;
-  var toBooleanStrict = kotlin_kotlin.$_$.u1;
-  var defineProp = kotlin_kotlin.$_$.j1;
+  var toBooleanStrict = kotlin_kotlin.$_$.v1;
+  var defineProp = kotlin_kotlin.$_$.k1;
   //endregion
   //region block: pre-declaration
   initMetadataForClass(PlayCard, 'PlayCard');
@@ -1550,6 +1551,8 @@
   var EndReason_FIRST_SET_instance;
   var EndReason_FIVE_OF_A_KIND_instance;
   var EndReason_DECK_OUT_instance;
+  var EndReason_TIMEOUT_instance;
+  var EndReason_SURRENDER_instance;
   function valueOf_3(value) {
     switch (value) {
       case 'FIRST_SET':
@@ -1558,6 +1561,10 @@
         return EndReason_FIVE_OF_A_KIND_getInstance();
       case 'DECK_OUT':
         return EndReason_DECK_OUT_getInstance();
+      case 'TIMEOUT':
+        return EndReason_TIMEOUT_getInstance();
+      case 'SURRENDER':
+        return EndReason_SURRENDER_getInstance();
       default:
         EndReason_initEntries();
         THROW_IAE('No enum constant com.first.game.domain.EndReason.' + value);
@@ -1572,6 +1579,8 @@
     EndReason_FIRST_SET_instance = new EndReason('FIRST_SET', 0);
     EndReason_FIVE_OF_A_KIND_instance = new EndReason('FIVE_OF_A_KIND', 1);
     EndReason_DECK_OUT_instance = new EndReason('DECK_OUT', 2);
+    EndReason_TIMEOUT_instance = new EndReason('TIMEOUT', 3);
+    EndReason_SURRENDER_instance = new EndReason('SURRENDER', 4);
   }
   function EndReason(name, ordinal) {
     Enum.call(this, name, ordinal);
@@ -1746,6 +1755,14 @@
   function EndReason_DECK_OUT_getInstance() {
     EndReason_initEntries();
     return EndReason_DECK_OUT_instance;
+  }
+  function EndReason_TIMEOUT_getInstance() {
+    EndReason_initEntries();
+    return EndReason_TIMEOUT_instance;
+  }
+  function EndReason_SURRENDER_getInstance() {
+    EndReason_initEntries();
+    return EndReason_SURRENDER_instance;
   }
   function SeededRng(seed) {
     this.c9_1 = Random(seed);
@@ -2197,14 +2214,29 @@
     }
     return new MatchResult(true, null, StateCodec_instance.u9(result.y6_1), EventCodec_instance.g9(result.z6_1));
   };
-  protoOf(MatchService).z9 = function (stateRaw, seat) {
+  protoOf(MatchService).z9 = function (stateRaw, winner, reason) {
+    var tmp0_elvis_lhs = StateCodec_instance.e9(stateRaw);
+    var tmp;
+    if (tmp0_elvis_lhs == null) {
+      return Companion_instance_1.j9(MatchError_BAD_STATE_getInstance());
+    } else {
+      tmp = tmp0_elvis_lhs;
+    }
+    var state = tmp;
+    if (state.y7())
+      return Companion_instance_1.i9(MatchError_MATCH_FINISHED_getInstance(), stateRaw);
+    var outcome = new Outcome(winner.y9(), reason);
+    var finished = state.w7(VOID, VOID, VOID, VOID, VOID, VOID, Phase_GAME_OVER_getInstance(), null, outcome);
+    return new MatchResult(true, null, StateCodec_instance.u9(finished), EventCodec_instance.g9(listOf_0(new GameEnded(outcome))));
+  };
+  protoOf(MatchService).aa = function (stateRaw, seat) {
     var tmp0_safe_receiver = StateCodec_instance.e9(stateRaw);
     var tmp;
     if (tmp0_safe_receiver == null) {
       tmp = null;
     } else {
       // Inline function 'kotlin.let' call
-      tmp = Redact_getInstance().ca(Mirror_instance.aa(tmp0_safe_receiver, seat), Side_YOU_getInstance());
+      tmp = Redact_getInstance().da(Mirror_instance.ba(tmp0_safe_receiver, seat), Side_YOU_getInstance());
     }
     var tmp1_safe_receiver = tmp;
     var tmp_0;
@@ -2216,14 +2248,14 @@
     }
     return tmp_0;
   };
-  protoOf(MatchService).da = function (eventsRaw, seat) {
+  protoOf(MatchService).ea = function (eventsRaw, seat) {
     var tmp0_safe_receiver = EventCodec_instance.e9(eventsRaw);
     var tmp;
     if (tmp0_safe_receiver == null) {
       tmp = null;
     } else {
       // Inline function 'kotlin.let' call
-      tmp = Redact_getInstance().fa(Mirror_instance.ea(tmp0_safe_receiver, seat), Side_YOU_getInstance());
+      tmp = Redact_getInstance().ga(Mirror_instance.fa(tmp0_safe_receiver, seat), Side_YOU_getInstance());
     }
     var tmp1_safe_receiver = tmp;
     var tmp_0;
@@ -2235,11 +2267,11 @@
     }
     return tmp_0;
   };
-  protoOf(MatchService).ga = function (stateRaw) {
+  protoOf(MatchService).ha = function (stateRaw) {
     var tmp0_safe_receiver = StateCodec_instance.e9(stateRaw);
     return (tmp0_safe_receiver == null ? null : tmp0_safe_receiver.y7()) === true;
   };
-  protoOf(MatchService).ha = function (stateRaw) {
+  protoOf(MatchService).ia = function (stateRaw) {
     var tmp0_safe_receiver = StateCodec_instance.e9(stateRaw);
     var tmp1_safe_receiver = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.j7_1;
     var tmp;
@@ -2247,11 +2279,11 @@
       tmp = null;
     } else {
       // Inline function 'kotlin.let' call
-      tmp = Companion_instance_2.ia(tmp1_safe_receiver.w8_1);
+      tmp = Companion_instance_2.ja(tmp1_safe_receiver.w8_1);
     }
     return tmp;
   };
-  protoOf(MatchService).ja = function (stateRaw) {
+  protoOf(MatchService).ka = function (stateRaw) {
     var tmp0_safe_receiver = StateCodec_instance.e9(stateRaw);
     var tmp;
     if (tmp0_safe_receiver == null) {
@@ -2272,7 +2304,7 @@
       tmp_1 = null;
     } else {
       // Inline function 'kotlin.let' call
-      tmp_1 = Companion_instance_2.ia(tmp1_safe_receiver.a9());
+      tmp_1 = Companion_instance_2.ja(tmp1_safe_receiver.a9());
     }
     return tmp_1;
   };
@@ -2326,10 +2358,10 @@
   }
   function Mirror() {
   }
-  protoOf(Mirror).aa = function (state, seat) {
-    return seat.equals(Seat_A_getInstance()) ? state : this.ka(state);
+  protoOf(Mirror).ba = function (state, seat) {
+    return seat.equals(Seat_A_getInstance()) ? state : this.la(state);
   };
-  protoOf(Mirror).ea = function (events, seat) {
+  protoOf(Mirror).fa = function (events, seat) {
     var tmp;
     if (seat.equals(Seat_A_getInstance())) {
       tmp = events;
@@ -2340,14 +2372,14 @@
       var _iterator__ex2g4s = events.e();
       while (_iterator__ex2g4s.f()) {
         var item = _iterator__ex2g4s.g();
-        var tmp$ret$0 = this.la(item);
+        var tmp$ret$0 = this.ma(item);
         destination.o(tmp$ret$0);
       }
       tmp = destination;
     }
     return tmp;
   };
-  protoOf(Mirror).ka = function (state) {
+  protoOf(Mirror).la = function (state) {
     var tmp = state.d7_1.b8();
     var tmp_0 = state.e7_1.b8();
     var tmp_1 = new Traps(state.g7_1.s7_1, state.g7_1.r7_1, state.g7_1.u7_1, state.g7_1.t7_1);
@@ -2370,7 +2402,7 @@
     }
     return new GameState(state.c7_1, state.b7_1, tmp, tmp_0, state.f7_1, tmp_1, state.h7_1, tmp_3, tmp_4, state.k7_1);
   };
-  protoOf(Mirror).la = function (event) {
+  protoOf(Mirror).ma = function (event) {
     var tmp;
     if (event instanceof GameStarted) {
       tmp = event.p4(event.m4_1.b8(), event.o4_1, event.n4_1);
@@ -2464,7 +2496,7 @@
       tmp_0 = false;
     }
     if (tmp_0) {
-      tmp = event.t4(VOID, $this.ba_1);
+      tmp = event.t4(VOID, $this.ca_1);
     } else {
       var tmp_1;
       if (event instanceof CardDrawn) {
@@ -2473,7 +2505,7 @@
         tmp_1 = false;
       }
       if (tmp_1) {
-        tmp = event.c5(VOID, $this.ba_1);
+        tmp = event.c5(VOID, $this.ca_1);
       } else {
         var tmp_2;
         if (event instanceof ChoiceRequired) {
@@ -2501,7 +2533,7 @@
       do {
         var index = inductionVariable;
         inductionVariable = inductionVariable + 1 | 0;
-        var tmp$ret$0 = Redact_getInstance().ba_1;
+        var tmp$ret$0 = Redact_getInstance().ca_1;
         list.o(tmp$ret$0);
       }
        while (inductionVariable < size);
@@ -2518,7 +2550,7 @@
       do {
         var index = inductionVariable;
         inductionVariable = inductionVariable + 1 | 0;
-        var tmp$ret$0 = Redact_getInstance().ba_1;
+        var tmp$ret$0 = Redact_getInstance().ca_1;
         list.o(tmp$ret$0);
       }
        while (inductionVariable < size);
@@ -2536,9 +2568,9 @@
   }
   function Redact() {
     Redact_instance = this;
-    this.ba_1 = Letter_F_getInstance();
+    this.ca_1 = Letter_F_getInstance();
   }
-  protoOf(Redact).ca = function (state, viewer) {
+  protoOf(Redact).da = function (state, viewer) {
     var own = hideDeck(this, state.p7(viewer));
     var foe = hideHand(this, hideDeck(this, state.p7(viewer.b8())));
     var tmp0_safe_receiver = state.i7_1;
@@ -2554,7 +2586,7 @@
     var tmp_1 = viewer.b8();
     return tmp_0.q7(tmp_1, Redact$state$lambda_0(foe)).w7(VOID, VOID, VOID, VOID, VOID, VOID, VOID, pending);
   };
-  protoOf(Redact).fa = function (events, viewer) {
+  protoOf(Redact).ga = function (events, viewer) {
     // Inline function 'kotlin.collections.map' call
     // Inline function 'kotlin.collections.mapTo' call
     var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(events, 10));
@@ -2576,10 +2608,10 @@
   var Seat_B_instance;
   function Companion_1() {
   }
-  protoOf(Companion_1).ia = function (side) {
+  protoOf(Companion_1).ja = function (side) {
     return side.equals(Side_YOU_getInstance()) ? Seat_A_getInstance() : Seat_B_getInstance();
   };
-  protoOf(Companion_1).ma = function (raw) {
+  protoOf(Companion_1).na = function (raw) {
     var tmp0 = get_entries_0();
     var tmp$ret$1;
     $l$block: {
@@ -2765,7 +2797,7 @@
     return this_0.toString();
   };
   protoOf(StateCodec).d9 = function (raw) {
-    return this.na(split(raw, charArrayOf([_Char___init__impl__6a9atx(10)])));
+    return this.oa(split(raw, charArrayOf([_Char___init__impl__6a9atx(10)])));
   };
   protoOf(StateCodec).e9 = function (raw) {
     // Inline function 'kotlin.runCatching' call
@@ -2796,7 +2828,7 @@
     }
     return tmp_1;
   };
-  protoOf(StateCodec).na = function (lines) {
+  protoOf(StateCodec).oa = function (lines) {
     // Inline function 'kotlin.require' call
     if (!(lines.j() >= 8)) {
       var message = '\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0437\u0430\u043D\u0438\u043C\u0430\u0435\u0442 8 \u0441\u0442\u0440\u043E\u043A, \u0434\u0430\u043D\u043E ' + lines.j();
@@ -2876,7 +2908,7 @@
     return toJs(MatchService_getInstance().q9(seed));
   };
   protoOf(MatchFacade).apply = function (state, seat, command, seed) {
-    var tmp0_elvis_lhs = Companion_instance_2.ma(seat);
+    var tmp0_elvis_lhs = Companion_instance_2.na(seat);
     var tmp;
     if (tmp0_elvis_lhs == null) {
       return new JsMatchResult(false, 'BAD_SEAT', '', '');
@@ -2886,37 +2918,82 @@
     var parsed = tmp;
     return toJs(MatchService_getInstance().v9(state, parsed, command, seed));
   };
+  protoOf(MatchFacade).finish = function (state, winner, reason) {
+    var tmp0_elvis_lhs = Companion_instance_2.na(winner);
+    var tmp;
+    if (tmp0_elvis_lhs == null) {
+      return new JsMatchResult(false, 'BAD_SEAT', '', '');
+    } else {
+      tmp = tmp0_elvis_lhs;
+    }
+    var seat = tmp;
+    // Inline function 'kotlin.runCatching' call
+    var tmp_0;
+    try {
+      // Inline function 'kotlin.Companion.success' call
+      var value = valueOf_3(reason);
+      tmp_0 = _Result___init__impl__xyqfz8(value);
+    } catch ($p) {
+      var tmp_1;
+      if ($p instanceof Error) {
+        var e = $p;
+        // Inline function 'kotlin.Companion.failure' call
+        tmp_1 = _Result___init__impl__xyqfz8(createFailure(e));
+      } else {
+        throw $p;
+      }
+      tmp_0 = tmp_1;
+    }
+    // Inline function 'kotlin.Result.getOrNull' call
+    var this_0 = tmp_0;
+    var tmp_2;
+    if (_Result___get_isFailure__impl__jpiriv(this_0)) {
+      tmp_2 = null;
+    } else {
+      var tmp_3 = _Result___get_value__impl__bjfvqg(this_0);
+      tmp_2 = (tmp_3 == null ? true : !(tmp_3 == null)) ? tmp_3 : THROW_CCE();
+    }
+    var tmp1_elvis_lhs = tmp_2;
+    var tmp_4;
+    if (tmp1_elvis_lhs == null) {
+      return new JsMatchResult(false, 'BAD_REASON', '', '');
+    } else {
+      tmp_4 = tmp1_elvis_lhs;
+    }
+    var cause = tmp_4;
+    return toJs(MatchService_getInstance().z9(state, seat, cause));
+  };
   protoOf(MatchFacade).viewFor = function (state, seat) {
-    var tmp0_safe_receiver = Companion_instance_2.ma(seat);
+    var tmp0_safe_receiver = Companion_instance_2.na(seat);
     var tmp;
     if (tmp0_safe_receiver == null) {
       tmp = null;
     } else {
       // Inline function 'kotlin.let' call
-      tmp = MatchService_getInstance().z9(state, tmp0_safe_receiver);
+      tmp = MatchService_getInstance().aa(state, tmp0_safe_receiver);
     }
     return tmp;
   };
   protoOf(MatchFacade).eventsFor = function (events, seat) {
-    var tmp0_safe_receiver = Companion_instance_2.ma(seat);
+    var tmp0_safe_receiver = Companion_instance_2.na(seat);
     var tmp;
     if (tmp0_safe_receiver == null) {
       tmp = null;
     } else {
       // Inline function 'kotlin.let' call
-      tmp = MatchService_getInstance().da(events, tmp0_safe_receiver);
+      tmp = MatchService_getInstance().ea(events, tmp0_safe_receiver);
     }
     return tmp;
   };
   protoOf(MatchFacade).isOver = function (state) {
-    return MatchService_getInstance().ga(state);
+    return MatchService_getInstance().ha(state);
   };
   protoOf(MatchFacade).winnerSeat = function (state) {
-    var tmp0_safe_receiver = MatchService_getInstance().ha(state);
+    var tmp0_safe_receiver = MatchService_getInstance().ia(state);
     return tmp0_safe_receiver == null ? null : tmp0_safe_receiver.u_1;
   };
   protoOf(MatchFacade).actingSeat = function (state) {
-    var tmp0_safe_receiver = MatchService_getInstance().ja(state);
+    var tmp0_safe_receiver = MatchService_getInstance().ka(state);
     return tmp0_safe_receiver == null ? null : tmp0_safe_receiver.u_1;
   };
   var MatchFacade_instance;
@@ -2929,16 +3006,16 @@
     this.state = state;
     this.events = events;
   }
-  protoOf(JsMatchResult).oa = function () {
+  protoOf(JsMatchResult).pa = function () {
     return this.ok;
   };
-  protoOf(JsMatchResult).pa = function () {
+  protoOf(JsMatchResult).qa = function () {
     return this.error;
   };
-  protoOf(JsMatchResult).qa = function () {
+  protoOf(JsMatchResult).ra = function () {
     return this.state;
   };
-  protoOf(JsMatchResult).ra = function () {
+  protoOf(JsMatchResult).sa = function () {
     return this.events;
   };
   function toJs(_this__u8e3s4) {

@@ -1,7 +1,11 @@
 package com.first.game.domain.net
 
+import com.first.game.domain.EndReason
 import com.first.game.domain.GameEngine
+import com.first.game.domain.GameEvent
 import com.first.game.domain.GameState
+import com.first.game.domain.Outcome
+import com.first.game.domain.Phase
 import com.first.game.domain.SeededRng
 import com.first.game.domain.Side
 
@@ -94,6 +98,29 @@ object MatchService {
             error = null,
             state = StateCodec.encode(result.state),
             events = EventCodec.encode(result.events),
+        )
+    }
+
+    /**
+     * Завершить партию не по правилам, а по внешней причине: вышло время хода
+     * или игрок сдался.
+     *
+     * Без этого партия заканчивалась только в базе: строка состояния оставалась
+     * «идущей», версия не росла, и соперник об окончании не узнавал вовсе —
+     * ждал хода, которого уже не будет.
+     */
+    fun finish(stateRaw: String, winner: Seat, reason: EndReason): MatchResult {
+        val state = StateCodec.decodeOrNull(stateRaw)
+            ?: return MatchResult.failure(MatchError.BAD_STATE)
+        if (state.isOver) return MatchResult.failure(MatchError.MATCH_FINISHED, stateRaw)
+
+        val outcome = Outcome(winner.side, reason)
+        val finished = state.copy(phase = Phase.GAME_OVER, pending = null, outcome = outcome)
+        return MatchResult(
+            ok = true,
+            error = null,
+            state = StateCodec.encode(finished),
+            events = EventCodec.encode(listOf(GameEvent.GameEnded(outcome))),
         )
     }
 

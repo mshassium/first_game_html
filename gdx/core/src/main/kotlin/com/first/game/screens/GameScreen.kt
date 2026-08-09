@@ -1512,6 +1512,10 @@ class GameScreen(
             EndReason.FIRST_SET -> "result.firstSet"
             EndReason.FIVE_OF_A_KIND -> "result.fiveOfAKind"
             EndReason.DECK_OUT -> "result.deckOut"
+            // Сетевые исходы: партия кончилась не по картам на столе, и без
+            // объяснения результат выглядел бы взявшимся ниоткуда.
+            EndReason.TIMEOUT -> if (won) "online.result.timeout.win" else "online.result.timeout.lose"
+            EndReason.SURRENDER -> if (won) "online.result.surrender.win" else "online.result.surrender.lose"
         }
         val reason = Label(Strings[reasonKey], theme.body)
         reason.setAlignment(com.badlogic.gdx.utils.Align.center)

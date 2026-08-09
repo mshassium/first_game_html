@@ -1,6 +1,7 @@
 package com.first.game.domain.net
 
 import com.first.game.domain.Command
+import com.first.game.domain.EndReason
 import com.first.game.domain.Side
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -122,6 +123,37 @@ class MatchServiceTest {
         val result = MatchService.apply(state, Seat.A, "play;0", "$seed#последний")
         assertFalse(result.ok)
         assertEquals(MatchError.MATCH_FINISHED, result.error)
+    }
+
+    @Test
+    fun `партию можно закончить по времени и по сдаче`() {
+        val state = MatchService.newMatch(seed).state
+
+        for ((winner, reason) in listOf(Seat.A to EndReason.TIMEOUT, Seat.B to EndReason.SURRENDER)) {
+            val finished = MatchService.finish(state, winner, reason)
+            assertTrue(finished.ok, "не удалось закончить партию: ${finished.error}")
+
+            val decoded = StateCodec.decode(finished.state)
+            assertTrue(decoded.isOver, "состояние осталось незаконченным")
+            assertEquals(winner.side, decoded.outcome?.winner)
+            assertEquals(reason, decoded.outcome?.reason)
+            // Событие нужно экрану: без него конец партии появился бы молча.
+            assertTrue(finished.events.startsWith("END;"), "нет события конца партии: ${finished.events}")
+
+            // Проигравший видит ту же партию как поражение.
+            val loserView = StateCodec.decode(assertNotNull(MatchService.viewFor(finished.state, winner.other)))
+            assertEquals(Side.AI, loserView.outcome?.winner)
+            assertEquals(winner, MatchService.winnerSeat(finished.state))
+        }
+    }
+
+    @Test
+    fun `законченную партию нельзя закончить дважды`() {
+        var state = MatchService.newMatch(seed).state
+        state = MatchService.finish(state, Seat.A, EndReason.SURRENDER).state
+        val again = MatchService.finish(state, Seat.B, EndReason.TIMEOUT)
+        assertFalse(again.ok)
+        assertEquals(MatchError.MATCH_FINISHED, again.error)
     }
 
     @Test

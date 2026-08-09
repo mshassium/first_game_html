@@ -29,6 +29,17 @@ object MatchFacade {
         return MatchService.apply(state, parsed, command, seed).toJs()
     }
 
+    /**
+     * Завершить партию по внешней причине: `"TIMEOUT"` или `"SURRENDER"`.
+     * [winner] — место, которому засчитывается победа.
+     */
+    fun finish(state: String, winner: String, reason: String): JsMatchResult {
+        val seat = Seat.ofOrNull(winner) ?: return JsMatchResult(false, "BAD_SEAT", "", "")
+        val cause = runCatching { com.first.game.domain.EndReason.valueOf(reason) }.getOrNull()
+            ?: return JsMatchResult(false, "BAD_REASON", "", "")
+        return MatchService.finish(state, seat, cause).toJs()
+    }
+
     /** Состояние в перспективе места, без карт соперника. null — состояние битое. */
     fun viewFor(state: String, seat: String): String? =
         Seat.ofOrNull(seat)?.let { MatchService.viewFor(state, it) }

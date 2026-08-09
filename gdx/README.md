@@ -67,6 +67,7 @@ node rules/smoke/facade-smoke.cjs
 ./gradlew lwjgl3:run -Pfirst.shots=/tmp/shots -Pfirst.frames=90,600
 ./gradlew lwjgl3:run -Pfirst.net=duel               # партия через настоящий сервер
 ./gradlew lwjgl3:run -Pfirst.net=poll               # то же без сокета: работа опросом
+./gradlew lwjgl3:run -Pfirst.net=surrender          # партия со сдачей: проверка исхода
 ./gradlew lwjgl3:run -Pfirst.boot=online            # сразу список комнат
 
 # Два окна играют друг с другом. Через gradlew run так нельзя: две сборки

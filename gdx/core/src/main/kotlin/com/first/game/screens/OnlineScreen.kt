@@ -310,7 +310,14 @@ class OnlineScreen(private val game: FirstGame) : KtxScreen {
     }
 }
 
-/** Текст ошибки по коду от сервера. Незнакомый код — общая формулировка. */
+/**
+ * Текст ошибки по коду от сервера.
+ *
+ * Показываются не все коды: `stale_version`, `not_your_turn`, `match_finished`
+ * и `illegal_command` клиент разбирает сам — просит свежий вид и продолжает,
+ * игроку про них знать незачем. Незнакомый код превращается в общую фразу,
+ * чтобы на экране не появилось служебное слово.
+ */
 internal fun errorText(code: String): String {
     val key = "online.error.$code"
     val known = Strings.has(key)

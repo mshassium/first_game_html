@@ -122,6 +122,12 @@ enum class EndReason {
 
     /** У проигравшего кончилась колода при обязательном доборе. */
     DECK_OUT,
+
+    /** Сетевая партия: у проигравшего вышло время хода. */
+    TIMEOUT,
+
+    /** Сетевая партия: проигравший сдался. */
+    SURRENDER,
 }
 
 data class Outcome(val winner: Side, val reason: EndReason)

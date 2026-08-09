@@ -100,13 +100,43 @@ async function expireIfDue(match) {
   if (match.status !== 'playing') return match;
   if (new Date(match.turn_deadline).getTime() > Date.now()) return match;
 
+  // Пометить партию просроченной должна база: клиентов, заметивших просрочку
+  // одновременно, бывает двое, и засчитать тайм-аут нужно ровно один раз.
   const expired = await rpc('expire_matches', { p_match_id: match.id });
   if (!Array.isArray(expired) || expired.length === 0) {
     // Кто-то успел раньше — перечитываем и работаем с тем, что в базе.
     return (await selectOne('matches', `id=eq.${match.id}&select=*`)) ?? match;
   }
-  const finished = await selectOne('matches', `id=eq.${match.id}&select=*`);
-  await writeViews(finished, finished.state, '', finished.turn_deadline);
+  const winner = expired[0].winner_seat;
+  return endMatch(match, winner, 'TIMEOUT');
+}
+
+/**
+ * Записать конец партии в само состояние.
+ *
+ * Отметки в строке матча мало: клиент читает вид, а там партия по-прежнему идёт
+ * и версия прежняя — значит обновление он просто отбросит и останется ждать
+ * хода, которого не будет. Поэтому исход кладётся в состояние и версия растёт.
+ */
+async function endMatch(match, winnerSeat, reason) {
+  const result = facade.finish(match.state, winnerSeat, reason);
+  if (!result.ok) {
+    // Состояние уже законченное — значит кто-то опередил; берём как есть.
+    return (await selectOne('matches', `id=eq.${match.id}&select=*`)) ?? match;
+  }
+
+  const [saved] = await update('matches', `id=eq.${match.id}`, {
+    state: result.state,
+    version: match.version + 1,
+    status: 'finished',
+    winner_seat: winnerSeat,
+    end_reason: reason,
+    updated_at: new Date().toISOString(),
+  }) ?? [];
+  const finished = saved ?? match;
+
+  await writeViews(finished, result.state, result.events, finished.turn_deadline);
+  await closeRoom(finished.room_id);
   return finished;
 }
 
@@ -172,16 +202,7 @@ export async function surrender(playerId, matchId) {
   const match = await expireIfDue(found);
   if (match.status !== 'playing') fail(Errors.MATCH_FINISHED);
 
-  const [saved] = await update('matches', `id=eq.${matchId}&version=eq.${match.version}`, {
-    status: 'finished',
-    winner_seat: seat === 'A' ? 'B' : 'A',
-    end_reason: 'SURRENDER',
-    updated_at: new Date().toISOString(),
-  }) ?? [];
-  if (!saved) fail(Errors.STALE_VERSION, { version: match.version });
-
-  await writeViews(saved, saved.state, '', saved.turn_deadline);
-  await closeRoom(saved.room_id);
+  await endMatch(match, seat === 'A' ? 'B' : 'A', 'SURRENDER');
   return viewOf(matchId, playerId);
 }
 
