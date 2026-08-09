@@ -35,3 +35,9 @@ tools/artgen/__pycache__/
 # Артефакты сборки IDE и Kotlin.
 gdx/.kotlin/
 gdx/*/bin/
+
+# Мультиплеер: служебный кэш Supabase CLI и локальные ключи проекта.
+# Ключи живут в переменных окружения и в настройках Vercel, в git их нет.
+server/supabase/.temp/
+server/.env
+server/.env.local

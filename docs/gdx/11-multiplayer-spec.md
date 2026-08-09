@@ -246,7 +246,11 @@ create policy mv_self on match_views  for select using (player_id = auth.uid());
 alter publication supabase_realtime add table match_views;
 ```
 
-Клиент подписывается на `postgres_changes`, событие `UPDATE`/`INSERT`, схема `public`, таблица `match_views`, фильтр `player_id=eq.<uid>`. RLS при этом применяется, то есть чужой вид не придёт даже при попытке подписаться без фильтра **(проверить)**.
+Миграции применяются через пул, а не через `db.<ref>.supabase.co`: прямое подключение у новых проектов работает только по IPv6, и `supabase db push` без строки пула падает с `tls error (EOF)`. Рабочая команда — в [server/README.md](../../server/README.md).
+
+Клиент подписывается на `postgres_changes`, событие `*`, схема `public`, таблица `match_views`, фильтр `player_id=eq.<uid>`.
+
+**Проверено на живом проекте** (`server/checks/realtime-smoke.mjs`): подписка **без** фильтра тоже принимается, но чужие строки по ней не приходят — RLS применяется к Realtime, и защищает именно она, а фильтр лишь сокращает трафик. Кадр `phx_join` должен нести `access_token` с JWT игрока: под анонимной ролью политика `authenticated` не срабатывает и не приходит ничего. Без heartbeat раз в ~25 секунд соединение закрывается.
 
 `rooms` в публикацию **не** добавляем: список комнат обновляется по кнопке и раз в 5 секунд, пока открыт экран списка. Живая подписка на лобби — цена без пользы; исключение — экран ожидания соперника, где хозяину нужен мгновенный старт (см. §8, шаг 5): он опрашивает `GET /api/rooms/{id}` раз в 2 секунды, пока ждёт.
 
@@ -342,7 +346,9 @@ core/src/main/kotlin/com/first/game/net/
 
 Анонимный вход даёт `access_token` (короткий) и `refresh_token` (долгий). Оба лежат в `GamePrefs` (в вебе это localStorage), при старте токен обновляется через `POST /auth/v1/token?grant_type=refresh_token`. Ник спрашивается один раз и уходит в `POST /api/profile`.
 
-**(проверить)** точный способ анонимного входа: в Supabase это отдельная опция проекта («Allow anonymous sign-ins»), и endpoint нужно подтвердить запросом, а не брать по памяти.
+**Проверено на живом проекте:** анонимный вход — это `POST /auth/v1/signup` с пустым телом `{}` и заголовком `apikey`. В ответ приходят `access_token` (час), `refresh_token` и `user.is_anonymous = true`. В настройках проекта опция включается полем `external_anonymous_users_enabled`.
+
+Ключи у проекта двух поколений: старые JWT (`anon`, `service_role`) и новые (`sb_publishable_…`, `sb_secret_…`). Берём новые: публикуемый — в игру, секретный — только в переменные окружения сервера.
 
 ### 10.3 Экраны
 
@@ -396,9 +402,11 @@ core/src/main/kotlin/com/first/game/net/
 
 Факт: пакет `domain/net` — `StateCodec`, `EventCodec`, `CommandCodec`, `Seat`, `Mirror`, `Redact`, `MatchService`; фасад в `jsMain`. 74 теста проходят одинаково на JVM и на Node, дымовая проверка `rules/smoke/facade-smoke.cjs` играет партию через фасад из настоящего Node. `SaveGame` переведён на общий кодек и стал обёрткой в три строки: версия сохранения, время партии, состояние; формат поднят до 2, старые сохранения отбрасываются штатным путём. Сквозная проверка формата: сохранение, записанное игрой на JVM, разбирается JS-сборкой того же кодека.
 
-### M9.3 — База и Supabase (0.5 дн)
+### M9.3 — База и Supabase (0.5 дн) — **сделано**
 Миграции из §7, RLS, публикация Realtime, анонимный вход включён.
 **DoD:** руками через SQL заведены две партии; из-под анонимного JWT виден только свой `match_views`, `matches` и `rooms` не читаются вовсе.
+
+Факт: проект `first-game` (`zugfqmlvohvxqdfbmiee`, eu-central-1, организация mshassium, free). Миграция `server/supabase/migrations/20260809061500_multiplayer_init.sql` применена. Две проверки в `server/checks/` заводят настоящую партию через библиотеку правил и убирают её за собой: `rls-smoke.mjs` — права, `realtime-smoke.mjs` — доставка хода по сокету.
 
 ### M9.4 — API (1–1.5 дн)
 Vercel-проект `server/`, все endpoint'ы §8, сборка `rules.js` в CI.
