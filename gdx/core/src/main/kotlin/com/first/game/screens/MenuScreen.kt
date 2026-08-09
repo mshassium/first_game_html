@@ -107,9 +107,7 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         }
         buttons += listOf(
             Triple(Strings["menu.play"], "duel") { confirmNewGame() },
-            // Своей иконки для сети в атласе нет, а чужая путала бы: круговая
-            // стрелка занята «Продолжить», скрещённые топоры — обычной игрой.
-            Triple(Strings["menu.online"], "") { game.showOnline() },
+            Triple(Strings["menu.online"], "online") { game.showOnline() },
             Triple(Strings["menu.rules"], "rules") { overlay.showRules() },
             Triple(Strings["menu.settings"], "settings") { showSettings() },
             // Подпись — только название языка: что это переключатель, говорит иконка флажков.
