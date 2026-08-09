@@ -1,6 +1,7 @@
 package com.first.game.teavm
 
 import com.first.game.FirstGame
+import com.first.game.net.AppProfile
 import com.first.game.net.Sockets
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplication
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplicationConfiguration
@@ -18,6 +19,14 @@ import com.github.xpenatan.gdx.teavm.backends.web.WebAssetPreloadListener
  * Сам слушатель ничего делать не обязан — важен факт его наличия.
  */
 object TeaVMLauncher {
+
+    /** Значение параметра строки запроса или null. */
+    private fun queryValue(query: String, name: String): String? = query
+        .removePrefix("?")
+        .split('&')
+        .firstOrNull { it.startsWith("$name=") }
+        ?.substringAfter('=')
+        ?.takeIf { it.isNotEmpty() }
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -37,8 +46,19 @@ object TeaVMLauncher {
             usePhysicalPixels = true
             preloadListener = WebAssetPreloadListener { }
         }
+        // Отладочные ключи приходят строкой запроса: ?net=guest&profile=b.
+        // Системных свойств в браузере нет, а проверять сетевые экраны в вебе
+        // как-то надо.
+        val query = org.teavm.jso.browser.Window.current().location.search.orEmpty()
+        val net = queryValue(query, "net")?.takeIf { it == "host" || it == "guest" }
+        queryValue(query, "profile")?.let { AppProfile.suffix = it }
+
         // Второй слушатель — экран загрузки. Без него бэкенд показывает свой:
         // логотип libGDX и белую полосу на чёрном.
-        WebApplication(FirstGame(), WebLoadingScreen(), config)
+        WebApplication(
+            FirstGame(bootNet = net, bootToOnline = queryValue(query, "boot") == "online"),
+            WebLoadingScreen(),
+            config,
+        )
     }
 }
