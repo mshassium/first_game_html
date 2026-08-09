@@ -104,7 +104,7 @@ class GameScreen(
     private var secondsLeft = 0f
     private var netStatus = NetStatus.POLLING
     private var netMessage = ""
-    private var netLabel: Label? = null
+    private val captionLayout = com.badlogic.gdx.graphics.g2d.GlyphLayout()
 
     /** Обратный отсчёт хода: рисуется поверх стола на последних секундах. */
     private val turnTimer = TurnTimer(assets, theme)
@@ -213,31 +213,65 @@ class GameScreen(
      * решение о просрочке принимает только сервер. Как время вышло, просим его
      * засчитать тайм-аут: ждущая сторона в этот момент как раз онлайн.
      */
-    private fun updateNetLabel(delta: Float) {
-        val label = netLabel ?: Label("", theme.bodyMuted).also {
-            it.setAlignment(com.badlogic.gdx.utils.Align.center)
-            topGroup.addActor(it)
-            netLabel = it
-        }
+    /** Часы хода тикают и в те кадры, когда сервер молчит. */
+    private fun tickTurnClock(delta: Float) {
+        if (secondsLeft <= 0f) return
+        secondsLeft -= delta
+        if (secondsLeft <= 0f && state.actingSide == Side.AI) net?.claimTimeout()
+    }
 
-        if (secondsLeft > 0f) {
-            secondsLeft -= delta
-            if (secondsLeft <= 0f && state.actingSide == Side.AI) net?.claimTimeout()
+    /**
+     * Ник соперника и состояние связи.
+     *
+     * Обе подписи живут у портретов, а не строкой над столом: центр верха занят
+     * счётчиками, а в портретной раскладке там же начинается зона сброса —
+     * надпись налезала прямо на неё.
+     */
+    private fun drawNetStatus(batch: Batch) {
+        val rival = net?.opponent?.takeIf { it.isNotEmpty() } ?: demoOpponent()
+        if (rival != null) {
+            drawPortraitCaption(batch, layout.aiPortrait, rival, Palette.TEXT_MUTED)
         }
 
         val connection = when {
             netMessage.isNotEmpty() -> netMessage
             netStatus == NetStatus.OFFLINE -> Strings["online.reconnecting"]
             netStatus == NetStatus.POLLING -> Strings["online.polling"]
-            else -> ""
+            else -> null
         }
-        // Время показывает не строка, а сам стол: см. drawTurnTimer.
-        val rival = net?.opponent?.takeIf { it.isNotEmpty() }?.let { "${Strings["online.opponent"]}: $it" } ?: ""
-        label.setText(listOf(rival, connection).filter { it.isNotEmpty() }.joinToString("   "))
-        label.pack()
-        // Под полосой HUD: верхний ряд занят счётчиками, часами и кнопкой меню.
-        label.setPosition((layout.worldWidth - label.width) / 2f, layout.worldHeight * 0.885f)
+        // Про связь говорим только когда с ней что-то не так.
+        if (connection != null) {
+            drawPortraitCaption(batch, layout.youPortrait, connection, Palette.school(Letter.S))
+        }
     }
+
+    /** Подпись под портретом, по его центру и не шире стола. */
+    private fun drawPortraitCaption(batch: Batch, portrait: Rectangle, text: String, color: Color) {
+        val font = theme.bodyMuted.font
+        val scale = (portrait.width * 0.22f / font.capHeight).coerceIn(0.4f, 1f)
+        font.data.setScale(scale)
+        font.color = Palette.rgba(color, 0.92f)
+        captionLayout.setText(font, text)
+
+        // Длинную подпись ужимаем: «Медленная связь» втрое шире портрета и
+        // иначе ложится на рамку игровой зоны.
+        val maxWidth = portrait.width * 2.4f
+        if (captionLayout.width > maxWidth) {
+            font.data.setScale(scale * maxWidth / captionLayout.width)
+            captionLayout.setText(font, text)
+        }
+        // По центру портрета, но не за краем экрана: портреты стоят у самой
+        // кромки, а подпись про связь заметно шире их.
+        val pad = layout.worldWidth * 0.01f
+        val x = (portrait.x + (portrait.width - captionLayout.width) / 2f)
+            .coerceIn(pad, maxOf(pad, layout.worldWidth - captionLayout.width - pad))
+        font.draw(batch, captionLayout, x, portrait.y - portrait.height * 0.06f)
+        font.data.setScale(1f)
+        font.color = Color.WHITE
+    }
+
+    /** В демо-режиме таймера ник подставляем, чтобы видеть раскладку целиком. */
+    private fun demoOpponent(): String? = if (demoTimer) "Хозяин" else null
 
     private fun connect(client: MatchClient) {
         client.onView = { view ->
@@ -373,7 +407,7 @@ class GameScreen(
     override fun render(delta: Float) {
         elapsedSeconds += delta
         net?.update(delta)
-        if (online) updateNetLabel(delta)
+        if (online) tickTurnClock(delta)
         Gdx.gl.glClearColor(Palette.SHADOW.r, Palette.SHADOW.g, Palette.SHADOW.b, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
         game.sound.update(delta)
@@ -400,12 +434,12 @@ class GameScreen(
      * много, счётчик над столом лишь мешает смотреть на карты.
      */
     private fun drawTurnTimer(delta: Float) {
+        if (!online && !demoTimer) return
         val seconds = if (demoTimer) {
             demoSeconds = (demoSeconds - delta).let { if (it <= 0.2f) 9.4f else it }
             demoSeconds
         } else {
-            if (!online || state.isOver) return
-            secondsLeft
+            if (state.isOver) 0f else secondsLeft
         }
 
         // Ждут того, чей портрет и подсвечен: у него же появляется отсчёт.
@@ -413,6 +447,7 @@ class GameScreen(
         game.batch.projectionMatrix = stage.viewport.camera.combined
         game.batch.begin()
         turnTimer.draw(game.batch, seconds, portrait)
+        drawNetStatus(game.batch)
         game.batch.end()
     }
 
