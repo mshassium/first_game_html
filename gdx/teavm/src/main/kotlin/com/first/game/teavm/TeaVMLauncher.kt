@@ -56,7 +56,7 @@ object TeaVMLauncher {
         // Второй слушатель — экран загрузки. Без него бэкенд показывает свой:
         // логотип libGDX и белую полосу на чёрном.
         WebApplication(
-            FirstGame(bootNet = net, bootToOnline = queryValue(query, "boot") == "online"),
+            CrashReporter(FirstGame(bootNet = net, bootToOnline = queryValue(query, "boot") == "online")),
             WebLoadingScreen(),
             config,
         )

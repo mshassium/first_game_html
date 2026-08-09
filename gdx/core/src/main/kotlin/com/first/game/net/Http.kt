@@ -45,7 +45,10 @@ object Http {
             .timeout(NetConfig.HTTP_TIMEOUT_MS)
             .header("Content-Type", "application/json")
             .apply {
-                header("apikey", NetConfig.SUPABASE_KEY)
+                // Ключ проекта нужен только самой Supabase. Своему API он не нужен,
+                // а браузер за лишний заголовок наказывает: preflight отклоняется,
+                // если сервер не перечислил его в Access-Control-Allow-Headers.
+                if (url.startsWith(NetConfig.SUPABASE_URL)) header("apikey", NetConfig.SUPABASE_KEY)
                 if (token != null) header("Authorization", "Bearer $token")
                 if (body != null) content(body)
             }

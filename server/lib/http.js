@@ -63,7 +63,9 @@ export function fail(code, details) {
 export function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization,Content-Type');
+  // apikey — на случай, если клиент пришлёт ключ проекта Supabase заодно:
+  // браузер отклоняет весь запрос, если заголовок не перечислен здесь.
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization,Content-Type,apikey');
   res.setHeader('Access-Control-Max-Age', '86400');
 }
 
