@@ -214,8 +214,11 @@ try {
   check(afterEnd.body.error === 'match_finished' || afterEnd.body.error === 'stale_version',
     `в законченную партию ходить нельзя (${afterEnd.body.error})`);
 
-  const noCurrent = await call('/matches/current', { token: host.token });
-  check(noCurrent.body.match === null, 'после конца партии активной не остаётся');
+  // Законченная партия ещё отдаётся: иначе игрок, у которого не поднялся сокет,
+  // не узнает исход — его последний ход был чужим.
+  const afterMatch = await call('/matches/current', { token: host.token });
+  check(afterMatch.body.match?.status === 'finished', 'после конца партии виден её исход');
+  check(afterMatch.body.match?.matchId === matchId, 'и это та самая партия');
 
   console.log('6. Тайм-аут');
   const timeout = await makeTimedOutMatch(players, call, cleanup);

@@ -65,6 +65,8 @@ node rules/smoke/facade-smoke.cjs
 ./gradlew lwjgl3:run -Pfirst.autoplay=true          # обе стороны ведёт ИИ
 ./gradlew lwjgl3:run -Pfirst.size=720x1280          # портретное окно
 ./gradlew lwjgl3:run -Pfirst.shots=/tmp/shots -Pfirst.frames=90,600
+./gradlew lwjgl3:run -Pfirst.net=duel               # партия через настоящий сервер
+./gradlew lwjgl3:run -Pfirst.net=poll               # то же без сокета: работа опросом
 ```
 
 Последний снимает кадры в PNG и закрывает приложение — так проверяются экраны

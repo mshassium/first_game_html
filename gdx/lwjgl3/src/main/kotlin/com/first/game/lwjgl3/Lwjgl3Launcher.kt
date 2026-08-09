@@ -4,6 +4,8 @@ import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 import com.first.game.FirstGame
+import com.first.game.net.NetSmokeApp
+import com.first.game.net.Sockets
 
 /**
  * Точка входа десктопной сборки.
@@ -17,8 +19,14 @@ import com.first.game.FirstGame
  *   -Dfirst.frames=90,600        — на каких кадрах снимать
  *   -Dfirst.overlay=rules        — сразу открыть оверлей меню (rules | settings)
  *   -Dfirst.speed=instant        — скорость анимаций: normal | fast | instant
+ *   -Dfirst.net=duel             — сетевой прогон: партия через настоящий сервер
+ *   -Dfirst.net=poll             — то же, но без сокета: проверка работы опросом
  */
 fun main() {
+    // Постоянное соединение для сетевой игры: своего сокета у libGDX нет.
+    // Ключ poll оставляет игру без сокета — так проверяется работа на опросе.
+    if (System.getProperty("first.net") != "poll") Sockets.factory = { DesktopSocket() }
+
     val bootToGame = System.getProperty("first.boot") == "game"
     val autoPlay = System.getProperty("first.autoplay") == "true"
     val shots = System.getProperty("first.shots")
@@ -29,12 +37,11 @@ fun main() {
     }
     // Экран загрузки живёт только в вебе и полторы секунды: без этого ключа
     // посмотреть на него нечем.
-    val boot: ApplicationListener =
-        if (System.getProperty("first.boot") == "loading") {
-            LoadingPreview()
-        } else {
-            FirstGame(bootToGame, autoPlay, System.getProperty("first.overlay"), speed)
-        }
+    val boot: ApplicationListener = when {
+        System.getProperty("first.boot") == "loading" -> LoadingPreview()
+        System.getProperty("first.net") in listOf("duel", "poll") -> NetSmokeApp()
+        else -> FirstGame(bootToGame, autoPlay, System.getProperty("first.overlay"), speed)
+    }
     val listener: ApplicationListener = if (shots != null) {
         ScreenshotRunner(
             delegate = boot,

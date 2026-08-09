@@ -1,6 +1,7 @@
 package com.first.game.teavm
 
 import com.first.game.FirstGame
+import com.first.game.net.Sockets
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplication
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplicationConfiguration
 import com.github.xpenatan.gdx.teavm.backends.web.WebAssetPreloadListener
@@ -24,6 +25,9 @@ object TeaVMLauncher {
         // чем пользователь сделает первое касание.
         WebBrowserHooks.installAudioResume()
         WebBrowserHooks.installOrientationLock()
+        // Постоянное соединение для сетевой игры: у libGDX своего сокета нет,
+        // в вебе за него отвечает сокет браузера.
+        Sockets.factory = { WebSocketAdapter() }
 
         val config = WebApplicationConfiguration().apply {
             width = 0

@@ -200,13 +200,20 @@ export async function claimTimeout(playerId, matchId) {
   return viewOf(matchId, playerId);
 }
 
-/** Активная партия игрока — для возврата после перезагрузки или обрыва. */
+/**
+ * Партия игрока — для возврата после перезагрузки или обрыва.
+ *
+ * Только что законченная тоже считается: иначе игрок, у которого не поднялся
+ * сокет, никогда не узнает, чем кончилось дело — его последний ход был чужим,
+ * а спросить, кроме как здесь, негде.
+ */
 export async function currentMatch(playerId) {
+  const mine = `or=(seat_a.eq.${playerId},seat_b.eq.${playerId})`;
   const rows = await select(
     'matches',
-    `or=(seat_a.eq.${playerId},seat_b.eq.${playerId})&status=eq.playing&select=*&order=updated_at.desc&limit=1`,
+    `${mine}&status=eq.playing&select=*&order=updated_at.desc&limit=1`,
   );
-  const found = rows?.[0];
+  const found = rows?.[0] ?? (await recentlyFinished(mine));
   if (!found) return null;
 
   const match = await expireIfDue(found);
@@ -222,6 +229,19 @@ export async function currentMatch(playerId) {
     ...view,
   };
 }
+
+/** Партия, законченная недавно: показать исход и предложить выйти в список. */
+async function recentlyFinished(mineFilter) {
+  const since = new Date(Date.now() - RESULT_WINDOW_MINUTES * 60_000).toISOString();
+  const rows = await select(
+    'matches',
+    `${mineFilter}&status=eq.finished&updated_at=gte.${since}&select=*&order=updated_at.desc&limit=1`,
+  );
+  return rows?.[0] ?? null;
+}
+
+/** Сколько после конца партии её ещё отдаёт `/matches/current`. */
+const RESULT_WINDOW_MINUTES = 10;
 
 function endReasonOf(state) {
   // Причина победы читается из состояния: последняя строка — исход партии.
