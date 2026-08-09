@@ -56,13 +56,14 @@ class CardActor(
         font.data.setScale(scale)
         val accent = Palette.school(letter)
         font.color = Color(accent.r * shade, accent.g * shade, accent.b * shade, alpha)
-        layout.setText(font, letter.name)
         // Буква садится в пустой бронзовый медальон, нарисованный на карте.
         // Его центр задан в промпт-буке (§2.3) и продублирован здесь: если менять
         // одно, надо менять и другое, иначе буква съедет с медальона.
-        val centerX = x + width * MEDALLION_X
-        val centerY = y + height * (1f - MEDALLION_Y) + layout.height / 2f
-        font.draw(batch, layout, centerX - layout.width / 2f, centerY)
+        font.drawCardLetter(
+            batch, layout, letter.name,
+            centerX = x + width * MEDALLION_X,
+            centerY = y + height * (1f - MEDALLION_Y),
+        )
         font.data.setScale(1f)
         font.color = Color.WHITE
     }

@@ -67,11 +67,10 @@ class ForbidBanner(
         // Своим цветом: в шрифт карт уже запечены золотая заливка и тёмная обводка,
         // а тонировка в цвет школы поверх крашеного полотнища съедала бы контраст.
         font.color = Color(1f, 1f, 1f, alpha)
-        glyphs.setText(font, letter?.name ?: HIDDEN_MARK)
-        font.draw(
-            batch, glyphs,
-            x + (width - glyphs.width) / 2f,
-            y + height * MARK_CENTER_Y + glyphs.height / 2f,
+        font.drawCardLetter(
+            batch, glyphs, letter?.name ?: HIDDEN_MARK,
+            centerX = x + width / 2f,
+            centerY = y + height * MARK_CENTER_Y,
         )
         font.data.setScale(1f)
         font.color = Color.WHITE
