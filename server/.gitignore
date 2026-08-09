@@ -1,0 +1,4 @@
+.vercel
+# Именно .env, а не .env*: .env.example лежит в репозитории намеренно.
+.env
+.env.local

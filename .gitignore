@@ -41,3 +41,4 @@ gdx/*/bin/
 server/supabase/.temp/
 server/.env
 server/.env.local
+server/.vercel/

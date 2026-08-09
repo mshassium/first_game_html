@@ -1,0 +1,16 @@
+{
+  "name": "first-game-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Сервер сетевых партий F!RST: комнаты, ходы, тайм-ауты",
+  "scripts": {
+    "sync-rules": "./scripts/sync-rules.sh",
+    "check:rls": "node checks/rls-smoke.mjs",
+    "check:realtime": "node checks/realtime-smoke.mjs",
+    "check:api": "node checks/api-smoke.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

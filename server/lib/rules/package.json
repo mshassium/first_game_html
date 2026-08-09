@@ -1,0 +1,4 @@
+{
+  "type": "commonjs",
+  "//": "Собрано из gdx/rules скриптом server/scripts/sync-rules.sh. Руками не править."
+}
