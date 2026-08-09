@@ -4,6 +4,7 @@ import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 import com.first.game.FirstGame
+import com.first.game.net.AppProfile
 import com.first.game.net.NetSmokeApp
 import com.first.game.net.Sockets
 
@@ -12,6 +13,7 @@ import com.first.game.net.Sockets
  *
  * Отладочные ключи:
  *   -Dfirst.boot=game            — открыть сразу игровой стол
+ *   -Dfirst.boot=online          — открыть сразу список комнат
  *   -Dfirst.boot=loading         — показать экран загрузки веб-сборки
  *   -Dfirst.autoplay=true        — обе стороны ведёт ИИ (дымовой прогон)
  *   -Dfirst.shots=/tmp/shots     — снять кадры в указанную папку и выйти
@@ -21,11 +23,16 @@ import com.first.game.net.Sockets
  *   -Dfirst.speed=instant        — скорость анимаций: normal | fast | instant
  *   -Dfirst.net=duel             — сетевой прогон: партия через настоящий сервер
  *   -Dfirst.net=poll             — то же, но без сокета: проверка работы опросом
+ *   -Dfirst.net=host             — окно-хозяин: заводит комнату и играет само
+ *   -Dfirst.net=guest            — окно-гость: входит в первую комнату и играет само
+ *   -Dfirst.profile=b            — отдельные настройки: два окна как разные игроки
  */
 fun main() {
     // Постоянное соединение для сетевой игры: своего сокета у libGDX нет.
     // Ключ poll оставляет игру без сокета — так проверяется работа на опросе.
     if (System.getProperty("first.net") != "poll") Sockets.factory = { DesktopSocket() }
+
+    System.getProperty("first.profile")?.let { AppProfile.suffix = it }
 
     val bootToGame = System.getProperty("first.boot") == "game"
     val autoPlay = System.getProperty("first.autoplay") == "true"
@@ -40,7 +47,11 @@ fun main() {
     val boot: ApplicationListener = when {
         System.getProperty("first.boot") == "loading" -> LoadingPreview()
         System.getProperty("first.net") in listOf("duel", "poll") -> NetSmokeApp()
-        else -> FirstGame(bootToGame, autoPlay, System.getProperty("first.overlay"), speed)
+        else -> FirstGame(
+            bootToGame, autoPlay, System.getProperty("first.overlay"), speed,
+            bootNet = System.getProperty("first.net")?.takeIf { it == "host" || it == "guest" },
+            bootToOnline = System.getProperty("first.boot") == "online",
+        )
     }
     val listener: ApplicationListener = if (shots != null) {
         ScreenshotRunner(

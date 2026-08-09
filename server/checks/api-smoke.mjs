@@ -114,6 +114,13 @@ try {
   });
   check(second.body.error === 'room_not_found', 'занятая комната больше не пускает');
 
+  console.log('3.5. Состояние своей комнаты');
+  const ownRoomState = await call(`/rooms/${roomId}`, { token: host.token });
+  check(ownRoomState.status === 200, `состояние комнаты отдаётся (${ownRoomState.status})`);
+  check(ownRoomState.body?.status === 'playing', `в комнате видно, что партия идёт (${ownRoomState.body?.status})`);
+  check(ownRoomState.body?.matchId === matchId, 'и её идентификатор');
+  check(ownRoomState.body?.guest === 'Гость', 'и ник гостя');
+
   console.log('4. Посторонний');
   const stranger = await signInAnonymously();
   cleanup.push(async () => { await api(`/rest/v1/profiles?id=eq.${stranger.id}`, { method: 'DELETE' }); });

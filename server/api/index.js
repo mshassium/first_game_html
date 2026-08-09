@@ -36,7 +36,10 @@ export default async function handler(req, res) {
   try {
     const route = routeOf(req);
     const result = await dispatch(req, route);
-    sendJson(res, result?.status ?? 200, result?.body ?? result ?? {});
+    // Успех — всегда 200, и тело уходит как есть. Пытаться угадать код по полям
+    // ответа нельзя: у комнаты есть собственное поле status со значением
+    // «lobby», и оно однажды уже уехало в заголовок HTTP.
+    sendJson(res, 200, result ?? {});
   } catch (error) {
     sendError(res, error);
   }

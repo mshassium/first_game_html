@@ -26,7 +26,7 @@ tasks.named<JavaExec>("run") {
     // Отладочные ключи пробрасываются как -Pfirst.boot=game -Pfirst.shots=/tmp/shots
     listOf(
         "first.boot", "first.shots", "first.size", "first.autoplay",
-        "first.frames", "first.overlay", "first.speed", "first.net",
+        "first.frames", "first.overlay", "first.speed", "first.net", "first.profile",
     ).forEach { key ->
         (project.findProperty(key) as String?)?.let { systemProperty(key, it) }
     }

@@ -102,7 +102,7 @@ class NetSmoke(private val log: (String) -> Unit, private val onDone: (Boolean) 
     }
 
     private fun watchMatch(id: String) {
-        val playerId = Auth.accessToken?.let { userIdOf(it) } ?: ""
+        val playerId = Auth.userId
         realtime = if (Sockets.available && playerId.isNotEmpty()) Realtime(playerId) else null
         if (realtime == null) log("сокет недоступен, проверяем работу опросом")
 
@@ -202,37 +202,6 @@ class NetSmoke(private val log: (String) -> Unit, private val onDone: (Boolean) 
         onDone(success)
     }
 
-    private companion object {
-        /**
-         * Идентификатор игрока из токена: он нужен подписке как фильтр.
-         *
-         * Токен — это JWT, в середине лежит base64 с полем `sub`. Разбираем
-         * вручную: подпись проверяет сервер, а нам нужен только идентификатор.
-         */
-        fun userIdOf(jwt: String): String {
-            val payload = jwt.split('.').getOrNull(1) ?: return ""
-            val decoded = runCatching { base64UrlDecode(payload) }.getOrNull() ?: return ""
-            return Json.parse(decoded).str("sub").orEmpty()
-        }
-
-        fun base64UrlDecode(text: String): String {
-            val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-            var buffer = 0
-            var bits = 0
-            val out = StringBuilder()
-            for (char in text) {
-                val value = alphabet.indexOf(char)
-                if (value < 0) continue
-                buffer = (buffer shl 6) or value
-                bits += 6
-                if (bits >= 8) {
-                    bits -= 8
-                    out.append(((buffer shr bits) and 0xFF).toChar())
-                }
-            }
-            return out.toString()
-        }
-    }
 }
 
 /** Обёртка приложения для прогона: держит [NetSmoke] живым и печатает ход дела. */

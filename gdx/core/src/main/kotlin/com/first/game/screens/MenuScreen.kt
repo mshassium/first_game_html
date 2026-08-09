@@ -153,6 +153,7 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
         }
         buttons += listOf(
             Triple(Strings["menu.play"], "duel") { confirmNewGame() },
+            Triple(Strings["menu.online"], "restart") { game.showOnline() },
             Triple(Strings["menu.rules"], "rules") { overlay.showRules() },
             Triple(Strings["menu.settings"], "settings") { showSettings() },
             // Подпись — только название языка: что это переключатель, говорит иконка флажков.

@@ -61,6 +61,10 @@ class MatchClient(
     var seat: String = "A"
         private set
 
+    /** Ник соперника: приходит вместе с партией и показывается на столе. */
+    var opponent: String = ""
+        private set
+
     var status: NetStatus = NetStatus.POLLING
         private set
 
@@ -165,6 +169,7 @@ class MatchClient(
             }
             if (status == NetStatus.OFFLINE) setStatus(NetStatus.POLLING)
             val match = result.json.obj("match") ?: return@get
+            match.str("opponent")?.let { opponent = it }
             accept(
                 version = match.int("version", -1),
                 seat = match.str("seat") ?: seat,

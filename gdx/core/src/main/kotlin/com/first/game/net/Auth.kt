@@ -15,7 +15,7 @@ import com.badlogic.gdx.Gdx
  */
 object Auth {
 
-    private val prefs by lazy { Gdx.app.getPreferences("first-net") }
+    private val prefs by lazy { Gdx.app.getPreferences(AppProfile.prefsName("first-net")) }
 
     private const val KEY_ACCESS = "accessToken"
     private const val KEY_REFRESH = "refreshToken"
@@ -32,6 +32,37 @@ object Auth {
         }
 
     val signedIn: Boolean get() = accessToken != null
+
+    /**
+     * Идентификатор игрока — им фильтруется подписка на свою партию.
+     *
+     * Достаётся из токена: JWT это три части через точку, в средней лежит
+     * base64 с полем `sub`. Подпись проверяет сервер, нам нужен только номер.
+     */
+    val userId: String
+        get() = accessToken?.let { token ->
+            val payload = token.split('.').getOrNull(1) ?: return@let null
+            val decoded = runCatching { base64UrlDecode(payload) }.getOrNull() ?: return@let null
+            Json.parse(decoded).str("sub")
+        }.orEmpty()
+
+    private fun base64UrlDecode(text: String): String {
+        val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+        var buffer = 0
+        var bits = 0
+        val out = StringBuilder()
+        for (char in text) {
+            val value = alphabet.indexOf(char)
+            if (value < 0) continue
+            buffer = (buffer shl 6) or value
+            bits += 6
+            if (bits >= 8) {
+                bits -= 8
+                out.append(((buffer shr bits) and 0xFF).toChar())
+            }
+        }
+        return out.toString()
+    }
 
     /**
      * Готовит токен к работе: продлевает сохранённый, а если продлевать нечего —

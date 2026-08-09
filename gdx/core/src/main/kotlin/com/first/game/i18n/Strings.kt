@@ -34,6 +34,12 @@ object Strings {
 
     operator fun get(key: String): String = bundle[key]
 
+    /**
+     * Есть ли такая строка. Нужно там, где ключ складывается из данных сервера:
+     * незнакомый код ошибки не должен превращаться в «???key???» на экране.
+     */
+    fun has(key: String): Boolean = runCatching { bundle[key] }.getOrNull()?.startsWith("???") == false
+
     fun format(key: String, vararg args: Any): String = bundle.format(key, *args)
 
     /** Следующий язык по кругу — для кнопки-переключателя. */

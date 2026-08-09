@@ -37,6 +37,8 @@ import com.first.game.domain.SeededRng
 import com.first.game.domain.Side
 import com.first.game.domain.ai.aiPolicy
 import com.first.game.i18n.Strings
+import com.first.game.net.MatchClient
+import com.first.game.net.NetStatus
 import com.first.game.ui.AnimationDirector
 import com.first.game.ui.BoardLayout
 import com.first.game.ui.CardActor
@@ -57,7 +59,14 @@ class GameScreen(
     private val autoPlay: Boolean = false,
     /** Отложенная партия: экран открывается сразу в ней, без раздачи. */
     private val resumed: SavedGame? = null,
+    /**
+     * Сетевая партия. Когда она задана, правил экран не считает вовсе: ходы
+     * уходят на сервер, а состояние и события приходят оттуда же.
+     */
+    private val net: MatchClient? = null,
 ) : KtxScreen {
+
+    private val online: Boolean get() = net != null
 
     private val assets = game.assets
     private val theme = game.theme
@@ -89,6 +98,12 @@ class GameScreen(
     private val topGroup = Group()
 
     private var elapsedSeconds = 0f
+
+    /** Сколько осталось на ход по данным сервера: в сетевой партии есть тайм-аут. */
+    private var secondsLeft = 0f
+    private var netStatus = NetStatus.POLLING
+    private var netMessage = ""
+    private var netLabel: Label? = null
     private var aiDelay = 0f
     private val hudOverlay = HudOverlay()
     private var hudHint: Group? = null
@@ -135,7 +150,13 @@ class GameScreen(
 
     init {
         val start = engine.newGame()
-        state = resumed?.state ?: start.state
+        // В сетевой партии расклад присылает сервер. До первого ответа на столе
+        // пусто: показывать свою раздачу было бы враньём, её тут же заменят.
+        state = when {
+            net != null -> emptyTable(start.state)
+            resumed != null -> resumed.state
+            else -> start.state
+        }
         elapsedSeconds = resumed?.elapsedSeconds ?: 0f
         // Отложенная партия открывается без событий, поэтому висящие эффекты
         // берутся прямо из состояния: показывать их нечему было бы.
@@ -161,8 +182,69 @@ class GameScreen(
             }
         })
         // Продолженная партия не переигрывает раздачу: доска собирается сразу.
-        if (resumed == null) enqueue(start.events)
+        if (resumed == null && net == null) enqueue(start.events)
         syncBoard()
+        net?.let(::connect)
+    }
+
+    // ------------------------------------------------------------ сетевая игра
+
+    /** Пустой стол: заглушка на те доли секунды, пока не пришёл первый вид. */
+    private fun emptyTable(sample: GameState): GameState = GameState(
+        you = com.first.game.domain.SideState(),
+        ai = com.first.game.domain.SideState(),
+        turn = sample.turn,
+        firstPlayer = sample.firstPlayer,
+        firstTurnDone = true,
+    )
+
+    /**
+     * Обратный отсчёт хода и состояние связи.
+     *
+     * Часы клиента и сервера расходятся, поэтому счётчик здесь — оценка;
+     * решение о просрочке принимает только сервер. Как время вышло, просим его
+     * засчитать тайм-аут: ждущая сторона в этот момент как раз онлайн.
+     */
+    private fun updateNetLabel(delta: Float) {
+        val label = netLabel ?: Label("", theme.bodyMuted).also {
+            it.setAlignment(com.badlogic.gdx.utils.Align.center)
+            topGroup.addActor(it)
+            netLabel = it
+        }
+
+        if (secondsLeft > 0f) {
+            secondsLeft -= delta
+            if (secondsLeft <= 0f && state.actingSide == Side.AI) net?.claimTimeout()
+        }
+
+        val connection = when {
+            netMessage.isNotEmpty() -> netMessage
+            netStatus == NetStatus.OFFLINE -> Strings["online.reconnecting"]
+            netStatus == NetStatus.POLLING -> Strings["online.polling"]
+            else -> ""
+        }
+        val timer = if (state.isOver) "" else "${Strings["online.turn_left"]}: ${secondsLeft.toInt().coerceAtLeast(0)}"
+        val rival = net?.opponent?.takeIf { it.isNotEmpty() }?.let { "${Strings["online.opponent"]}: $it" } ?: ""
+        label.setText(listOf(rival, timer, connection).filter { it.isNotEmpty() }.joinToString("   "))
+        label.pack()
+        // Под полосой HUD: верхний ряд занят счётчиками, часами и кнопкой меню.
+        label.setPosition((layout.worldWidth - label.width) / 2f, layout.worldHeight * 0.885f)
+    }
+
+    private fun connect(client: MatchClient) {
+        client.onView = { view ->
+            // Сервер присылает состояние уже в нашей перспективе, поэтому доска
+            // и анимации работают ровно так же, как в игре против ИИ.
+            state = view.state
+            secondsLeft = view.secondsLeft
+            for (side in Side.entries) {
+                state.traps.forbidOn(side)?.let { shownForbid[side] = it }
+            }
+            if (view.events.isEmpty()) syncBoard() else enqueue(view.events)
+        }
+        client.onStatus = { status -> netStatus = status }
+        client.onError = { code -> netMessage = errorText(code) }
+        client.start()
     }
 
     /**
@@ -282,6 +364,8 @@ class GameScreen(
 
     override fun render(delta: Float) {
         elapsedSeconds += delta
+        net?.update(delta)
+        if (online) updateNetLabel(delta)
         Gdx.gl.glClearColor(Palette.SHADOW.r, Palette.SHADOW.g, Palette.SHADOW.b, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
         game.sound.update(delta)
@@ -317,10 +401,13 @@ class GameScreen(
      * и без сохранения здесь партия просто пропадёт.
      */
     override fun pause() {
-        if (!state.isOver) SaveGame.save(state, elapsedSeconds)
+        // Сетевую партию хранит сервер: она продолжится сама, где бы игрок
+        // ни открыл игру снова.
+        if (!online && !state.isOver) SaveGame.save(state, elapsedSeconds)
     }
 
     override fun dispose() {
+        net?.stop()
         stage.dispose()
     }
 
@@ -332,9 +419,25 @@ class GameScreen(
 
         if (state.isOver) {
             if (!resultDialogShown) {
-                SaveGame.clear()
+                if (!online) SaveGame.clear()
                 showResultDialog()
             }
+            return
+        }
+
+        if (online) {
+            // Ход соперника придёт с сервера; своего выбора ждём диалогом ниже.
+            if (state.actingSide != Side.YOU) return
+            if (autoPlay) {
+                // Проверочный режим: за нас ходит та же эвристика, что и за ИИ.
+                aiDelay -= delta
+                if (aiDelay <= 0f) {
+                    aiDelay = AI_THINK_TIME * GamePrefs.animationSpeed.factor
+                    apply(policy.decide(state))
+                }
+                return
+            }
+            if (state.phase == Phase.AWAITING_CHOICE && choiceDialog == null) showChoiceDialog()
             return
         }
 
@@ -353,7 +456,22 @@ class GameScreen(
         }
     }
 
+    /**
+     * Ход игрока.
+     *
+     * В одиночной партии состояние считается тут же. В сетевой команда уходит
+     * на сервер, а состояние меняется только когда он ответит: считать правила
+     * на клиенте — значит позволить их подделать.
+     */
     private fun apply(command: Command) {
+        val client = net
+        if (client != null) {
+            when (command) {
+                is Command.PlayCard -> client.play(command.handIndex)
+                is Command.ChooseOption -> client.choose(command.optionIndex)
+            }
+            return
+        }
         val result = engine.apply(state, command)
         state = result.state
         enqueue(result.events)
@@ -1242,8 +1360,31 @@ class GameScreen(
         body.setAlignment(com.badlogic.gdx.utils.Align.center)
         body.setWidth(innerWidth)
 
+        // Сетевую партию нельзя ни отложить, ни бросить молча: соперник ждёт
+        // хода, и уйти из неё можно только сдавшись.
+        val actions = if (online) {
+            listOf<Pair<String, () -> Unit>>(
+                "online.surrender" to {
+                    net?.surrender()
+                    dismissPauseDialog()
+                },
+                "pause.resume" to { dismissPauseDialog() },
+            )
+        } else {
+            listOf<Pair<String, () -> Unit>>(
+                "pause.save" to {
+                    SaveGame.save(state, elapsedSeconds)
+                    game.showMenu()
+                },
+                "pause.abandon" to {
+                    SaveGame.clear()
+                    game.showMenu()
+                },
+                "pause.resume" to { dismissPauseDialog() },
+            )
+        }
         val panelHeight = gap * 3f + title.prefHeight + gap + body.prefHeight +
-            gap * 1.6f + buttonHeight * 3f + gap * 2f + gap * 2.4f
+            gap * 1.6f + buttonHeight * actions.size + gap * (actions.size - 1) + gap * 2.4f
         val panelX = (layout.worldWidth - panelWidth) / 2f
         val panelY = (layout.worldHeight - panelHeight) / 2f
 
@@ -1260,17 +1401,6 @@ class GameScreen(
         )
         dialog.addActor(body)
 
-        val actions = listOf<Pair<String, () -> Unit>>(
-            "pause.save" to {
-                SaveGame.save(state, elapsedSeconds)
-                game.showMenu()
-            },
-            "pause.abandon" to {
-                SaveGame.clear()
-                game.showMenu()
-            },
-            "pause.resume" to { dismissPauseDialog() },
-        )
         var buttonY = body.y - gap * 1.6f - buttonHeight
         for ((key, action) in actions) {
             val button = TextButton(Strings[key], theme.buttonCompact)
