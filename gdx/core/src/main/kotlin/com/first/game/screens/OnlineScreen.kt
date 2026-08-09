@@ -1,7 +1,6 @@
 package com.first.game.screens
 
 import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.Input
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.Label
@@ -15,6 +14,8 @@ import com.first.game.net.Auth
 import com.first.game.net.NetResult
 import com.first.game.net.RoomInfo
 import com.first.game.net.RoomsApi
+import com.first.game.ui.FormDialog
+import com.first.game.ui.FormField
 import com.first.game.ui.Overlay
 import com.first.game.ui.Palette
 import com.first.game.ui.drawCover
@@ -34,6 +35,7 @@ class OnlineScreen(private val game: FirstGame) : KtxScreen {
     private val stage = Stage(ExtendViewport(WORLD_WIDTH, WORLD_HEIGHT), game.batch)
     private val theme = game.theme
     private val overlay = Overlay(stage, theme, game.assets, game.sound)
+    private val form = FormDialog(stage, theme, game.assets, game.sound)
     private val root = Table()
 
     private var rooms: List<RoomInfo> = emptyList()
@@ -66,8 +68,8 @@ class OnlineScreen(private val game: FirstGame) : KtxScreen {
         }
 
         // Список живёт своей жизнью: комнаты появляются и исчезают, пока игрок
-        // на него смотрит.
-        if (!busy && !overlay.isOpen) {
+        // на него смотрит. Пока открыта форма, обновлять нечего.
+        if (!busy && !overlay.isOpen && !form.isOpen) {
             refreshTimer += delta
             if (refreshTimer >= REFRESH_SECONDS) {
                 refreshTimer = 0f
@@ -139,12 +141,18 @@ class OnlineScreen(private val game: FirstGame) : KtxScreen {
     // ------------------------------------------------------------------ ввод
 
     private fun askNickname() {
-        input(Strings["online.nickname.title"], Auth.nickname ?: "", Strings["online.nickname.hint"]) { name ->
-            val trimmed = name.trim()
-            if (trimmed.length < 2) return@input askNickname()
+        form.show(
+            title = Strings["online.nickname.title"],
+            fields = listOf(
+                FormField(Strings["online.nickname.hint"], Auth.nickname.orEmpty(), maxLength = 16),
+            ),
+            confirm = Strings["online.nickname.save"],
+        ) { (name) ->
+            // Слишком короткое имя — спрашиваем снова, а не молча закрываем форму.
+            if (name.length < 2) return@show askNickname()
             busy = true
             build()
-            RoomsApi.setNickname(trimmed) { result ->
+            RoomsApi.setNickname(name) { result ->
                 busy = false
                 when (result) {
                     is NetResult.Ok -> {
@@ -160,19 +168,30 @@ class OnlineScreen(private val game: FirstGame) : KtxScreen {
         }
     }
 
+    /**
+     * Создание комнаты одним окном: название и пароль сразу.
+     *
+     * Пароль необязателен, и пустое поле — это «без пароля». Прежние два
+     * последовательных системных диалога пропустить было нельзя вовсе.
+     */
     private fun createRoom() {
-        input(Strings["online.create.title"], defaultRoomName(), Strings["online.create.name"]) { name ->
-            input(Strings["online.create.title"], "", Strings["online.create.password"]) { password ->
-                busy = true
-                build()
-                RoomsApi.create(name.trim().ifBlank { defaultRoomName() }, password.trim()) { result ->
-                    busy = false
-                    when (result) {
-                        is NetResult.Ok -> game.showLobby(result.value)
-                        is NetResult.Fail -> {
-                            message = errorText(result.code)
-                            build()
-                        }
+        form.show(
+            title = Strings["online.create.title"],
+            fields = listOf(
+                FormField(Strings["online.create.name"], defaultRoomName(), maxLength = 24),
+                FormField(Strings["online.create.password"], maxLength = 24, secret = true),
+            ),
+            confirm = Strings["online.create"],
+        ) { (name, password) ->
+            busy = true
+            build()
+            RoomsApi.create(name.ifBlank { defaultRoomName() }, password) { result ->
+                busy = false
+                when (result) {
+                    is NetResult.Ok -> game.showLobby(result.value)
+                    is NetResult.Fail -> {
+                        message = errorText(result.code)
+                        build()
                     }
                 }
             }
@@ -180,10 +199,11 @@ class OnlineScreen(private val game: FirstGame) : KtxScreen {
     }
 
     private fun joinByCode() {
-        input(Strings["online.join_by_code"], "", Strings["online.code"]) { code ->
-            val trimmed = code.trim().uppercase()
-            if (trimmed.isEmpty()) return@input
-            join(roomId = null, code = trimmed, locked = true)
+        form.show(
+            title = Strings["online.join_by_code"],
+            fields = listOf(FormField(Strings["online.code"], maxLength = 6)),
+        ) { (code) ->
+            if (code.isNotEmpty()) join(roomId = null, code = code.uppercase(), locked = true)
         }
     }
 
@@ -210,31 +230,12 @@ class OnlineScreen(private val game: FirstGame) : KtxScreen {
     }
 
     private fun askPassword(roomId: String?, code: String?, retry: Boolean) {
-        val title = if (retry) Strings["online.error.wrong_password"] else Strings["online.password.title"]
-        input(title, "", Strings["online.password"]) { password ->
-            if (password.isBlank()) return@input
-            join(roomId, code, locked = true, password = password)
+        form.show(
+            title = if (retry) Strings["online.error.wrong_password"] else Strings["online.password.title"],
+            fields = listOf(FormField(Strings["online.password"], maxLength = 24, secret = true)),
+        ) { (password) ->
+            if (password.isNotEmpty()) join(roomId, code, locked = true, password = password)
         }
-    }
-
-    /**
-     * Ввод текста системным полем.
-     *
-     * Своей клавиатуры в игре нет, а libGDX умеет открыть родное поле ввода на
-     * каждой платформе: на десктопе окно, в браузере запрос, на телефоне —
-     * экранную клавиатуру.
-     */
-    private fun input(title: String, initial: String, hint: String, onText: (String) -> Unit) {
-        Gdx.input.getTextInput(
-            object : Input.TextInputListener {
-                override fun input(text: String) {
-                    Gdx.app.postRunnable { onText(text) }
-                }
-
-                override fun canceled() = Unit
-            },
-            title, initial, hint,
-        )
     }
 
     // -------------------------------------------------------------- раскладка

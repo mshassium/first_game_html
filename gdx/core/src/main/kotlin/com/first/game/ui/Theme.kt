@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.NinePatch
 import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
+import com.badlogic.gdx.scenes.scene2d.ui.TextField
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable
 import com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
@@ -37,6 +38,25 @@ class Theme(val assets: Assets) {
     val body = Label.LabelStyle(assets.bodyFont, Palette.TEXT)
     val bodyMuted = Label.LabelStyle(assets.bodyFont, Palette.TEXT_MUTED)
     val bodyBold = Label.LabelStyle(assets.bodyBoldFont, Palette.TEXT)
+
+    /**
+     * Поле ввода: ник, название комнаты, пароль.
+     *
+     * Своего спрайта у поля нет — берём выпадающий список из атласа, он ровно
+     * та же «утопленная» плашка. Курсор и выделение рисуются белым пикселем,
+     * подкрашенным палитрой.
+     */
+    val textField = TextField.TextFieldStyle(
+        assets.bodyFont,
+        Palette.TEXT,
+        TextureRegionDrawable(assets.white).tint(Palette.GOLD_LIGHT),
+        TextureRegionDrawable(assets.white).tint(Palette.rgba(Palette.GOLD, 0.35f)),
+        stretchable("dropdown_closed", COMPACT_SPLIT, COMPACT_SPLIT, assets.panelStone),
+    ).apply {
+        focusedBackground = stretchable("dropdown_focus", COMPACT_SPLIT, COMPACT_SPLIT, assets.panelStone)
+        messageFontColor = Palette.TEXT_MUTED
+        messageFont = assets.bodyFont
+    }
 
     val button = TextButton.TextButtonStyle(
         stretchable("btn_primary_up", 0.12f, 0.32f, assets.buttonUp),
