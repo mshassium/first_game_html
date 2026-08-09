@@ -24,6 +24,7 @@ import com.first.game.net.Sockets
  *   -Dfirst.net=duel             — сетевой прогон: партия через настоящий сервер
  *   -Dfirst.net=poll             — то же, но без сокета: проверка работы опросом
  *   -Dfirst.net=surrender        — партия со сдачей: проверка исхода на экране
+ *   -Dfirst.timer=on             — крутить таймер хода на столе без сетевой партии
  *   -Dfirst.net=host             — окно-хозяин: заводит комнату и играет само
  *   -Dfirst.net=guest            — окно-гость: входит в первую комнату и играет само
  *   -Dfirst.profile=b            — отдельные настройки: два окна как разные игроки
@@ -53,6 +54,7 @@ fun main() {
             bootToGame, autoPlay, System.getProperty("first.overlay"), speed,
             bootNet = System.getProperty("first.net")?.takeIf { it == "host" || it == "guest" },
             bootToOnline = System.getProperty("first.boot") == "online",
+            timerDemo = System.getProperty("first.timer") == "on",
         )
     }
     val listener: ApplicationListener = if (shots != null) {

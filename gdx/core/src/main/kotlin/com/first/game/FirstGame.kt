@@ -45,6 +45,8 @@ class FirstGame(
     private val bootNet: String? = null,
     /** Открыть сразу список комнат — для проверки сетевых экранов. */
     private val bootToOnline: Boolean = false,
+    /** Крутить таймер хода на живом столе без сетевой партии — для проверки вида. */
+    val timerDemo: Boolean = false,
 ) : Game() {
 
     lateinit var batch: SpriteBatch private set

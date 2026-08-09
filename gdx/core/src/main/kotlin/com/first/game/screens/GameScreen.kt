@@ -45,6 +45,7 @@ import com.first.game.ui.CardActor
 import com.first.game.ui.ForbidBanner
 import com.first.game.ui.GlowActor
 import com.first.game.ui.Palette
+import com.first.game.ui.TurnTimer
 import com.first.game.ui.drawCover
 import ktx.app.KtxScreen
 
@@ -104,6 +105,13 @@ class GameScreen(
     private var netStatus = NetStatus.POLLING
     private var netMessage = ""
     private var netLabel: Label? = null
+
+    /** Обратный отсчёт хода: рисуется поверх стола на последних секундах. */
+    private val turnTimer = TurnTimer(assets, theme)
+
+    /** Показ таймера без сетевой партии: секунды идут по кругу. Для отладки вида. */
+    private val demoTimer = game.timerDemo
+    private var demoSeconds = 9.4f
     private var aiDelay = 0f
     private val hudOverlay = HudOverlay()
     private var hudHint: Group? = null
@@ -223,9 +231,9 @@ class GameScreen(
             netStatus == NetStatus.POLLING -> Strings["online.polling"]
             else -> ""
         }
-        val timer = if (state.isOver) "" else "${Strings["online.turn_left"]}: ${secondsLeft.toInt().coerceAtLeast(0)}"
+        // Время показывает не строка, а сам стол: см. drawTurnTimer.
         val rival = net?.opponent?.takeIf { it.isNotEmpty() }?.let { "${Strings["online.opponent"]}: $it" } ?: ""
-        label.setText(listOf(rival, timer, connection).filter { it.isNotEmpty() }.joinToString("   "))
+        label.setText(listOf(rival, connection).filter { it.isNotEmpty() }.joinToString("   "))
         label.pack()
         // Под полосой HUD: верхний ряд занят счётчиками, часами и кнопкой меню.
         label.setPosition((layout.worldWidth - label.width) / 2f, layout.worldHeight * 0.885f)
@@ -383,6 +391,29 @@ class GameScreen(
         advance(delta)
         stage.act(delta)
         stage.draw()
+
+        drawTurnTimer(delta)
+    }
+
+    /**
+     * Обратный отсчёт рисуется последним и только на исходе времени: пока его
+     * много, счётчик над столом лишь мешает смотреть на карты.
+     */
+    private fun drawTurnTimer(delta: Float) {
+        val seconds = if (demoTimer) {
+            demoSeconds = (demoSeconds - delta).let { if (it <= 0.2f) 9.4f else it }
+            demoSeconds
+        } else {
+            if (!online || state.isOver) return
+            secondsLeft
+        }
+
+        // Ждут того, чей портрет и подсвечен: у него же появляется отсчёт.
+        val portrait = if (state.actingSide == Side.YOU) layout.youPortrait else layout.aiPortrait
+        game.batch.projectionMatrix = stage.viewport.camera.combined
+        game.batch.begin()
+        turnTimer.draw(game.batch, seconds, portrait)
+        game.batch.end()
     }
 
     override fun resize(width: Int, height: Int) {
