@@ -268,7 +268,7 @@ class OnlineScreen(private val game: FirstGame) : KtxScreen {
             val lock = if (room.hasPassword) "  ${Strings["online.locked"]}" else ""
             val caption = "${room.name} — ${room.host}$lock"
             list.add(
-                menuButton(theme, game.assets, game.sound, caption, null, capSize) {
+                menuButton(theme, game.assets, game.sound, caption, null, capSize, listWidth) {
                     join(room.id, room.code, room.hasPassword)
                 },
             ).size(listWidth, rowHeight).padBottom(gap * 0.6f).row()
@@ -278,21 +278,21 @@ class OnlineScreen(private val game: FirstGame) : KtxScreen {
         val actions = Table()
         val buttonWidth = listWidth * 0.48f
         actions.add(
-            menuButton(theme, game.assets, game.sound, Strings["online.create"], "duel", capSize) { createRoom() },
+            menuButton(theme, game.assets, game.sound, Strings["online.create"], "duel", capSize, buttonWidth) { createRoom() },
         ).size(buttonWidth, rowHeight).padRight(gap)
         actions.add(
-            menuButton(theme, game.assets, game.sound, Strings["online.join_by_code"], null, capSize) { joinByCode() },
+            menuButton(theme, game.assets, game.sound, Strings["online.join_by_code"], null, capSize, buttonWidth) { joinByCode() },
         ).size(buttonWidth, rowHeight).row()
         root.add(actions).padTop(gap).row()
 
         val bottom = Table()
         bottom.add(
-            menuButton(theme, game.assets, game.sound, Strings["online.refresh"], "restart", capSize) {
+            menuButton(theme, game.assets, game.sound, Strings["online.refresh"], "restart", capSize, buttonWidth) {
                 loadRooms(silent = false)
             },
         ).size(buttonWidth, rowHeight).padRight(gap)
         bottom.add(
-            menuButton(theme, game.assets, game.sound, Strings["common.back"], null, capSize) { game.showMenu() },
+            menuButton(theme, game.assets, game.sound, Strings["common.back"], null, capSize, buttonWidth) { game.showMenu() },
         ).size(buttonWidth, rowHeight).row()
         root.add(bottom).padTop(gap * 0.6f).row()
     }

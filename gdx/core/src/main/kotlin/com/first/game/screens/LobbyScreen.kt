@@ -133,7 +133,7 @@ class LobbyScreen(private val game: FirstGame, private val room: RoomInfo) : Ktx
         }).width(worldWidth * 0.5f).padBottom(gap * 1.5f).row()
 
         root.add(
-            menuButton(theme, game.assets, game.sound, Strings["online.leave"], null, capSize) { leave() },
+            menuButton(theme, game.assets, game.sound, Strings["online.leave"], null, capSize, buttonWidth) { leave() },
         ).size(buttonWidth, buttonHeight).row()
     }
 

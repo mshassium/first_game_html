@@ -28,11 +28,23 @@ fun menuButton(
     icon: String? = null,
     /** Высота прописных в мире экрана: от неё считаются отступы. */
     capSize: Float,
+    /** Ширина кнопки, если известна: по ней ужимается длинная подпись. */
+    width: Float = 0f,
     action: () -> Unit,
 ): TextButton {
     val button = TextButton(text, theme.button)
     val label = button.label
     val region = assets.icon(icon ?: "")
+
+    // Длинная подпись на узкой кнопке наезжает на иконку, поэтому её ужимаем.
+    // Ширина известна не всегда: в главном меню кнопки заведомо просторные.
+    if (width > 0f) {
+        // Подпись центрируется по всей ширине кнопки, поэтому запас нужен с
+        // обеих сторон от иконки, иначе длинный текст подходит к ней вплотную.
+        val available = width - capSize * (if (region != null) 3f else 1.2f)
+        val natural = label.prefWidth
+        if (natural > available && natural > 0f) label.setFontScale(available / natural)
+    }
 
     button.clearChildren()
     label.setAlignment(Align.center)

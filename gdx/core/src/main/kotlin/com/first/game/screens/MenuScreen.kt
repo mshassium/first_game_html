@@ -98,23 +98,80 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
 
         val worldWidth = stage.viewport.worldWidth
         val worldHeight = stage.viewport.worldHeight
-        // Веер, заголовок и четыре кнопки должны помещаться по высоте целиком.
-        val cardHeight = (worldHeight * 0.17f).coerceIn(56f, 130f)
-        val cardWidth = cardHeight / 1.5f
-        val buttonHeight = (worldHeight * 0.085f).coerceIn(44f, 70f)
+
+        // Список собирается первым: от числа кнопок зависят все размеры.
+        val buttons = mutableListOf<Triple<String, String, () -> Unit>>()
+        // «Продолжить» появляется только когда есть что продолжать.
+        if (SaveGame.exists) {
+            buttons += Triple(Strings["menu.continue"], "restart") { game.continueGame() }
+        }
+        buttons += listOf(
+            Triple(Strings["menu.play"], "duel") { confirmNewGame() },
+            // Своей иконки для сети в атласе нет, а чужая путала бы: круговая
+            // стрелка занята «Продолжить», скрещённые топоры — обычной игрой.
+            Triple(Strings["menu.online"], "") { game.showOnline() },
+            Triple(Strings["menu.rules"], "rules") { overlay.showRules() },
+            Triple(Strings["menu.settings"], "settings") { showSettings() },
+            // Подпись — только название языка: что это переключатель, говорит иконка флажков.
+            Triple(Strings.language.label, "lang") { toggleLanguage() },
+        )
+
+        val title = Label(Strings["app.title"], theme.titleLarge).apply {
+            color = Palette.GOLD_LIGHT
+            setAlignment(Align.center)
+        }
+        val subtitle = Label(Strings["app.subtitle"], theme.bodyMuted).apply { setAlignment(Align.center) }
+
+        /**
+         * Меню обязано помещаться целиком.
+         *
+         * Раньше размеры брались долями от высоты экрана, и стоило добавить
+         * шестую кнопку, как нижняя уехала за край, а эмблема — за верхний.
+         * Теперь блок сначала измеряется, и если не влезает, всё пропорционально
+         * ужимается: лучше кнопки помельче, чем обрезанные.
+         */
+        val titleBlock = title.prefHeight + subtitle.prefHeight
+        var scale = 1f
+        var buttonHeight: Float
+        var emblemHeight: Float
+        var gap: Float
+        var attempts = 0
+        do {
+            gap = worldHeight * 0.016f * scale
+            buttonHeight = (worldHeight * 0.085f).coerceIn(44f, 70f) * scale
+            emblemHeight = worldHeight * 0.20f * scale
+            val total = emblemHeight + gap * 1.5f + titleBlock + buttons.size * (buttonHeight + gap)
+            if (total <= worldHeight * 0.96f) break
+            scale *= 0.94f
+        } while (attempts++ < 12)
+
         val buttonWidth = (worldWidth * 0.26f).coerceIn(200f, 380f)
 
-        // Эмблема Ордена над заголовком.
-        val emblem = game.assets.uiRegion("emblem_first")?.let { region ->
-            val height = worldHeight * 0.20f
-            Image(region) to (height * region.regionWidth / region.regionHeight to height)
+        val emblem = game.assets.uiRegion("emblem_first")
+        if (emblem != null) {
+            val width = emblemHeight * emblem.regionWidth / emblem.regionHeight
+            root.add(Image(emblem)).size(width, emblemHeight).padBottom(gap * 0.5f).row()
+        } else {
+            root.add(cardFan(worldHeight * 0.17f * scale)).padBottom(gap).row()
         }
+        root.add(title).padBottom(2f).row()
+        root.add(subtitle).padBottom(gap).row()
 
+        for ((text, icon, action) in buttons) {
+            root.add(menuButton(text, icon, action))
+                .size(buttonWidth, buttonHeight).padBottom(gap).row()
+        }
+    }
+
+    /** Веер карт вместо эмблемы: показывается, пока её нет в атласе. */
+    private fun cardFan(cardHeight: Float): Table {
+        val height = cardHeight.coerceIn(56f, 130f)
+        val width = height / 1.5f
         val fan = Table()
         Letter.ALL.forEachIndexed { index, letter ->
             val card = CardActor(game.assets, letter)
-            card.setSize(cardWidth, cardHeight)
-            card.setOrigin(cardWidth / 2f, cardHeight / 2f)
+            card.setSize(width, height)
+            card.setOrigin(width / 2f, height / 2f)
             card.rotation = (index - 2) * 5f
             // Едва заметное дыхание: карты по очереди приподнимаются.
             card.addAction(
@@ -127,42 +184,9 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
                     ),
                 ),
             )
-            fan.add(card).size(cardWidth, cardHeight).padLeft(if (index == 0) 0f else cardWidth * 0.12f)
+            fan.add(card).size(width, height).padLeft(if (index == 0) 0f else width * 0.12f)
         }
-
-        val title = Label(Strings["app.title"], theme.titleLarge).apply {
-            color = Palette.GOLD_LIGHT
-            setAlignment(Align.center)
-        }
-        val subtitle = Label(Strings["app.subtitle"], theme.bodyMuted).apply { setAlignment(Align.center) }
-
-        val gap = worldHeight * 0.016f
-        if (emblem != null) {
-            val (image, size) = emblem
-            root.add(image).size(size.first, size.second).padBottom(gap * 0.5f).row()
-        } else {
-            root.add(fan).padBottom(gap).row()
-        }
-        root.add(title).padBottom(2f).row()
-        root.add(subtitle).padBottom(gap).row()
-
-        val buttons = mutableListOf<Triple<String, String, () -> Unit>>()
-        // «Продолжить» появляется только когда есть что продолжать.
-        if (SaveGame.exists) {
-            buttons += Triple(Strings["menu.continue"], "restart") { game.continueGame() }
-        }
-        buttons += listOf(
-            Triple(Strings["menu.play"], "duel") { confirmNewGame() },
-            Triple(Strings["menu.online"], "restart") { game.showOnline() },
-            Triple(Strings["menu.rules"], "rules") { overlay.showRules() },
-            Triple(Strings["menu.settings"], "settings") { showSettings() },
-            // Подпись — только название языка: что это переключатель, говорит иконка флажков.
-            Triple(Strings.language.label, "lang") { toggleLanguage() },
-        )
-        for ((text, icon, action) in buttons) {
-            root.add(menuButton(text, icon, action))
-                .size(buttonWidth, buttonHeight).padBottom(gap).row()
-        }
+        return fan
     }
 
     /**
