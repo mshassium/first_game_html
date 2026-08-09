@@ -34,7 +34,7 @@ btn_primary_up
   index: -1
 btn_round_disabled
   rotate: false
-  xy: 1920, 311
+  xy: 1676, 1380
   size: 120, 105
   orig: 120, 105
   offset: 0, 0
@@ -76,7 +76,7 @@ checkbox_checked
   index: -1
 checkbox_empty
   rotate: false
-  xy: 1759, 432
+  xy: 1794, 1213
   size: 149, 151
   orig: 149, 151
   offset: 0, 0
@@ -209,7 +209,7 @@ icon_duel
   index: -1
 icon_hand
   rotate: false
-  xy: 1606, 979
+  xy: 1640, 788
   size: 171, 174
   orig: 171, 174
   offset: 0, 0
@@ -251,14 +251,21 @@ icon_music_off
   index: -1
 icon_music_on
   rotate: false
-  xy: 1640, 789
+  xy: 1759, 598
   size: 170, 174
   orig: 170, 174
   offset: 0, 0
   index: -1
+icon_online
+  rotate: false
+  xy: 755, 93
+  size: 172, 172
+  orig: 172, 172
+  offset: 0, 0
+  index: -1
 icon_restart
   rotate: false
-  xy: 755, 90
+  xy: 1606, 978
   size: 172, 175
   orig: 172, 175
   offset: 0, 0
@@ -286,21 +293,21 @@ icon_settings
   index: -1
 icon_sound_off
   rotate: false
-  xy: 1793, 979
+  xy: 1759, 408
   size: 171, 174
   orig: 171, 174
   offset: 0, 0
   index: -1
 icon_sound_on
   rotate: false
-  xy: 1826, 789
+  xy: 1759, 218
   size: 171, 174
   orig: 171, 174
   offset: 0, 0
   index: -1
 icon_speed
   rotate: false
-  xy: 1759, 599
+  xy: 1759, 28
   size: 170, 174
   orig: 170, 174
   offset: 0, 0
@@ -349,7 +356,7 @@ portrait_player
   index: -1
 slider_knob
   rotate: false
-  xy: 1759, 270
+  xy: 1794, 1051
   size: 145, 146
   orig: 145, 146
   offset: 0, 0
