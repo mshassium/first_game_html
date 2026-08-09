@@ -51,12 +51,28 @@ class Theme(val assets: Assets) {
         Palette.TEXT,
         TextureRegionDrawable(assets.white).tint(Palette.GOLD_LIGHT),
         TextureRegionDrawable(assets.white).tint(Palette.rgba(Palette.GOLD, 0.35f)),
-        stretchable("dropdown_closed", COMPACT_SPLIT, COMPACT_SPLIT, assets.panelStone),
+        fieldBackground("dropdown_closed"),
     ).apply {
-        focusedBackground = stretchable("dropdown_focus", COMPACT_SPLIT, COMPACT_SPLIT, assets.panelStone)
+        focusedBackground = fieldBackground("dropdown_focus")
         messageFontColor = Palette.TEXT_MUTED
         messageFont = assets.bodyFont
     }
+
+    /**
+     * Плашка поля ввода с внутренними полями.
+     *
+     * Отступы задаются явно: у резной рамки они берутся из девятипатча и равны
+     * толщине канта, а этого мало — текст ложится прямо на завиток угла и
+     * читается как съехавший. Заодно выравнивается высота: без равных верхнего
+     * и нижнего полей строка проседает вниз.
+     */
+    private fun fieldBackground(name: String): Drawable =
+        stretchable(name, COMPACT_SPLIT, COMPACT_SPLIT, assets.panelStone).apply {
+            leftWidth = FIELD_PAD_X
+            rightWidth = FIELD_PAD_X
+            topHeight = FIELD_PAD_Y
+            bottomHeight = FIELD_PAD_Y
+        }
 
     val button = TextButton.TextButtonStyle(
         stretchable("btn_primary_up", 0.12f, 0.32f, assets.buttonUp),
@@ -140,5 +156,9 @@ class Theme(val assets: Assets) {
 
         /** Доля capHeight, на которую Label опускает прописные ниже центра бокса. */
         const val CAP_SINK = 0.29f
+
+        /** Внутренние поля поля ввода: текст не должен наезжать на кант рамки. */
+        const val FIELD_PAD_X = 22f
+        const val FIELD_PAD_Y = 10f
     }
 }

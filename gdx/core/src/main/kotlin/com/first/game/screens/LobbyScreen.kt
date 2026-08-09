@@ -34,6 +34,9 @@ class LobbyScreen(private val game: FirstGame, private val room: RoomInfo) : Ktx
     private var message = ""
     private var leaving = false
 
+    /** Сколько ещё показывать отметку «скопировано». */
+    private var copiedFor = 0f
+
     init {
         stage.addActor(root)
         build()
@@ -54,6 +57,11 @@ class LobbyScreen(private val game: FirstGame, private val room: RoomInfo) : Ktx
             game.batch.setColor(1f, 1f, 1f, 1f)
             game.batch.drawCover(texture, stage.viewport.worldWidth, stage.viewport.worldHeight)
             game.batch.end()
+        }
+
+        if (copiedFor > 0f) {
+            copiedFor -= delta
+            if (copiedFor <= 0f) build()
         }
 
         if (!leaving) {
@@ -101,6 +109,12 @@ class LobbyScreen(private val game: FirstGame, private val room: RoomInfo) : Ktx
         }
     }
 
+    private fun copyCode() {
+        Gdx.app.clipboard.contents = room.code
+        copiedFor = COPIED_SECONDS
+        build()
+    }
+
     private fun leave() {
         leaving = true
         RoomsApi.leave(room.id) { game.showOnline() }
@@ -125,7 +139,14 @@ class LobbyScreen(private val game: FirstGame, private val room: RoomInfo) : Ktx
 
         root.add(Label(Strings["online.code"], theme.bodyMuted)).padBottom(gap * 0.3f).row()
         root.add(Label(room.code, theme.titleLarge).apply { color = Palette.GOLD_LIGHT })
-            .padBottom(gap).row()
+            .padBottom(gap * 0.4f).row()
+
+        // Код диктуют голосом или пересылают, поэтому его нужно уметь забрать
+        // из игры: выделить текст на холсте нельзя, это не веб-страница.
+        val copyLabel = if (copiedFor > 0f) Strings["online.copied"] else Strings["online.copy_code"]
+        root.add(
+            menuButton(theme, game.assets, game.sound, copyLabel, null, capSize, buttonWidth) { copyCode() },
+        ).size(buttonWidth, buttonHeight).padBottom(gap).row()
 
         root.add(Label(message.ifEmpty { Strings["online.waiting.body"] }, theme.body).apply {
             setAlignment(Align.center)
@@ -143,5 +164,8 @@ class LobbyScreen(private val game: FirstGame, private val room: RoomInfo) : Ktx
 
         /** Чаще незачем: партия начинается ровно один раз. */
         const val POLL_SECONDS = 2f
+
+        /** Сколько держится отметка «скопировано». */
+        const val COPIED_SECONDS = 1.6f
     }
 }

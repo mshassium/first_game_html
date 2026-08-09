@@ -98,7 +98,14 @@ class FormDialog(
                 .width(panelWidth * 0.78f).left().padBottom(gap * 0.2f).row()
 
             val input = TextField(field.initial, theme.textField).apply {
+                // По центру: у резной рамки внутренние поля берутся из девятипатча
+                // и равны толщине канта, поэтому прижатый влево текст ложился
+                // прямо на завиток угла.
+                setAlignment(Align.center)
                 maxLength = field.maxLength
+                // Каретка в конец: иначе она стоит перед подставленным текстом,
+                // и первый же символ уходит в начало строки.
+                setCursorPosition(field.initial.length)
                 if (field.secret) {
                     isPasswordMode = true
                     setPasswordCharacter('•')
