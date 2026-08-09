@@ -1425,9 +1425,18 @@ class GameScreen(
     ): TextButton {
         val button = TextButton(text, theme.button)
         button.setBounds(x, y, width, height)
-        // Нижний обод кнопки толще верхнего — приподнимаем подпись, иначе она садится на него.
-        button.padTop(0f)
-        button.padBottom(height * 0.12f)
+        // Высота подписи задаётся явно: по умолчанию Label просит
+        // `capHeight - descent * 2`, у заголовочного шрифта это 71 при кнопке около 60 —
+        // бокс не влезает и распирает таблицу. Плюс подъём прописных, которые Label
+        // центрует ниже середины своего бокса (см. Theme.capSink).
+        val label = button.label
+        button.clearChildren()
+        label.setAlignment(com.badlogic.gdx.utils.Align.center)
+        button.add(label)
+            .height(height * 0.5f)
+            .expand()
+            .center()
+            .padBottom(theme.capSink(label) * 2f)
         button.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 game.sound.play(SoundManager.Sfx.UI_CLICK)

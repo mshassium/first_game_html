@@ -88,6 +88,18 @@ class Theme(val assets: Assets) {
         return NinePatchDrawable(patch)
     }
 
+    /**
+     * Насколько Label опускает прописные буквы ниже центра своего бокса.
+     *
+     * Вертикальную центровку Label делает по высоте разметки текста, а она не
+     * совпадает с прописными: у шрифта заголовков capHeight 39 при боксе 71.
+     * Величина измерена по экрану настроек и задана в долях capHeight, чтобы
+     * не зависеть от размера кнопки — от него смещение не меняется.
+     * Отступ ячейки сдвигает виджет на половину своей величины, поэтому
+     * вызывающий удваивает результат.
+     */
+    fun capSink(label: Label): Float = label.style.font.capHeight * CAP_SINK
+
     fun dim(alpha: Float): Drawable = TextureRegionDrawable(assets.white).tint(Palette.rgba(Palette.SHADOW, alpha))
 
     fun tinted(color: Color): Drawable = TextureRegionDrawable(assets.white).tint(color)
@@ -105,5 +117,8 @@ class Theme(val assets: Assets) {
          * двух третей высоты, иначе на растяжку ничего не остаётся.
          */
         const val COMPACT_BUTTON_SCALE = 0.42f
+
+        /** Доля capHeight, на которую Label опускает прописные ниже центра бокса. */
+        const val CAP_SINK = 0.29f
     }
 }

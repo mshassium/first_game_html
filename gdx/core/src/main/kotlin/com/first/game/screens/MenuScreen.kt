@@ -238,17 +238,7 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
     }
 
 
-    /**
-     * Насколько Label опускает прописные буквы ниже центра своего бокса.
-     *
-     * Вертикальную центровку Label делает по высоте разметки текста, а она не
-     * совпадает с прописными: у шрифта заголовков capHeight 39 при боксе 71.
-     * Величина измерена по экрану настроек и задана в долях capHeight, чтобы
-     * не зависеть от размера кнопки — от него смещение не меняется.
-     * Отступ ячейки сдвигает виджет на половину своей величины, поэтому
-     * вызывающий удваивает результат.
-     */
-    private fun capSink(label: Label): Float = label.style.font.capHeight * CAP_SINK
+    private fun capSink(label: Label): Float = theme.capSink(label)
 
     private fun toggleLanguage() {
         val next = Strings.nextLanguage()
@@ -331,8 +321,5 @@ class MenuScreen(private val game: FirstGame) : KtxScreen {
 
         /** Насколько иконка кнопки отступает от края, в долях своего размера. */
         const val ICON_INSET = 0.35f
-
-        /** Доля capHeight, на которую Label опускает прописные ниже центра бокса. */
-        const val CAP_SINK = 0.29f
     }
 }
