@@ -3,6 +3,7 @@ package com.first.game.teavm
 import com.first.game.FirstGame
 import com.first.game.net.AppProfile
 import com.first.game.net.Sockets
+import com.first.game.ui.SoftKeyboards
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplication
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplicationConfiguration
 import com.github.xpenatan.gdx.teavm.backends.web.WebAssetPreloadListener
@@ -30,10 +31,24 @@ object TeaVMLauncher {
 
     @JvmStatic
     fun main(args: Array<String>) {
+        // Отладочные ключи приходят строкой запроса: ?net=guest&profile=b.
+        // Системных свойств в браузере нет, а проверять сетевые экраны в вебе
+        // как-то надо.
+        val query = org.teavm.jso.browser.Window.current().location.search.orEmpty()
+
         // Ставим до старта приложения: слушатели должны существовать раньше,
         // чем пользователь сделает первое касание.
         WebBrowserHooks.installAudioResume()
         WebBrowserHooks.installOrientationLock()
+        // Клавиатуру веб-бэкенд libGDX не показывает вовсе, поэтому на телефоне
+        // поля ввода без этого моста бесполезны. На десктопе клавиатура и так
+        // физическая — там ввод идёт обычным путём, через события клавиш, и
+        // подменять его незачем; ?keyboard=1 включает мост принудительно, иначе
+        // проверить его с настольного браузера нечем.
+        if (WebKeyboard.isTouchDevice() || queryValue(query, "keyboard") == "1") {
+            WebKeyboard.install()
+            SoftKeyboards.instance = WebKeyboardAdapter()
+        }
         // Постоянное соединение для сетевой игры: у libGDX своего сокета нет,
         // в вебе за него отвечает сокет браузера.
         Sockets.factory = { WebSocketAdapter() }
@@ -46,10 +61,6 @@ object TeaVMLauncher {
             usePhysicalPixels = true
             preloadListener = WebAssetPreloadListener { }
         }
-        // Отладочные ключи приходят строкой запроса: ?net=guest&profile=b.
-        // Системных свойств в браузере нет, а проверять сетевые экраны в вебе
-        // как-то надо.
-        val query = org.teavm.jso.browser.Window.current().location.search.orEmpty()
         val net = queryValue(query, "net")?.takeIf { it == "host" || it == "guest" }
         queryValue(query, "profile")?.let { AppProfile.suffix = it }
 

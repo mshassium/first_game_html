@@ -1,6 +1,7 @@
 package com.first.game.ui
 
 import com.badlogic.gdx.Input
+import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.Group
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.InputListener
@@ -45,12 +46,16 @@ class FormDialog(
 
     private var current: Group? = null
 
+    /** Пусто там, где клавиатуру показывает сама libGDX: на десктопе и в приложениях. */
+    private val keyboard: SoftKeyboard? get() = SoftKeyboards.instance
+
     val isOpen: Boolean get() = current != null
 
     fun close() {
         current?.remove()
         current = null
         stage.keyboardFocus = null
+        keyboard?.close()
     }
 
     /**
@@ -93,6 +98,16 @@ class FormDialog(
             setAlignment(Align.center)
         }).width(panelWidth * 0.86f).padBottom(gap * 0.6f).row()
 
+        // Поле, за которым сейчас следит клавиатура платформы: набранное она
+        // отдаёт строкой, и разложить эту строку больше некуда.
+        var active: TextField? = null
+        val softKeyboard = keyboard
+
+        fun bind(spec: FormField, input: TextField) {
+            active = input
+            softKeyboard?.open(input.text, spec.maxLength, spec.secret)
+        }
+
         val inputs = fields.map { field ->
             content.add(Label(field.label, theme.bodyMuted).apply { setAlignment(Align.left) })
                 .width(panelWidth * 0.78f).left().padBottom(gap * 0.2f).row()
@@ -110,6 +125,14 @@ class FormDialog(
                     isPasswordMode = true
                     setPasswordCharacter('•')
                 }
+                // Касание поля — тот самый жест, по которому платформа согласна
+                // открыть клавиатуру. Позже, из игрового цикла, будет поздно.
+                if (softKeyboard != null) {
+                    onscreenKeyboard = object : TextField.OnscreenKeyboard {
+                        override fun show(textField: TextField) = bind(field, textField)
+                        override fun close() = softKeyboard.close()
+                    }
+                }
             }
             content.add(input).size(panelWidth * 0.78f, rowHeight).padBottom(gap * 0.6f).row()
             input
@@ -117,13 +140,15 @@ class FormDialog(
 
         val values = { inputs.map { it.text.trim() } }
 
+        fun submit() {
+            val result = values()
+            close()
+            onConfirm(result)
+        }
+
         val buttons = Table()
         buttons.add(
-            menuButton(theme, assets, sound, confirm, null, capSize, panelWidth * 0.37f) {
-                val result = values()
-                close()
-                onConfirm(result)
-            },
+            menuButton(theme, assets, sound, confirm, null, capSize, panelWidth * 0.37f) { submit() },
         ).size(panelWidth * 0.37f, rowHeight).padRight(gap * 0.6f)
         buttons.add(
             menuButton(theme, assets, sound, Strings["common.back"], null, capSize, panelWidth * 0.37f) { close() },
@@ -132,23 +157,42 @@ class FormDialog(
 
         content.pack()
         val panelHeight = content.prefHeight + gap * 2.4f
-        val frame = Image(theme.modalFrame)
-        frame.setBounds(
-            (worldWidth - panelWidth) / 2f,
-            (worldHeight - panelHeight) / 2f,
-            panelWidth, panelHeight,
-        )
-        group.addActor(frame)
-        content.setBounds(frame.x, frame.y + gap * 1.2f, panelWidth, content.prefHeight)
-        group.addActor(content)
+
+        // Рамка и содержимое ходят вместе, поэтому лежат в одной группе: под
+        // клавиатурой окно и поднимается, и ужимается разом.
+        val panel = Group()
+        panel.setSize(panelWidth, panelHeight)
+        panel.addActor(Image(theme.modalFrame).apply { setSize(panelWidth, panelHeight) })
+        content.setBounds(0f, gap * 1.2f, panelWidth, content.prefHeight)
+        panel.addActor(content)
+        group.addActor(panel)
+
+        /**
+         * Окно посередине того, что осталось от экрана.
+         *
+         * Клавиатура не двигает страницу, а накрывает её снизу: окно,
+         * поставленное по центру экрана, оказалось бы под ней, и игрок печатал
+         * бы вслепую. Если в оставшуюся полосу окно не влезает целиком, оно
+         * ужимается — иначе кнопки подтверждения уходят под клавиатуру.
+         *
+         * @param covered доля экрана снизу, которую забрала клавиатура
+         */
+        fun place(covered: Float) {
+            val visibleHeight = worldHeight * (1f - covered)
+            val scale = (visibleHeight * 0.94f / panelHeight).coerceAtMost(1f)
+            panel.setScale(scale)
+            panel.setPosition(
+                (worldWidth - panelWidth * scale) / 2f,
+                worldHeight - visibleHeight + (visibleHeight - panelHeight * scale) / 2f,
+            )
+        }
+        place(0f)
 
         // Enter подтверждает, Esc закрывает — привычнее, чем целиться в кнопку.
         group.addListener(object : InputListener() {
             override fun keyDown(event: InputEvent?, keycode: Int): Boolean = when (keycode) {
                 Input.Keys.ENTER, Input.Keys.NUMPAD_ENTER -> {
-                    val result = values()
-                    close()
-                    onConfirm(result)
+                    submit()
                     true
                 }
 
@@ -161,10 +205,32 @@ class FormDialog(
             }
         })
 
+        // Набранное забираем каждый кадр: платформа отдаёт строку целиком, и
+        // никакого события «символ пришёл» у неё для игры нет.
+        if (softKeyboard != null) {
+            group.addActor(object : Actor() {
+                override fun act(delta: Float) {
+                    if (softKeyboard.pollSubmit()) return submit()
+                    softKeyboard.poll()?.let { typed ->
+                        active?.apply {
+                            text = typed
+                            setCursorPosition(typed.length)
+                        }
+                    }
+                    place(softKeyboard.coveredFraction)
+                }
+            })
+        }
+
         group.color.a = 0f
         group.addAction(Actions.fadeIn(0.15f))
         stage.addActor(group)
         stage.keyboardFocus = inputs.firstOrNull()
         current = group
+
+        // Курсор в поле стоит с первого кадра — пусть и клавиатура появляется
+        // сразу, а не после лишнего касания. Окно открыто по нажатию кнопки,
+        // так что жест игрока ещё в силе и платформа запрос примет.
+        fields.firstOrNull()?.let { spec -> inputs.firstOrNull()?.let { bind(spec, it) } }
     }
 }
