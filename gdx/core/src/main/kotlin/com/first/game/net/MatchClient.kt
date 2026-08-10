@@ -68,9 +68,18 @@ class MatchClient(
     var status: NetStatus = NetStatus.POLLING
         private set
 
+    /**
+     * Ход ушёл на сервер, ответа ещё нет.
+     *
+     * Экрану это нужно знать: состояние до ответа не меняется, и без такой
+     * отметки он спрашивал бы одно и то же по второму разу — диалог выбора
+     * закрывался от касания и тут же открывался снова, будто карту не выбрали.
+     */
+    var busy: Boolean = false
+        private set
+
     private var pollTimer = 0f
     private var socketWait = 0f
-    private var awaitingReply = false
     private var stopped = false
 
     /** Последний показанный вид: по нему клиент напоминает о себе после ответа. */
@@ -136,11 +145,11 @@ class MatchClient(
      * уже не будет. Поэтому после ответа клиент напоминает о последнем виде.
      */
     private fun command(kind: String, index: Int) {
-        if (awaitingReply) return
-        awaitingReply = true
+        if (busy) return
+        busy = true
         val body = Json.obj("version" to version, "kind" to kind, "index" to index)
         Http.post("${NetConfig.API_BASE}/matches/$matchId/command", body, Auth.accessToken) { result ->
-            awaitingReply = false
+            busy = false
             handle(result)
             remindIfMissed()
         }
@@ -228,7 +237,7 @@ class MatchClient(
         lastView = view
         // Пришло, пока ждали ответа на свой ход: значит собеседник мог не успеть
         // отреагировать, и после ответа ему надо напомнить.
-        if (awaitingReply) viewChangedWhileBusy = true
+        if (busy) viewChangedWhileBusy = true
         onView(view)
     }
 

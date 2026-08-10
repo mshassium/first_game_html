@@ -54,6 +54,9 @@ export async function startMatch(room) {
  *
  * Каждый игрок получает свою перспективу и только то, что имеет право видеть:
  * рука соперника и обе колоды в видах уже заменены заглушками.
+ *
+ * Возвращает записанные строки: тому, кто сделал ход, они и уходят ответом.
+ * Перечитывать их из базы незачем — это лишний перелёт до Франкфурта.
  */
 export async function writeViews(match, state, events, deadline) {
   const now = new Date().toISOString();
@@ -71,6 +74,15 @@ export async function writeViews(match, state, events, deadline) {
     updated_at: now,
   }));
   await upsert('match_views', rows);
+  return rows;
+}
+
+/** Вид игрока среди только что записанных — в том же виде, в каком его отдаёт база. */
+function viewFromRows(rows, playerId) {
+  const row = rows.find((view) => view.player_id === playerId);
+  if (!row) fail(Errors.MATCH_NOT_FOUND);
+  const { seat, version, state, events, deadline } = row;
+  return { seat, version, state, events, deadline };
 }
 
 /** Вид партии глазами игрока — то же, что придёт ему по сокету. */
@@ -190,10 +202,10 @@ export async function applyCommand(playerId, matchId, { version, kind, index }) 
 
   if (!saved) fail(Errors.STALE_VERSION, { version: match.version });
 
-  await writeViews(saved, result.state, result.events, deadline);
+  const views = await writeViews(saved, result.state, result.events, deadline);
   if (over) await closeRoom(saved.room_id);
 
-  return viewOf(matchId, playerId);
+  return viewFromRows(views, playerId);
 }
 
 /** Сдаться: партия заканчивается в пользу соперника. */
@@ -238,9 +250,13 @@ export async function currentMatch(playerId) {
   if (!found) return null;
 
   const match = await expireIfDue(found);
-  const view = await viewOf(match.id, playerId);
   const opponentId = match.seat_a === playerId ? match.seat_b : match.seat_a;
-  const opponent = await selectOne('profiles', `id=eq.${opponentId}&select=nickname`);
+  // Оба запроса разом: вид партии и ник соперника друг о друге не знают, а
+  // каждый перелёт до базы стоит дороже, чем сама выборка.
+  const [view, opponent] = await Promise.all([
+    viewOf(match.id, playerId),
+    selectOne('profiles', `id=eq.${opponentId}&select=nickname`),
+  ]);
 
   return {
     matchId: match.id,

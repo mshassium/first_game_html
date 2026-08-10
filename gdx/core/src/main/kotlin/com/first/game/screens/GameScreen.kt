@@ -69,6 +69,9 @@ class GameScreen(
 
     private val online: Boolean get() = net != null
 
+    /** Ход отправлен и ответа ещё нет: новых касаний в это время не принимаем. */
+    private val sending: Boolean get() = net?.busy == true
+
     private val assets = game.assets
     private val theme = game.theme
     private val stage = Stage(ExtendViewport(WORLD_WIDTH, WORLD_HEIGHT), game.batch)
@@ -503,7 +506,10 @@ class GameScreen(
                 }
                 return
             }
-            if (state.phase == Phase.AWAITING_CHOICE && choiceDialog == null) showChoiceDialog()
+            // Пока выбор летит на сервер, спрашивать заново нечего: состояние
+            // меняется только с ответом, а диалог, открытый сразу после касания,
+            // выглядит так, будто карту не выбрали.
+            if (state.phase == Phase.AWAITING_CHOICE && choiceDialog == null && !sending) showChoiceDialog()
             return
         }
 
@@ -533,7 +539,15 @@ class GameScreen(
         val client = net
         if (client != null) {
             when (command) {
-                is Command.PlayCard -> client.play(command.handIndex)
+                is Command.PlayCard -> {
+                    // Карта трогается с места сразу, не дожидаясь сервера: иначе
+                    // между касанием и первым движением на столе висит пауза, и
+                    // касание кажется потерянным.
+                    handActors.getOrNull(command.handIndex)
+                        ?.addAction(Actions.moveBy(0f, HOVER_LIFT, director.duration(0.1f)))
+                    client.play(command.handIndex)
+                }
+
                 is Command.ChooseOption -> client.choose(command.optionIndex)
             }
             return
@@ -1377,7 +1391,7 @@ class GameScreen(
             if (playable) {
                 card.addListener(object : ClickListener() {
                     override fun clicked(event: InputEvent?, x: Float, y: Float) {
-                        if (!director.isIdle) return
+                        if (!director.isIdle || sending) return
                         game.sound.unlock()
                         apply(Command.PlayCard(index))
                     }

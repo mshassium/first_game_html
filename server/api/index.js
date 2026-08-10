@@ -65,20 +65,23 @@ async function dispatch(req, route) {
     if (second && !third && isGet) return roomState(await playerFrom(req), second);
   }
 
+  // Партии спрашивают только идентификатор игрока: ник нужен, чтобы попасть в
+  // комнату, а за столом он уже проверен. Лишняя выборка профиля на каждый ход
+  // — это ещё один перелёт до базы, самая дорогая часть запроса.
   if (head === 'matches') {
     if (second === 'current' && isGet) {
-      const match = await currentMatch((await playerFrom(req)).id);
+      const match = await currentMatch(await userIdFrom(req));
       return { match };
     }
     if (second && third === 'command' && isPost) {
-      const player = await playerFrom(req);
-      return applyCommand(player.id, second, await readJson(req));
+      const playerId = await userIdFrom(req);
+      return applyCommand(playerId, second, await readJson(req));
     }
     if (second && third === 'surrender' && isPost) {
-      return surrender((await playerFrom(req)).id, second);
+      return surrender(await userIdFrom(req), second);
     }
     if (second && third === 'claim-timeout' && isPost) {
-      return claimTimeout((await playerFrom(req)).id, second);
+      return claimTimeout(await userIdFrom(req), second);
     }
   }
 
