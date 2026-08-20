@@ -1,0 +1,38 @@
+{
+ "sheet": "/Users/railkhamitov/projects/personal/first_game_html/docs/gdx/12-art-direction-lab/e8-one-canvas/out/M12_gpt-5.4-image-2_1.png",
+ "items": [
+  {
+   "name": "NOTEPAD",
+   "box": [
+    131,
+    216,
+    660,
+    632
+   ],
+   "w": 529,
+   "h": 416
+  },
+  {
+   "name": "PUNCH",
+   "box": [
+    702,
+    276,
+    962,
+    541
+   ],
+   "w": 260,
+   "h": 265
+  },
+  {
+   "name": "TRAY",
+   "box": [
+    1014,
+    204,
+    1404,
+    655
+   ],
+   "w": 390,
+   "h": 451
+  }
+ ]
+}

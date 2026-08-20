@@ -1,0 +1,523 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>F!RST · E8 Единый холст</title>
+<style>
+:root{--bg:#0d0b08;--panel:rgba(30,25,19,.92);--ink:#eadfcd;--muted:#a3957f;--gold:#d3a54a;--rule:#3a3024;--mono:ui-monospace,Menlo,monospace;--la:.16}
+*{box-sizing:border-box}html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,"Helvetica Neue",Arial,sans-serif;overflow:hidden;height:100vh}
+#stage{position:absolute;inset:0;overflow:hidden}
+#scene{position:absolute;left:0;top:0;width:1536px;height:864px;transform-origin:0 0}
+#plate,#orig{position:absolute;left:0;top:0;width:1536px;height:864px;display:block}
+#orig{opacity:0;transition:opacity .3s}
+#lamp{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;
+ background:radial-gradient(ellipse 40% 50% at 9% 5%,rgba(255,198,112,var(--la)),rgba(255,190,100,0) 72%)}
+#fx{position:absolute;left:0;top:0;width:1536px;height:864px;pointer-events:none}
+.spr{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.obj{position:absolute;left:0;top:0;will-change:transform}
+
+.hit{cursor:pointer}
+.shadow{position:absolute;pointer-events:none;border-radius:50%;filter:blur(6px);
+ background:radial-gradient(ellipse at center,rgba(0,0,0,.7),rgba(0,0,0,.34) 46%,rgba(0,0,0,0) 72%)}
+.lbl{position:absolute;left:0;top:0;transform-origin:50% 50%;pointer-events:none;width:80px;text-align:center;
+ font:700 var(--fs,26px)/1 "Noteworthy","Bradley Hand","Marker Felt",cursive;color:#2f2519}
+#hud{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none;width:170px;
+ font:600 25px/1.25 "Noteworthy","Bradley Hand","Marker Felt",cursive;color:#241a10;opacity:.95;
+ text-shadow:0 1px 0 rgba(255,240,210,.35)}
+#hud .row{display:flex;gap:5px;align-items:baseline;letter-spacing:.03em}
+#hud .row b{font-weight:700;min-width:30px;color:#3a2a18}
+#hud s{opacity:.28}
+#menu{position:absolute;left:0;top:0;opacity:0;pointer-events:none;transition:opacity .35s;
+ filter:drop-shadow(0 16px 22px rgba(0,0,0,.6))}
+#menu img{display:block;width:100%;height:auto}
+#menu .items{position:absolute;left:9%;top:19%;width:38%;
+ font:700 32px/2.1 "Noteworthy","Bradley Hand","Marker Felt",cursive;color:#3a2c1c}
+#menu .items div{cursor:pointer}
+#menu .items div:hover{color:#7a4a1e}
+#menu .items div.pick::after{content:" ✓";color:#7a4a1e}
+#menu.on{opacity:1;pointer-events:auto}
+#seams{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .2s}
+#seams.on{opacity:1}
+#seams div{position:absolute;border:1.5px dashed rgba(255,214,140,.7);border-radius:3px}
+#cap{position:absolute;left:50%;top:16px;transform:translateX(-50%);background:rgba(16,12,9,.82);border:1px solid var(--rule);
+ padding:9px 18px;border-radius:8px;font-size:15px;opacity:0;transition:opacity .25s;max-width:62vw;text-align:center;z-index:70;pointer-events:none}
+#cap.on{opacity:1}
+#panel{position:absolute;top:12px;right:12px;width:238px;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;backdrop-filter:blur(6px);z-index:80}
+#panel h1{font:400 18px Georgia,serif;margin:0 0 2px}#panel h1 button{float:right;background:none;border:0;color:var(--muted);cursor:pointer;font-size:14px}
+#panel .sub{color:var(--muted);font-size:12px;margin:0 0 10px}
+#panel h2{font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin:12px 0 6px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.acts button{background:#2a231b;color:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:8px 6px;font:13px inherit;cursor:pointer;text-align:left}
+.acts button:hover{border-color:#6a5636}.acts button:disabled{opacity:.45;cursor:default}
+.acts button.big{grid-column:1/3;background:#332a1c;border-color:var(--gold);color:var(--gold)}
+label.chk{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:12px;margin-top:7px;cursor:pointer}
+#panel.min{width:auto}#panel.min>*:not(h1){display:none}
+</style>
+<div id="stage"><div id="scene">
+ <img id="plate" alt="">
+ <div id="table"></div>
+ <div id="hud"></div>
+ <div id="menu"><img alt=""><div class="items"></div></div>
+ <img id="orig" alt="">
+ <div id="lamp"></div>
+ <canvas id="fx"></canvas>
+ <div id="seams"></div>
+</div></div>
+<div id="cap"></div>
+<div id="panel"><h1>E8 · Единый холст <button id="minb">–</button></h1>
+ <p class="sub">Раунд 6. Карты режутся по телу и не дают артефактов, жетон садится на угол карты, сброс — растущая стопка, маркер хода не вращается.</p>
+ <h2>Сцена</h2>
+ <div class="acts"><button class="big" data-act="all">▶ Сыграть ход</button>
+  <button data-act="menu">Меню · блокнот</button><button data-act="deal">Раздача</button>
+  <button data-act="play">Розыгрыш</button><button data-act="pick">Выбор буквы</button>
+  <button data-act="tokens">Пять жетонов</button><button data-act="discard">Сброс</button>
+  <button data-act="turn">Передать ход</button><button data-act="win">Победа</button>
+  <button data-act="lose">Поражение</button><button data-act="reset">Заново</button>
+  <button class="big" data-act="orient">⟳ Портрет / ландшафт</button></div>
+ <h2>Проверка</h2>
+ <label class="chk"><input type="checkbox" id="ab"> оригинал холста поверх</label>
+ <label class="chk"><input type="checkbox" id="sm"> швы: что вырезано</label>
+ <label class="chk"><input type="checkbox" id="cp" checked> подписи</label>
+ <label class="chk"><input type="checkbox" id="slow"> замедление ×2</label>
+</div>
+<script>
+// ═══ 1. Плоскость стола ═══════════════════════════════════════════════════════
+// Гомография (u,v) → пиксели картины: u — колонка слота 0…4, v — ряд (0 — противник, 1 — я).
+// Подобрана по десяти напечатанным на коврике слотам, поэтому и продолжение плоскости
+// (v≈2 — рука на дереве, u≈−2 — место фигурок) остаётся в ракурсе стола.
+const LAYOUTS={
+ land:{name:'ландшафт', W:1536, H:864,
+  plate:'cut6/plate.png', orig:'out/M6_gpt-5.4-image-2_1.png',
+  hom:[[128.86911,-38.73185,515.34001],[-2.73745,176.21965,310.40821],[-0.00658,-0.06685,1]],
+  card:[0.838,0.767],
+  socket:{0:[-1.235,-0.259], 1:[-1.014,1.203]}, tokenSocket:[-0.855,0.325],
+  hand:{v:1.88, u:1.9, step:0.95, tilt:0.10},
+  deck:{0:[1235,392], 1:[1235,556]}, tray:[1231,268],
+  chipDeck:[1105,585], chipTray:[1092,262],
+  hud:{px:[300,760], w:170, h:96, rot:-0.19}, propK:1.0,
+  menu:{u:1.85, v:0.62, w:690, h:425},
+  punch:{v:1.60, u0:0.35, du:0.82},
+  button:[1225,596,1500,830]},
+ port:{name:'портрет', W:864, H:1536,
+  plate:'out/P1_gpt-5.4-image-2_1.png', orig:'out/P1_gpt-5.4-image-2_1.png',
+  hom:[[91.26363,-34.77996,293.45771],[-2.25072,217.57321,570.90534],[-0.00315,-0.0789,1]],
+  card:[0.812,0.539],
+  socket:{0:[-0.861,-0.152], 1:[-0.631,1.046]}, tokenSocket:[-0.812,0.101],
+  hand:{v:1.92, u:2.0, step:0.95, tilt:0.09},
+  deck:{0:[777,602], 1:[777,841]}, tray:[777,470],
+  chipDeck:[735,935], chipTray:[700,415],
+  hud:{px:[170,1385], w:150, h:88, rot:-0.14}, propK:0.68,
+  menu:{u:1.5, v:0.48, w:620, h:382},
+  punch:{v:1.55, u0:0.35, du:0.82},
+  button:null}};
+// Выбор судьи (р.6): карта ложится как нарисована, жетон садится на угол карты, сброс — растущая стопка.
+const TWEAK={skew:0, token:'corner', discard:'pile'};
+let LAY=LAYOUTS.land;
+let CANVAS_W=LAY.W, CANVAS_H=LAY.H;
+let PLATE=LAY.plate, ORIGINAL=LAY.orig;
+let H=LAY.hom, CARD_W=LAY.card[0], CARD_H=LAY.card[1];
+const LAND=LAYOUTS.land;                          // холст, в котором нарисованы карты: их исходные четырёхугольники
+function Pin(m,u,v){const d=m[2][0]*u+m[2][1]*v+m[2][2];
+ return [(m[0][0]*u+m[0][1]*v+m[0][2])/d,(m[1][0]*u+m[1][1]*v+m[1][2])/d]}
+function P(u,v){return Pin(H,u,v)}
+function quadIn(m,u,v,w,h,rot=0){const c=Math.cos(rot),s=Math.sin(rot);
+ return [[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]].map(([x,y])=>Pin(m,u+x*c-y*s,v+x*s+y*c))}
+function scaleAt(u,v){const a=P(u,v),b=P(u,v+.01);return Math.hypot(b[0]-a[0],b[1]-a[1])/.01}
+const SCALE0=scaleAt(0,1);
+function quad(u,v,w,h,rot=0){                     // прямоугольник в плоскости стола → 4 точки на картине
+ const c=Math.cos(rot),s=Math.sin(rot);
+ return [[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]].map(([x,y])=>P(u+x*c-y*s,v+x*s+y*c))}
+function planeSize(u,v,wpx,hpx){       // сколько это в единицах плоскости в данной точке стола
+ const du=Math.hypot(...P(u+.5,v).map((c,i)=>c-P(u-.5,v)[i])), dv=Math.hypot(...P(u,v+.5).map((c,i)=>c-P(u,v-.5)[i]));
+ return [wpx/du, hpx/dv]}
+function layFlat(el,u,v,wpx,hpx,rot=0,z=90){          // положить DOM-прямоугольник в плоскость стола
+ const [wu,hv]=planeSize(u,v,wpx,hpx), q=quad(u,v,wu,hv,rot);
+ const src=[[0,0],[wpx,0],[wpx,hpx],[0,hpx]];
+ el.style.width=wpx+'px';el.style.height=hpx+'px';el.style.transformOrigin='0 0';el.style.zIndex=String(z);
+ el.style.transform=mat3d(mul3(unitTo(q),inv3(unitTo(src))))}
+function liftQ(q,k){                              // поднять над столом: чуть крупнее и выше
+ const cx=(q[0][0]+q[2][0])/2, cy=(q[0][1]+q[2][1])/2, s=1+k*.0016;
+ return q.map(([x,y])=>[cx+(x-cx)*s, cy+(y-cy)*s-k])}
+function unitTo(q){const [p0,p1,p2,p3]=q;         // единичный квадрат → четырёхугольник
+ const dx1=p1[0]-p2[0],dx2=p3[0]-p2[0],dx3=p0[0]-p1[0]+p2[0]-p3[0];
+ const dy1=p1[1]-p2[1],dy2=p3[1]-p2[1],dy3=p0[1]-p1[1]+p2[1]-p3[1];
+ const den=dx1*dy2-dx2*dy1, g=(dx3*dy2-dx2*dy3)/den, h=(dx1*dy3-dx3*dy1)/den;
+ return [p1[0]-p0[0]+g*p1[0], p3[0]-p0[0]+h*p3[0], p0[0],
+         p1[1]-p0[1]+g*p1[1], p3[1]-p0[1]+h*p3[1], p0[1], g, h, 1]}
+function inv3(m){const [a,b,c,d,e,f,g,h,i]=m;
+ const A=e*i-f*h,B=f*g-d*i,C=d*h-e*g,det=a*A+b*B+c*C;
+ return [A/det,(c*h-b*i)/det,(b*f-c*e)/det,B/det,(a*i-c*g)/det,(c*d-a*f)/det,C/det,(b*g-a*h)/det,(a*e-b*d)/det]}
+function mul3(m,n){const r=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++)
+ r[i*3+j]=m[i*3]*n[j]+m[i*3+1]*n[3+j]+m[i*3+2]*n[6+j];return r}
+function mat3d(m){const k=1/m[8];
+ return `matrix3d(${m[0]*k},${m[3]*k},0,${m[6]*k}, ${m[1]*k},${m[4]*k},0,${m[7]*k}, 0,0,1,0, ${m[2]*k},${m[5]*k},0,1)`}
+let HINV=inv3([H[0][0],H[0][1],H[0][2],H[1][0],H[1][1],H[1][2],H[2][0],H[2][1],H[2][2]]);
+function planeOf(x,y){const d=HINV[6]*x+HINV[7]*y+HINV[8];
+ return [(HINV[0]*x+HINV[1]*y+HINV[2])/d,(HINV[3]*x+HINV[4]*y+HINV[5])/d]}
+// ═══ 2. Ассеты ════════════════════════════════════════════════════════════════
+// Всё, что лежит на столе, вырезано из холста: карты и кнопка — из мастер-кадра M6,
+// блокнот, жетон-выбивка и фишка — из «инвентарного» кадра M7 того же стола. Фигурки нарисованы в картине.
+const SPR={
+ F:{src:'cut6/cards/F.png', size:[104,145], slot:[0,0]},
+ I:{src:'cut6/cards/I.png', size:[103,146], slot:[1,0]},
+ R:{src:'cut6/cards/R.png', size:[106,142], slot:[2,0]},
+ S:{src:'cut6/cards/S.png', size:[113,157], slot:[2,1]},
+ T:{src:'cut6/cards/T.png', size:[112,158], slot:[3,1]},
+ BACK:{src:'cut6/cards/BACK.png', size:[122,145]},
+ BUTTON:{src:'cut6/sprites/BUTTON.png', box:[1225,596,1500,830]},
+ HOUR:{src:'cut/sprites/04.png', box:[300,400,401,551]},
+ TRAP:{src:'cut/sprites/07.png', box:[312,540,391,612]}
+};
+const TOKEN={                                     // жетоны пяти эффектов — «инвентарный» кадр M8
+ F:'cut8/sprites/04.png', I:'cut8/sprites/00.png', R:'cut8/sprites/01.png',
+ S:'cut8/sprites/02.png', T:'cut8/sprites/03.png'};
+const A={notepad:'cut7/sprites/02.png', punch:'cut7/sprites/00.png', chip:'cut7/sprites/01.png'};
+const LETTERS=['F','I','R','S','T'];
+const COLOR={F:'#2f6ea8',I:'#3f7a3a',R:'#c07a1e',S:'#a8322c',T:'#5a3f9e'};
+let SOCKET=LAY.socket;                                // печатные гнёзда: в них стоит маркер хода
+let TOKEN_SOCKET=LAY.tokenSocket;                     // второе гнездо противника — под жетон запрета
+let TRAP_HOME=LAY.tokenSocket;
+let HAND=LAY.hand;
+const TOKEN_SPOT={F:'socket', I:'deck', R:'tray', S:'oppCard', T:'myCard'};  // куда ложится жетон эффекта
+let DECK=LAY.deck;                                    // колоды нарисованы в плите
+let TRAY=LAY.tray;                                    // лоток сброса — тоже нарисован
+// ═══ 3. Движок ════════════════════════════════════════════════════════════════
+const E={lin:t=>t,sineOut:t=>Math.sin(t*Math.PI/2),pow2In:t=>t*t,pow2Out:t=>1-(1-t)*(1-t),
+ pow3In:t=>t*t*t,pow3Out:t=>1-Math.pow(1-t,3),swingOut:t=>{t-=1;return t*t*(3*t+2)+1}};
+const $=id=>document.getElementById(id), speed=()=>$('slow').checked?2:1;
+const tweens=new Set();
+function tween(d,fn,e='lin',done){const t0=performance.now(),tw={};
+ tw.step=now=>{const p=Math.min(1,(now-t0)/(d*1000*speed()));fn((E[e]||E.lin)(p),p);
+  if(p>=1){tweens.delete(tw);done&&done()}};tweens.add(tw)}
+const tw=(d,f,e)=>new Promise(r=>tween(d,f,e,r));
+const wait=s=>new Promise(r=>setTimeout(r,s*1000*speed()));
+const scene=$('scene'),table=$('table'),fx=$('fx'),ctx=fx.getContext('2d');
+let jolt=0, busy=false, lampKick=0, lampMul=1, lampNoise=0, turn=0, sandOn=true;
+function fit(){const k=Math.min(innerWidth/CANVAS_W,innerHeight/CANVAS_H);
+ scene.style.transform=`translate(${(innerWidth-CANVAS_W*k)/2}px,${(innerHeight-CANVAS_H*k)/2}px) scale(${k})`}
+addEventListener('resize',fit);fit();
+fx.width=CANVAS_W*1.5;fx.height=CANVAS_H*1.5;ctx.setTransform(1.5,0,0,1.5,0,0);
+$('plate').src=PLATE;$('orig').src=ORIGINAL;
+// ═══ 4. Карты ═════════════════════════════════════════════════════════════════
+const cards={};
+function img(src,cls,w,h){const el=new Image();el.src=src;el.className=cls;el.alt='';
+ el.style.width=w+'px';if(h)el.style.height=h+'px';table.appendChild(el);return el}
+function mkCard(letter){const d=SPR[letter],[su,sv]=d.slot;
+ const el=img(d.src,'spr card hit',d.size[0],d.size[1]);
+ const back=img(SPR.BACK.src,'spr card',SPR.BACK.size[0],SPR.BACK.size[1]);
+ const c={letter,el,back,u:su,v:sv,rot:0,k:1,liftK:0,z:20,face:true,where:'deck',hidden:false,phase:Math.random()*6.28,
+  srcQ:[[0,0],[d.size[0],0],[d.size[0],d.size[1]],[0,d.size[1]]],
+  backQ:[[0,0],[SPR.BACK.size[0],0],[SPR.BACK.size[0],SPR.BACK.size[1]],[0,SPR.BACK.size[1]]]};
+ cards[letter]=c;return c}
+function skewQ(q){if(!TWEAK.skew)return q;              // сузить верх: карта читается лежащей на столе
+ const k=TWEAK.skew, cx=(q[0][0]+q[1][0])/2;
+ return [[q[0][0]+(cx-q[0][0])*k, q[0][1]],[q[1][0]+(cx-q[1][0])*k, q[1][1]],q[2],q[3]]}
+function drawCard(c,bob=0){
+ const q=liftQ(skewQ(quad(c.u,c.v+bob,CARD_W*c.k,CARD_H*c.k,c.rot)),c.liftK);
+ c.el.style.transform=mat3d(mul3(unitTo(q),inv3(unitTo(c.srcQ))));
+ c.back.style.transform=mat3d(mul3(unitTo(q),inv3(unitTo(c.backQ))));
+ const sh=`drop-shadow(${(2+c.liftK*.10).toFixed(1)}px ${(4+c.liftK*.16).toFixed(1)}px ${(4+c.liftK*.12).toFixed(1)}px rgba(0,0,0,${(.5+Math.min(.25,c.liftK/160)).toFixed(2)}))`;
+ c.el.style.filter=sh;c.back.style.filter=sh;
+ c.el.style.zIndex=c.z;c.back.style.zIndex=c.z;
+ c.el.style.opacity=c.hidden?0:(c.face?1:0);
+ c.back.style.opacity=c.hidden?0:(c.face?0:1)}
+function setCard(c,u,v,rot=c.rot,k=c.k){c.u=u;c.v=v;c.rot=rot;c.k=k;drawCard(c)}
+// ═══ 5. Предметы стола ════════════════════════════════════════════════════════
+const objs={};
+function mkObj(key,src,w,plane,opts={}){const el=img(src,'obj'+(opts.hit?' hit':'')+(opts.ui?' ui':''),w);
+ const o={key,el,w:w*LAY.propK,w0:w,u:plane[0],v:plane[1],rot:0,liftPx:0,scale:1,z:opts.z||30,alpha:1,anchor:opts.anchor||.86};
+ if(opts.shadow){const sh=document.createElement('div');sh.className='shadow';table.appendChild(sh);o.shadow=sh}
+ if(opts.label!==undefined){const l=document.createElement('div');l.className='lbl';l.textContent=opts.label;
+  table.appendChild(l);o.lbl=l}
+ objs[key]=o;return o}
+function drawObj(o){const [x,y]=P(o.u,o.v), s=o.scale*scaleAt(o.u,o.v)/SCALE0;
+ const h=o.el.naturalWidth?o.w*o.el.naturalHeight/o.el.naturalWidth:o.w;
+ o.el.style.height=h+'px';
+ o.el.style.transformOrigin='50% '+(o.anchor*100)+'%';
+ o.el.style.transform=`translate(${x-o.w/2}px,${y-h*o.anchor-o.liftPx}px) scale(${s}) rotate(${o.rot}deg)`;
+ o.el.style.zIndex=o.z;o.el.style.opacity=o.alpha;
+ if(o.shadow){const sw=o.w*s*.78, sh=sw*.32, k=1-Math.min(.5,o.liftPx/240);
+  Object.assign(o.shadow.style,{left:(x-sw/2)+'px',top:(y-sh*.55)+'px',width:sw+'px',height:sh+'px',
+   transform:`scale(${k})`,opacity:(.7*k*o.alpha).toFixed(2),zIndex:String(o.z-1)})}
+ if(o.lbl){o.lbl.style.transform=`translate(${x-40}px,${y-h*s*.34-o.liftPx}px) scale(${s})`;
+  o.lbl.style.setProperty('--fs',(o.w*.40)+'px');o.lbl.style.opacity=o.alpha;o.lbl.style.zIndex=String(o.z+1)}}
+LETTERS.forEach(mkCard);
+const hour  =mkObj('hour',SPR.HOUR.src,92,SOCKET[0],{z:34,shadow:true,anchor:.85});
+const tokens={};                                       // пять жетонов эффектов, лежат вне стола до применения
+for(const L of LETTERS){const o=mkObj('tok'+L,TOKEN[L],TWEAK.token==='under'?86:78,TRAP_HOME,{z:TWEAK.token==='under'?16:64,shadow:true,anchor:.5});o.alpha=0;tokens[L]=o}
+const trap=tokens.T;
+const punches=LETTERS.map((L,i)=>{const o=mkObj('punch'+L,A.punch,86,[LAY.punch.u0+i*LAY.punch.du,LAY.punch.v],{z:50,shadow:true,label:L,hit:true,anchor:.5,ui:true});
+ o.letter=L;o.alpha=0;o.lbl.style.color=COLOR[L];return o});
+
+
+// ═══ 6. Свет, пыль, пар, песок ════════════════════════════════════════════════
+const parts=[],motes=[];let last=performance.now();
+for(let i=0;i<110;i++)motes.push({x:Math.random(),y:Math.random(),r:1+Math.random()*2.3,
+ vx:(Math.random()-.5)*.004,vy:-.002-Math.random()*.004,a:Math.random()*6.28,s:.5+Math.random()*.5});
+function confetti(x,y,n){const cols=['#e04a3a','#3f9a5e','#e39a2a','#7fb2e6','#8a5fc9','#f2dfa6'];
+ for(let i=0;i<n;i++){const a=-Math.PI/2+(Math.random()-.5)*1.7,sp=200+Math.random()*300;
+  parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1.6+Math.random()*.9,t:0,r:3+Math.random()*4,
+   kind:'paper',color:cols[i%cols.length],rot:Math.random()*6,vr:(Math.random()-.5)*10})}}
+function dust(x,y,n,spread=1){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=(40+Math.random()*90)*spread;
+ parts.push({x,y,vx:Math.cos(a)*sp*.6,vy:-Math.abs(Math.sin(a))*sp*.5-20,life:.5+Math.random()*.4,t:0,r:2+Math.random()*4,kind:'dust'})}}
+function particles(){const now=performance.now(),dt=Math.min(.05,(now-last)/1000)/speed();last=now;
+ ctx.clearRect(0,0,CANVAS_W,CANVAS_H);
+ const la=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--la'))||.16;
+ for(const m of motes){m.x+=m.vx*dt*8*m.s;m.y+=m.vy*dt*8*m.s;m.a+=dt;
+  if(m.y<-.02){m.y=1.02;m.x=Math.random()}if(m.x<-.02||m.x>1.02){m.x=Math.random();m.y=Math.random()}
+  const inLight=Math.max(0,1-Math.hypot((m.x-.09)*1.15,(m.y-.05)*1.4)/.85);
+  const a=inLight*(.5+.35*Math.sin(m.a*3))*(la/.16)*lampMul*.7;
+  if(a<.02)continue;ctx.globalAlpha=Math.min(.8,a);ctx.fillStyle='#ffe2b0';
+  ctx.beginPath();ctx.arc(m.x*CANVAS_W,m.y*CANVAS_H,m.r,0,6.3);ctx.fill()}
+ if(Math.random()<.3*lampMul)parts.push({x:1478+(Math.random()-.5)*22,y:268,vx:(Math.random()-.5)*8,vy:-16-Math.random()*12,
+  life:1.6+Math.random()*.8,t:0,r:5+Math.random()*7,kind:'steam'});
+ if(sandOn&&Math.random()<.5){const [hx,hy]=P(hour.u,hour.v),s=scaleAt(hour.u,hour.v)/SCALE0;
+  parts.push({x:hx-1+(Math.random()-.5)*2,y:hy-62*s,vx:0,vy:36,life:.36,t:0,r:1.2*s,kind:'sand'})}
+ for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.t+=dt;if(p.t>=p.life){parts.splice(i,1);continue}
+  const k=1-p.t/p.life;p.x+=p.vx*dt;p.y+=p.vy*dt;
+  if(p.kind==='steam'){p.vx+=Math.sin(p.t*3)*4*dt;p.r+=6*dt;
+   ctx.globalAlpha=.09*Math.sin(Math.min(1,p.t/p.life)*Math.PI)*lampMul;ctx.fillStyle='#e8dcc0';
+   ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.3);ctx.fill();continue}
+  if(p.kind==='paper'){p.vy+=340*dt;p.vx*=.985;p.rot+=p.vr*dt;
+   ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.globalAlpha=Math.min(1,k*3);ctx.fillStyle=p.color;
+   ctx.fillRect(-p.r,-p.r*.6,p.r*2,p.r*1.2);ctx.restore();continue}
+  if(p.kind==='sand'){ctx.globalAlpha=.8*k;ctx.fillStyle='#efd39a';ctx.fillRect(p.x,p.y,p.r,p.r*1.7);continue}
+  p.vy+=60*dt;p.vx*=.98;ctx.globalAlpha=k*.5;ctx.fillStyle='#cdb894';
+  ctx.beginPath();ctx.arc(p.x,p.y,p.r*(2-k),0,6.3);ctx.fill()}
+ ctx.globalAlpha=1}
+function frame(now){for(const t of [...tweens])t.step(now);
+ const t=now/1000;
+ lampNoise+=(Math.random()-.5)*.05;lampNoise*=.88;                       // мерцание лампы вернулось (E7)
+ const la=(0.155+Math.sin(t*.62)*.05+Math.sin(t*2.7)*.02+lampNoise*.9+lampKick)*lampMul;
+ lampKick*=.86;document.documentElement.style.setProperty('--la',Math.max(0,la).toFixed(3));
+ for(const l of LETTERS){const c=cards[l];
+  drawCard(c, c.where==='hand'&&!c.busy?Math.sin(t*2.1+c.phase)*.006:0)}
+ for(const k in objs)drawObj(objs[k]);
+ if(jolt>0){scene.style.marginLeft=((Math.random()*2-1)*jolt)+'px';scene.style.marginTop=((Math.random()*2-1)*jolt)+'px';
+  jolt*=.86;if(jolt<.25){jolt=0;scene.style.marginLeft=scene.style.marginTop=''}}
+ particles();requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+// ═══ 7. Подписи и счёт в блокноте ═════════════════════════════════════════════
+const cap=$('cap');let capT=0;
+function say(text,sec=2.8){if(!$('cp').checked)return;cap.textContent=text;cap.classList.add('on');
+ clearTimeout(capT);capT=setTimeout(()=>cap.classList.remove('on'),sec*1000*speed())}
+const state={me:[],opp:[],discard:[],deck:45,forbid:null};
+function drawHud(){const hud=$('hud');
+ const row=(who,arr)=>`<div class="row"><b>${who}</b>${LETTERS.map(l=>arr.includes(l)?l:`<s>${l}</s>`).join(' ')}</div>`;
+ hud.innerHTML=row('я',state.me)+row('он',state.opp)+
+  (state.forbid?`<div class="row"><b>стоп</b>${state.forbid}</div>`:'');
+ layFlat(hud,...planeOf(...LAY.hud.px),LAY.hud.w,LAY.hud.h,LAY.hud.rot,28);
+}
+// ═══ 8. Грамматика движения ═══════════════════════════════════════════════════
+function handLayout(){const hs=LETTERS.map(l=>cards[l]).filter(c=>c.where==='hand');
+ const vh=HAND.v+(turn===1?0:0.11);                    // в чужой ход рука приспущена и притушена
+ hs.forEach((c,i)=>{const n=hs.length,u=HAND.u-((n-1)/2)*HAND.step+i*HAND.step,rot=(i-(n-1)/2)*HAND.tilt;
+  c.el.style.filter=turn===1?'none':'brightness(.82) saturate(.9)';
+  c.z=25+i;const f={u:c.u,v:c.v,rot:c.rot,k:c.k};
+  tween(.28,p=>setCard(c,f.u+(u-f.u)*p,f.v+(vh-f.v)*p,f.rot+(rot-f.rot)*p,f.k+(1.0-f.k)*p),'swingOut')})}
+async function playCard(c,u,v){                        // карта едет по прямой и ложится в слот в ракурсе стола
+ c.busy=true;c.z=60;const f={u:c.u,v:c.v,rot:c.rot,k:c.k};
+ await tw(.44,(e,l)=>{c.liftK=Math.sin(l*Math.PI)*34;
+  setCard(c,f.u+(u-f.u)*e,f.v+(v-f.v)*e,f.rot*(1-e),f.k+(1-f.k)*e)},'swingOut');
+ c.liftK=0;c.where='board';c.z=20;setCard(c,u,v,0,1);
+ const [x,y]=P(u,v);jolt=Math.max(jolt,4.5);lampKick=.05;dust(x,y+34,12);
+ await tw(.22,(e,l)=>{c.liftK=6*Math.sin(l*Math.PI);drawCard(c)},'pow2Out');c.liftK=0;c.busy=false}
+async function dropObj(o,u,v,h=150){                   // жетон падает на своё место (E4)
+ o.u=u;o.v=v;o.liftPx=h;o.alpha=0;o.scale=1.2;
+ await tw(.36,(e,l)=>{o.liftPx=h*(1-e);o.alpha=Math.min(1,l*4);o.scale=1.2-.2*e},'pow2In');
+ o.liftPx=0;o.scale=1;const [x,y]=P(u,v);jolt=Math.max(jolt,5);lampKick=.05;dust(x,y+10,10);
+ await tw(.18,(e,l)=>{o.scale=1+.07*Math.sin(l*Math.PI)},'lin');o.scale=1}
+async function moveObj(o,u,v,dur=.45,h=110){const f={u:o.u,v:o.v};
+ await tw(dur,(e,l)=>{o.u=f.u+(u-f.u)*e;o.v=f.v+(v-f.v)*e;o.liftPx=Math.sin(l*Math.PI)*h},'sineOut');o.liftPx=0}
+// ═══ 9. Шаги партии ═══════════════════════════════════════════════════════════
+async function stepTurn(to=1-turn){    // маркер хода просто переезжает на сторону активного игрока, без вращения
+ turn=to;sandOn=false;say(to?'Мой ход':'Ход противника');
+ const [u,v]=SOCKET[to],f={u:hour.u,v:hour.v};
+ await tw(.52,(e,l)=>{hour.u=f.u+(u-f.u)*e;hour.v=f.v+(v-f.v)*e;hour.liftPx=Math.sin(l*Math.PI)*46},'sineOut');
+ hour.liftPx=0;const [x,y]=P(u,v);jolt=Math.max(jolt,2.5);dust(x,y+10,6);
+ sandOn=true;drawHud();handLayout()}
+async function stepDeal(n=4){say('Раздача: карты приходят из колоды рубашкой вверх');
+ const hs=LETTERS.filter(l=>cards[l].where==='deck'&&l!=='R').slice(0,n);
+ const [du,dv]=planeOf(...DECK[1]);
+ for(const l of hs){const c=cards[l];c.hidden=false;c.face=false;c.where='flying';c.z=55;
+  setCard(c,du,dv,0,1);let flipped=false;
+  await tw(.42,(e,l2)=>{c.liftK=Math.sin(l2*Math.PI)*60;if(l2>.55&&!flipped){flipped=true;c.face=true}
+   setCard(c,du+(HAND.u-du)*e,dv+(HAND.v-dv)*e,0,1+.06*e)},'swingOut');
+  c.liftK=0;c.face=true;c.where='hand';state.deck--;drawHud();handLayout();await wait(.12)}}
+async function stepPlay(letter){
+ const c=letter&&cards[letter].where==='hand'?cards[letter]:LETTERS.map(l=>cards[l]).find(x=>x.where==='hand');
+ if(!c){say('Рука пуста — «Заново»');return}
+ say('Розыгрыш: карта ложится в слот — в ракурсе стола, а не плашмя');
+ c.where='flying';handLayout();await playCard(c,state.me.length,1);
+ state.me.push(c.letter);drawHud();return c}
+async function stepPick(letter='T'){   // выбор буквы — не модалка, а жетоны-выбивки на столе
+ say('Эффект F: жетоны-выбивки ложатся перед вами — выберите букву');
+ punches.forEach((o,i)=>{o.u=LAY.punch.u0+i*LAY.punch.du;o.v=LAY.punch.v;o.liftPx=0;o.alpha=0;o.scale=1.15;
+  tween(.3+i*.05,(e)=>{o.alpha=e;o.scale=1.15-.15*e;o.liftPx=44*(1-e)},'pow2Out')});
+ await wait(1.1);
+ const pick=punches.find(o=>o.letter===letter);
+ say('Выбрана буква '+letter+' — жетон уходит в гнездо запрета');
+ await Promise.all(punches.filter(o=>o!==pick).map(o=>tw(.3,e=>{o.alpha=1-e;o.liftPx=26*e},'pow2In')));
+ punches.forEach(o=>{if(o!==pick){o.alpha=0;o.liftPx=0}});
+ await moveObj(pick,TOKEN_SOCKET[0],TOKEN_SOCKET[1],.55,130);
+ jolt=Math.max(jolt,4);dust(...P(pick.u,pick.v),8);
+ state.forbid=letter;drawHud()}
+function nearCard(u,row){                              // где жетон садится относительно карты
+ if(TWEAK.token==='under') return [u, row?1.42:0.42];   // под картой: виден только край жетона
+ if(TWEAK.token==='corner')return [u+0.28, row?1.26:0.26]; // на углу карты
+ return [u-0.62, row?1.0:0.0]}                          // рядом с картой на коврике
+function tokenSpot(L){                                 // грамматика E4: у каждого состояния своё место
+ switch(TOKEN_SPOT[L]){
+  case 'socket': return TOKEN_SOCKET;
+  case 'deck':   return planeOf(DECK[1][0]-46,DECK[1][1]);
+  case 'tray':   return planeOf(TRAY[0]-52,TRAY[1]+14);
+  case 'oppCard':return nearCard(Math.max(0,state.opp.length-1),0);
+  default:       return nearCard(Math.max(0,state.me.length-1),1)}}
+const TOKEN_SAY={F:'Запрет: жетон-замок ложится в гнездо противника',
+ I:'Добор: жетон-росток ложится на мою колоду', R:'Возврат: жетон-перо ложится у лотка сброса',
+ S:'Кража: жетон-рука ложится у карты противника', T:'Ловушка: жетон-капкан ложится у моей карты'};
+async function stepEffect(L){const o=tokens[L];say(TOKEN_SAY[L]);
+ o.alpha=0;const [u,v]=tokenSpot(L);await dropObj(o,u,v)}
+async function stepToken(){await stepEffect('T')}
+async function stepAllTokens(){
+ if(!state.opp.length)await stepOppPlay();
+ if(!state.me.length){if(!LETTERS.some(l=>cards[l].where==='hand'))await stepDeal(3);await stepPlay()}
+ say('Пять состояний — пять жетонов, у каждого своё место',3.5);
+ for(const L of LETTERS){await stepEffect(L);await wait(.5)}
+ await wait(1.2);
+ await Promise.all(LETTERS.map(L=>tw(.32,e=>{tokens[L].alpha=1-e;tokens[L].liftPx=40*e},'pow2In')));
+ LETTERS.forEach(L=>{tokens[L].alpha=0;tokens[L].liftPx=0})}
+function trayPlace(i){                 // куда ложится i-я карта сброса
+ const [tu,tv]=planeOf(...TRAY);
+ if(TWEAK.discard==='fan') return [tu-0.15+i*0.30, tv+0.55, 0.05, .78];
+ if(TWEAK.discard==='pile'){const j=Math.min(i,4);   // растущая стопка: у каждой следующей виден край предыдущей
+  return [tu-0.10+j*0.075, tv-0.06+j*0.05, 0.06*(j%2?1:-1)-0.02, .5]}
+ return [tu, tv, 0.05, .42]}
+async function toTray(c){              // сброс: карта ложится в лоток ЛИЦОМ ВВЕРХ
+ c.busy=true;c.z=45+state.discard.length;const f={u:c.u,v:c.v,rot:c.rot,k:c.k};
+ const [tu,tv,trot,tk]=trayPlace(state.discard.length);
+ await tw(.5,(e,l)=>{c.liftK=Math.sin(l*Math.PI)*26;
+  setCard(c,f.u+(tu-f.u)*e,f.v+(tv-f.v)*e,f.rot+(trot-f.rot)*e,f.k+(tk-f.k)*e)},'pow2In');
+ c.liftK=0;c.where='tray';c.busy=false;state.discard.push(c.letter);drawHud();
+ dust(TRAY[0],TRAY[1]+14,6);jolt=Math.max(jolt,2)}
+async function stepDiscard(){const c=LETTERS.map(l=>cards[l]).find(x=>x.where==='board'&&state.me.includes(x.letter));
+ if(!c){say('Нечего сбрасывать');return}
+ say('Сброс: карта уезжает в лоток лицом вверх');
+ state.me=state.me.filter(l=>l!==c.letter);await toTray(c)}
+async function showDiscard(){          // сброс разворачивается лесенкой прямо на столе — видно, что внутри
+ const ds=LETTERS.map(l=>cards[l]).filter(c=>c.where==='tray');
+ if(!ds.length){say('Сброс пуст');return}
+ say('Лоток раскрыт: видно, какие карты в сбросе');
+ const [tu,tv]=planeOf(...TRAY);
+ ds.forEach((c,i)=>{c.z=70+i;const f={u:c.u,v:c.v,k:c.k,rot:c.rot};
+  const tuu=4.30, tvv=-0.12+i*0.46;
+  tween(.36,e=>setCard(c,f.u+(tuu-f.u)*e,f.v+(tvv-f.v)*e,f.rot*(1-e),f.k+(.85-f.k)*e),'swingOut')});
+ await wait(1.9);
+ ds.forEach((c,i)=>{const f={u:c.u,v:c.v,k:c.k,rot:c.rot},[pu,pv,prot,pk]=trayPlace(i);
+  tween(.36,e=>setCard(c,f.u+(pu-f.u)*e,f.v+(pv-f.v)*e,f.rot+(prot-f.rot)*e,f.k+(pk-f.k)*e),'pow2In');c.z=45+i});
+ await wait(.5)}
+async function stepOppPlay(){const c=cards.R;
+ if(c.where==='board')return;
+ say('Противник кладёт карту в свой ряд');
+ const [du,dv]=planeOf(...DECK[0]);c.hidden=false;c.face=false;c.where='flying';c.z=55;setCard(c,du,dv,0,1);
+ let flipped=false;const u=state.opp.length;
+ await tw(.5,(e,l)=>{c.liftK=Math.sin(l*Math.PI)*40;if(l>.5&&!flipped){flipped=true;c.face=true}
+  setCard(c,du+(u-du)*e,dv+(0-dv)*e,0,1)},'swingOut');
+ c.liftK=0;c.where='board';c.z=20;setCard(c,u,0,0,1);
+ state.opp.push(c.letter);drawHud();jolt=Math.max(jolt,4);dust(...P(u,0),10)}
+// меню — тот же стол: блокнот ложится поверх, лампа притухает
+const menu=$('menu');
+function menuLayout(){layFlat(menu,LAY.menu.u,LAY.menu.v,LAY.menu.w,LAY.menu.h,-0.02,90)}
+async function openNote(lines,{clickable=true,dim=.4}={}){menuLayout();
+ menu.querySelector('img').src=A.notepad;
+ menu.querySelector('.items').innerHTML=lines.map(t=>`<div>${t}</div>`).join('');
+ if(clickable)menu.querySelectorAll('.items div').forEach(d=>d.onclick=()=>{d.classList.add('pick');setTimeout(()=>closeNote(),700)});
+ menu.classList.add('on');await tw(.5,e=>{lampMul=1-dim*e},'sineOut')}
+async function closeNote(){menu.classList.remove('on');const from=lampMul;
+ await tw(.5,e=>{lampMul=from+(1-from)*e},'sineOut');lampMul=1}
+async function stepMenu(open=true){
+ if(open){say('Меню — не окно, а блокнот на том же столе');await openNote(['Новая партия','Правила','Выйти'])}
+ else await closeNote()}
+async function stepWin(){say('Победа: собраны все пять букв');
+ state.me=[...LETTERS];drawHud();
+ confetti(...P(1.5,1.3),110);confetti(...P(2.4,1.3),110);jolt=Math.max(jolt,6);lampKick=.10;
+ await openNote(['Победа!','F I R S T','ещё партию?'],{dim:.25});
+ await wait(1.2);confetti(...P(1.9,0.8),90)}
+async function stepLose(){say('Поражение: колода кончилась');
+ state.deck=0;drawHud();
+ await tw(.7,e=>{lampMul=1-.55*e},'sineOut');
+ await openNote(['Колода пуста','партия проиграна','ещё раз?'],{dim:.25})}
+
+// ═══ 10. Сцена целиком ════════════════════════════════════════════════════════
+async function sceneAll(){if(busy)return;busy=true;setBusy(true);
+ await reset();await wait(.4);
+ await stepMenu(true);await wait(1.2);
+ menu.querySelector('.items div').classList.add('pick');await wait(.6);
+ await stepMenu(false);await wait(.3);
+ await stepDeal(4);await wait(.5);
+ await stepTurn(1);await wait(.5);
+ await stepPlay('F');await wait(.5);
+ await stepPick('T');await wait(.8);
+ await stepTurn(0);await wait(.4);
+ await stepOppPlay();await wait(.5);
+ await stepToken();await wait(1.0);
+ await stepTurn(1);await wait(.4);
+ await stepDiscard();await wait(.5);
+ say('Всё на столе — куски одной живописи: и карты, и жетон, и блокнот меню',5);
+ busy=false;setBusy(false)}
+function setBusy(b){document.querySelectorAll('.acts button').forEach(x=>x.disabled=b)}
+// ═══ 10a. Смена раскладки: тот же конвейер на портретном холсте телефона ══════
+async function applyLayout(key){LAY=LAYOUTS[key];
+ CANVAS_W=LAY.W;CANVAS_H=LAY.H;H=LAY.hom;CARD_W=LAY.card[0];CARD_H=LAY.card[1];
+ HINV=inv3([H[0][0],H[0][1],H[0][2],H[1][0],H[1][1],H[1][2],H[2][0],H[2][1],H[2][2]]);
+ SOCKET=LAY.socket;TOKEN_SOCKET=LAY.tokenSocket;TRAP_HOME=LAY.tokenSocket;HAND=LAY.hand;DECK=LAY.deck;TRAY=LAY.tray;
+ for(const el of [scene,$('plate'),$('orig'),fx]){el.style.width=CANVAS_W+'px';el.style.height=CANVAS_H+'px'}
+ fx.width=CANVAS_W*1.5;fx.height=CANVAS_H*1.5;ctx.setTransform(1.5,0,0,1.5,0,0);
+ $('plate').src=LAY.plate;$('orig').src=LAY.orig;
+ for(const k in objs)objs[k].w=objs[k].w0*LAY.propK;
+ seams.innerHTML='';
+ fit();await reset();say('Раскладка: '+LAY.name,2.5)}
+
+// ═══ 11. Исходное состояние и управление ══════════════════════════════════════
+async function reset(){
+ state.me=[];state.opp=[];state.discard=[];state.deck=45;state.forbid=null;turn=0;
+ const [du,dv]=planeOf(...DECK[1]);
+ for(const l of LETTERS){const c=cards[l];c.where='deck';c.face=true;c.busy=false;c.liftK=0;c.z=20;c.hidden=true;
+  setCard(c,du,dv,0,.98)}
+ punches.forEach(o=>{o.alpha=0;o.liftPx=0});
+ LETTERS.forEach(L=>{tokens[L].alpha=0;tokens[L].liftPx=0});
+ hour.u=SOCKET[0][0];hour.v=SOCKET[0][1];hour.rot=0;hour.alpha=1;hour.liftPx=0;sandOn=true;
+ menu.classList.remove('on');lampMul=1;drawHud()}
+async function showAsPainted(){        // «как на картине»: все предметы возвращаются в свои места на холсте
+ await reset();
+ for(const l of LETTERS){const c=cards[l],[su,sv]=SPR[l].slot;c.hidden=false;c.face=true;c.where='board';setCard(c,su,sv,0,1)}
+ hour.alpha=0;LETTERS.forEach(L=>{tokens[L].alpha=0});
+ say('Собранная сцена в положении холста — сверьте с оригиналом',4)}
+const ACT={all:sceneAll,menu:()=>stepMenu(!menu.classList.contains('on')),deal:()=>stepDeal(4),play:()=>stepPlay(),
+ pick:()=>stepPick('T'),tokens:stepAllTokens,discard:stepDiscard,turn:()=>stepTurn(),
+ win:stepWin,lose:stepLose,reset,
+ orient:()=>applyLayout(LAY===LAYOUTS.land?'port':'land')};
+document.querySelectorAll('.acts button').forEach(b=>b.onclick=async()=>{
+ const a=b.dataset.act;if(a==='all')return ACT.all();
+ if(busy)return;setBusy(true);await ACT[a]();setBusy(false)});
+$('ab').onchange=async e=>{if(e.target.checked){await showAsPainted();$('orig').style.opacity=1}
+ else{$('orig').style.opacity=0;await reset()}};
+$('sm').onchange=e=>{drawSeams();seams.classList.toggle('on',e.target.checked)};
+$('minb').onclick=()=>$('panel').classList.toggle('min');
+const seams=$('seams');
+function drawSeams(){seams.innerHTML='';                 // где проходят границы вырезанного
+ for(const [k,d] of Object.entries(SPR)){const b=d.box;if(!b)continue;const r=document.createElement('div');
+  r.style.cssText=`left:${b[0]}px;top:${b[1]}px;width:${b[2]-b[0]}px;height:${b[3]-b[1]}px`;seams.appendChild(r)}
+ for(const l of LETTERS){const c=cards[l],q=quad(c.u,c.v,CARD_W*c.k,CARD_H*c.k,c.rot);
+  const xs=q.map(p=>p[0]),ys=q.map(p=>p[1]);const r=document.createElement('div');
+  r.style.cssText=`left:${Math.min(...xs)}px;top:${Math.min(...ys)}px;width:${Math.max(...xs)-Math.min(...xs)}px;height:${Math.max(...ys)-Math.min(...ys)}px`;
+  seams.appendChild(r)}}
+table.addEventListener('click',e=>{if(busy)return;
+ const el=e.target.closest('img');if(!el)return;
+ const c=Object.values(cards).find(x=>x.el===el);
+ if(c&&c.where==='hand'){c.where='flying';handLayout();
+  playCard(c,state.me.length,1).then(()=>{state.me.push(c.letter);drawHud()});return}
+ const p=punches.find(o=>o.el===el);if(p&&p.alpha>.5)stepPick(p.letter)});
+$('plate').addEventListener('click',e=>{if(busy)return;
+ const r=$('plate').getBoundingClientRect(),x=(e.clientX-r.left)/r.width*CANVAS_W,y=(e.clientY-r.top)/r.height*CANVAS_H;
+ if(x>1120&&x<1345&&y>180&&y<365)showDiscard()});
+reset().then(()=>say('Раунд 6: правки по замечаниям. Нажмите «Сыграть ход».',5));
+</script>

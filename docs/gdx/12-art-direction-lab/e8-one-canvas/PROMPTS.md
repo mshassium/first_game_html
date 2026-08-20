@@ -108,3 +108,64 @@ Below the mat, along the bottom of the frame, the near edge of the table: bare w
 The mat is EMPTY — no cards, no tokens, no hourglass on it.
 Aspect ratio 9:16. No text, no letters, no numbers anywhere, no watermark, no logos.
 ```
+
+### M9 — мастер-холст в светлом игровом клубе (по мотивам D5b)
+
+```prompt
+refs: docs/gdx/12-art-direction-lab/e0-directions/out/D5b_gpt-5.4-image-2_1.png
+Painterly digital illustration in exactly the manner of the attached reference: warm chunky stylisation, visible brushwork, cosy exaggerated proportions, NOT photorealistic, NOT a 3D render.
+A table in a friendly local tabletop-game store, and the whole scene is BRIGHT AND AIRY: honey-toned oak table, daylight from a shop window mixing with warm pendant lamps overhead, light walls, no dark corners, no heavy vignette.
+The camera looks almost straight DOWN onto the table, only a slight tilt, so the tabletop fills the frame and the shop is a soft blurred band along the top edge: shelves of colourful board-game boxes, a rack of booster packs, other players at their tables, hanging lamps.
+On the table, filling the middle of the frame, a dark neoprene playmat with a subtle glowing rune border. Printed on the mat in pale line work: an upper row of five card-sized rectangles (the opponent's) and a lower row of five card-sized rectangles (the player's); to the left of each row a vertical column of two small printed circles (token sockets). The mat is COMPLETELY EMPTY — no cards, no tokens, nothing lying on it.
+Left of the mat, standing on the table, two hand-painted tabletop miniatures on round bases: at the top a bearded mage in a wizard-hat hoodie on a base with an ICE-BLUE rim, at the bottom a young woman with headphones in a purple hoodie on a base with a JADE-GREEN rim.
+Right of the mat: two face-down decks with a cream rune emblem on dark indigo backs, one level with each row, and a shallow wooden discard tray above the upper deck.
+Around the mat, the store's clutter: an open dice tray with bright polyhedral dice, a couple of deck boxes, a card binder, a small red dragon figure, a spiral notepad with a pen, a paper cup of coffee, a bowl of snacks.
+Aspect ratio 16:9. No text, no letters, no numbers anywhere, no logos, no watermark.
+```
+
+### M10 — карты F·I·R·S·T крупно на светлом столе (инвентарный кадр)
+
+```prompt
+refs: docs/gdx/12-art-direction-lab/e8-one-canvas/out/M9_gpt-5.4-image-2_3.png, docs/gdx/12-art-direction-lab/e2-letter-hero/out/C1F_gpt-5.4-image-2_1.png
+Painterly digital illustration in exactly the style, palette and lighting of the FIRST attached image — the same bright tabletop-game store, the same honey-toned oak table, the same daylight plus warm pendant lamps, the same visible brushwork.
+The camera looks straight DOWN at the empty dark playmat, close in, so that the frame is filled by SIX large playing cards lying flat in a row on the mat, well separated from each other, none of them overlapping, all the same size and all seen from directly above without perspective distortion.
+Five of them are face-up letter cards, drawn exactly like the SECOND attached image: portrait 2:3, thick cream card stock with a thin gold corner ornament, dominated by ONE huge hand-painted brush-stroke capital letter filling most of the card, with a small painted emblem beneath it —
+F in ice blue with a padlock, I in jade green with a sprout, R in amber with a quill feather, S in crimson with a shadowy hand, T in violet with a bear trap.
+The sixth card is face-DOWN: dark indigo back with a cream rune compass emblem and a thin cream border.
+Each card casts a soft short shadow on the mat. No other objects in the frame.
+Aspect ratio 16:9. No text other than the five letters, no numbers, no logos, no watermark.
+```
+
+### M11 — жетоны пяти эффектов на светлом столе
+
+```prompt
+refs: docs/gdx/12-art-direction-lab/e8-one-canvas/out/M9_gpt-5.4-image-2_3.png, docs/gdx/12-art-direction-lab/e4-effects/props/TRAP.png
+Painterly digital illustration in exactly the style, palette and lighting of the FIRST attached image — the same bright tabletop-game store, the same honey-toned oak table, daylight plus warm pendant lamps, visible brushwork.
+The camera looks straight DOWN at the empty dark playmat, close in. Lying alone on the mat in one row, well separated, all the same size, seen from directly above:
+five round tokens of dark walnut wood, each the size of a large coin, each with a painted metal rim in its own colour and a small sculpted object resting on its face — in the manner of the SECOND attached image (a wooden token with an iron bear trap):
+(1) ICE-BLUE rim — a closed iron padlock; (2) JADE-GREEN rim — a young sprout with two leaves in dark soil; (3) AMBER rim — a single quill feather; (4) CRIMSON rim — a small shadowy hand reaching up; (5) VIOLET rim — an iron bear trap with open jaws.
+Same worn painted-model finish and the same soft shadow on the mat for every token. No other objects in the frame.
+Aspect ratio 16:9. No text, no letters, no numbers, no logos, no watermark.
+```
+
+### M12 — предметы интерфейса на светлом столе
+
+```prompt
+refs: docs/gdx/12-art-direction-lab/e8-one-canvas/out/M9_gpt-5.4-image-2_3.png
+Painterly digital illustration in exactly the style, palette and lighting of the attached image — the same bright tabletop-game store, the same honey-toned oak table, daylight plus warm pendant lamps, visible brushwork.
+The camera looks straight DOWN at the empty dark playmat, close in. Lying alone on the mat, well separated from each other, seen from directly above:
+(1) on the left, an OPEN spiral-bound pocket notepad, both pages blank cream paper with faint ruled lines, a metal spiral along the fold, corners softly bent from use — about twice as wide as a playing card;
+(2) in the middle, a round punch-board token of wood and thick card, the size of a large coin, with a thin engraved rune ring near the rim and a completely EMPTY smooth centre;
+(3) on the right, a shallow wooden discard tray, empty, seen from directly above, its inner felt visible.
+No other objects in the frame.
+Aspect ratio 16:9. No text, no letters, no numbers, no logos, no watermark.
+```
+
+### M13 — та же сцена, коврик без печатной разметки (плита для движка)
+
+```prompt
+refs: docs/gdx/12-art-direction-lab/e8-one-canvas/out/M9_gpt-5.4-image-2_3.png
+Repaint the attached image — same scene, same bright tabletop-game store, same painterly style, same palette, same lighting, same camera, every object in exactly the same place — with one change and nothing else: the playmat is now COMPLETELY BLANK. Remove all printed line work from the mat: the ten card-sized rectangles and the four small circles are gone. Keep the mat's outer rune border, its corner ornaments and its dark neoprene texture exactly as they are.
+Everything else stays untouched and identical: the two miniatures on round bases at the left, the two face-down decks and the wooden tray at the right, the dice tray, deck boxes, card binder, notepad and pen, coffee cup, snack bowl, the red dragon figure, the honey-toned oak table and the blurred store behind.
+Aspect ratio 16:9. No text, no letters, no numbers, no logos, no watermark.
+```

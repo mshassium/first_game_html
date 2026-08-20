@@ -30,6 +30,6 @@ def repl(m):
     rel = m.group(1)
     if rel not in seen: seen[rel] = data_uri(rel)
     return f"'{seen[rel]}'"
-html = re.sub(r"'((?:\.\./|out/|props/|cut\d*/|ui/)[^']+\.(?:png|jpg|jpeg))'", repl, html)
+html = re.sub(r"'((?:\.\./|out/|props/|cut\d*/|ui/|assets/)[^']+\.(?:png|jpg|jpeg))'", repl, html)
 pathlib.Path(a.dst).write_text(html, encoding="utf-8")
 print(a.dst, f"{pathlib.Path(a.dst).stat().st_size/1024:.0f} КБ, встроено {len(seen)}")
