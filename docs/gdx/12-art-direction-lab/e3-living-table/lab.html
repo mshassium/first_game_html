@@ -1,0 +1,167 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>F!RST · E3 Стол отвечает</title>
+<style>
+:root{--bg:#15120e;--panel:rgba(30,25,19,.92);--ink:#eadfcd;--muted:#a3957f;--gold:#d3a54a;--rule:#3a3024;--mono:ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,"Helvetica Neue",Arial,sans-serif;overflow:hidden;height:100vh}
+#stage{position:absolute;inset:0;overflow:hidden;perspective:1400px}
+#scene{position:absolute;inset:0;will-change:transform}
+.layer{position:absolute;inset:-3%;will-change:transform}
+#bg{background:#1a1712 center/cover no-repeat}
+#lamp{pointer-events:none;mix-blend-mode:screen;background:radial-gradient(ellipse 55% 60% at 88% 4%,rgba(255,190,100,var(--la,.44)),rgba(255,190,100,0) 72%)}
+#dark{pointer-events:none;background:radial-gradient(ellipse 80% 90% at 88% 4%,rgba(0,0,0,0),rgba(0,0,0,var(--da,.34)) 100%)}
+.zone{position:absolute;border:2px solid rgba(214,196,160,.22);border-radius:10px}
+.zone.active{border-color:rgba(255,220,150,.45)}
+.mini{position:absolute;transform-origin:50% 90%;will-change:transform;cursor:pointer}
+.mini canvas{display:block;width:100%;height:auto;filter:var(--grade)}
+.prop img{filter:var(--grade)}
+#panel input[type=range]{width:100%;accent-color:var(--gold)}
+.row{display:grid;grid-template-columns:96px 1fr 44px;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin-top:4px}
+.row output{font:11px var(--mono);color:var(--ink);text-align:right}
+.presets{display:flex;gap:6px;margin-top:6px}.presets button{flex:1;background:#2a231b;color:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:5px;font:12px inherit;cursor:pointer}.presets button.on{border-color:var(--gold);color:var(--gold)}
+.shadow{position:absolute;pointer-events:none;border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.75),rgba(0,0,0,.42) 45%,rgba(0,0,0,0) 72%);filter:blur(3px);opacity:var(--shade,.7)}
+.cast{position:absolute;pointer-events:none;border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.45),rgba(0,0,0,0) 70%);filter:blur(6px);transform-origin:50% 50%;opacity:var(--shade,.7)}
+.socket{position:absolute;border-radius:50%;border:2px solid rgba(214,196,160,.24);box-shadow:inset 0 0 0 1px rgba(0,0,0,.35),inset 0 0 12px rgba(0,0,0,.35)}
+.socket::after{content:'';position:absolute;inset:14%;border-radius:50%;border:1px dashed rgba(214,196,160,.18)}
+.prop{position:absolute;pointer-events:none;will-change:transform;filter:drop-shadow(0 6px 8px rgba(0,0,0,.5))}.prop img{display:block;width:100%;height:100%;object-fit:contain}
+.ring{display:none}
+.card{position:absolute;border-radius:6% / 4%;background:#efe6d3 center/cover;box-shadow:0 6px 14px rgba(0,0,0,.45);will-change:transform;cursor:pointer}
+#fx{position:absolute;inset:0;pointer-events:none}
+#panel{position:absolute;top:12px;right:12px;width:280px;max-height:calc(100vh - 24px);overflow:auto;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;backdrop-filter:blur(6px);z-index:10}
+#panel h1{font:400 18px Georgia,serif;margin:0 0 2px}#panel .sub{color:var(--muted);font-size:12px;margin:0 0 10px}
+#panel h2{font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin:12px 0 6px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.acts button{background:#2a231b;color:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:7px 6px;font:13px inherit;cursor:pointer}
+.acts button:hover{border-color:#6a5636}.acts button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+label.chk{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:12px;margin-top:5px}
+#panel h1 button{float:right;background:none;border:0;color:var(--muted);cursor:pointer;font-size:14px}
+#panel.min{width:auto}#panel.min>*:not(h1){display:none}
+#turn{position:absolute;left:50%;top:12px;transform:translateX(-50%);font:600 13px/1 var(--mono);letter-spacing:.08em;color:var(--gold);text-shadow:0 1px 2px #000;opacity:.9}
+</style>
+<div id="stage">
+  <div id="scene">
+    <div class="layer" id="bg"></div>
+    <div class="layer" id="dark"></div>
+    <div class="layer" id="lamp"></div>
+    <div class="layer" id="table"></div>
+    <canvas id="fx"></canvas>
+  </div>
+  <div id="turn">ТВОЙ ХОД</div>
+</div>
+<div id="panel">
+  <h1>E3 · Стол отвечает <button id="minb">–</button></h1>
+  <p class="sub">Раунд 6. Фигурки и маркер перерисованы с камерой строго сверху (по рендеру судьи, refs/judge_minis_topdown.png): база — широкий эллипс, как коврик; приглушённая матовая краска. Ползунки — на пресете «судья 19.08».</p>
+  <h2>Живёт само (idle)</h2>
+  <label class="chk"><input type="checkbox" id="oLamp" checked> лампа дышит (медленное мерцание)</label>
+  <label class="chk"><input type="checkbox" id="oDust" checked> пылинки в луче лампы</label>
+  <label class="chk"><input type="checkbox" id="oLight" checked> тени под миниатюрами (контактная + от лампы)</label>
+  <label class="chk"><input type="checkbox" id="oTurn" checked> маркер хода (песочные часы у активного игрока)</label>
+  <p class="sub" style="margin-top:8px">Миниатюры статичны. Клик по миниатюре — прыжок с поворотом.</p>
+  <h2>Свет предметов (фигурки, жетоны, маркер)</h2>
+  <div class="presets" id="presets"><button data-p="judge" class="on">судья 19.08</button><button data-p="raw">как есть</button><button data-p="soft">приглушённо</button><button data-p="dark">тёмный стол</button></div>
+  <div class="row"><span>яркость</span><input type="range" id="gB" min="50" max="110" value="89"><output id="oB">82%</output></div>
+  <div class="row"><span>контраст</span><input type="range" id="gC" min="80" max="130" value="108"><output id="oC">106%</output></div>
+  <div class="row"><span>насыщенность</span><input type="range" id="gS" min="40" max="120" value="92"><output id="oS">82%</output></div>
+  <div class="row"><span>тёплый тон</span><input type="range" id="gW" min="0" max="60" value="13"><output id="oW">18%</output></div>
+  <div class="row"><span>тени под базой</span><input type="range" id="gSh" min="0" max="100" value="70"><output id="oSh">70%</output></div>
+  <p class="sub" style="margin-top:6px">Значения — это то, что уедет в промпт генерации и в тинт спрайтов в игре.</p>
+  <h2>Отвечает (события)</h2>
+  <div class="acts">
+    <button data-act="turn">Передать ход</button>
+    <button data-act="play">Разыграть карту</button>
+    <button data-act="hit">Удар по столу</button>
+    <button data-act="ouch">Противник получил (S)</button>
+    <button data-act="cheer">Игрок доволен (I)</button>
+    <button data-act="socket">Жетон в гнездо</button>
+    <button data-act="reset">Сцена заново</button>
+  </div>
+  <label class="chk"><input type="checkbox" id="oReact" checked> миниатюры реагируют на события</label>
+  <label class="chk"><input type="checkbox" id="oLampR" checked> лампа вздрагивает от удара</label>
+  <label class="chk"><input type="checkbox" id="slow"> замедление ×3</label>
+</div>
+<script>
+const E={sineOut:t=>Math.sin(t*Math.PI/2),pow2Out:t=>1-(1-t)*(1-t),swingOut:t=>{const s=2;t=t-1;return t*t*((s+1)*t+s)+1},pow2In:t=>t*t,linear:t=>t,elasticOut:t=>t===0?0:t===1?1:Math.pow(2,-10*t)*Math.sin((t*10-.75)*(2*Math.PI/3))+1};
+const $=id=>document.getElementById(id);
+const PRESETS={judge:[89,108,92,13,70],raw:[100,100,100,0,70],soft:[82,106,82,18,70],dark:[70,112,74,28,85]};
+function applyGrade(){const b=+$('gB').value,c=+$('gC').value,s=+$('gS').value,w=+$('gW').value,sh=+$('gSh').value;
+ document.documentElement.style.setProperty('--grade',`brightness(${b/100}) contrast(${c/100}) saturate(${s/100}) sepia(${w/100})`);
+ $('oB').textContent=b+'%';$('oC').textContent=c+'%';$('oS').textContent=s+'%';$('oW').textContent=w+'%';$('oSh').textContent=sh+'%';document.documentElement.style.setProperty('--shade',sh/100);
+ document.querySelectorAll('#presets button').forEach(x=>x.classList.remove('on'))}
+window.addEventListener('DOMContentLoaded',()=>{['gB','gC','gS','gW','gSh'].forEach(id=>$(id).addEventListener('input',applyGrade));document.querySelectorAll('#presets button').forEach(b=>b.onclick=()=>{const v=PRESETS[b.dataset.p];['gB','gC','gS','gW','gSh'].forEach((id,i)=>$(id).value=v[i]);applyGrade();b.classList.add('on')});applyGrade()}); const on=id=>$(id).checked; const speed=()=>on('slow')?3:1;
+const tweens=new Set();function tween(d,fn,e='linear',done){const t0=performance.now();const tw={};tw.step=now=>{const p=Math.min(1,(now-t0)/(d*1000*speed()));fn((E[e]||E.linear)(p),p);if(p>=1){tweens.delete(tw);done&&done()}};tweens.add(tw)}
+const tw=(d,f,e)=>new Promise(r=>tween(d,f,e,r)); const wait=s=>new Promise(r=>setTimeout(r,s*1000*speed()));
+const A={bg:'out/BG_gpt-5.4-image-2_1.png',opp:'props/TOP_OPP.png',me:'props/TOP_ME.png',turn:'props/TOP_TURN.png',lock:'../e4-effects/props/LOCK2.png',trap:'../e4-effects/props/TRAP.png',F:'../e2-letter-hero/out/C1F_gpt-5.4-image-2_1.png',S:'../e2-letter-hero/out/C1S_gpt-5.4-image-2_1.png',I:'../e2-letter-hero/out/C1I_gpt-5.4-image-2_1.png'};
+$('bg').style.backgroundImage=`url(${A.bg})`;
+const stage=$('stage'),scene=$('scene'),table=$('table'),fx=$('fx'),ctx=fx.getContext('2d');
+let W,H,CW,CHh; const minis={}; const zones=[]; const cards=[]; const sockets=[]; const props=[]; let turnEl,turnP; let turn=1; // 1 — я, 0 — противник
+function layout(){W=stage.clientWidth;H=stage.clientHeight;fx.width=W*devicePixelRatio;fx.height=H*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+ CW=Math.min(H*0.15,W*0.075);CHh=CW*1.5; table.innerHTML=''; zones.length=0; cards.length=0; props.length=0;
+ // миниатюры на левом краю коврика: свет лампы рисуется на canvas поверх фигурки (source-atop), контактная тень + длинная тень от лампы
+ const mw=CW*1.4; for(const [k,src,fy] of [['opp',A.opp,0.10],['me',A.me,0.52]]){const x=W*0.145,y=H*fy; const mh=mw*1.5;
+  const cast=document.createElement('div');cast.className='cast';Object.assign(cast.style,{left:(x-mw*.5)+'px',top:(y+mh*.66)+'px',width:mw*1.7+'px',height:mw*.5+'px',transform:'rotate(18deg)'});table.appendChild(cast);
+  const sh=document.createElement('div');sh.className='shadow';Object.assign(sh.style,{left:(x+mw*.02)+'px',top:(y+mh*.80)+'px',width:mw*.96+'px',height:mw*.36+'px'});table.appendChild(sh);
+  const el=document.createElement('div');el.className='mini';el.style.width=mw+'px';el.style.left=x+'px';el.style.top=y+'px';table.appendChild(el);
+  const cv=document.createElement('canvas');el.appendChild(cv);const img=new Image();img.onload=()=>{drawLit(cv,img,mw,false)};img.src=src;
+  minis[k]={el,sh,cast,cv,img,x,y,w:mw,h:mh,rot:0,sc:1,lift:0,lit:null}}
+ // гнёзда для жетонов: колонка между миниатюрой и рядом (запрет · ловушка), напечатаны на коврике
+ sockets.length=0; for(const [k,fy] of [['opp',0.10],['me',0.52]]){for(let i=0;i<2;i++){const s=document.createElement('div');s.className='socket';const d=CW*.9;const sx=W*0.145+mw*1.08,sy=H*fy+mw*.45+i*(d*1.18);Object.assign(s.style,{left:sx+'px',top:sy+'px',width:d+'px',height:d+'px'});table.appendChild(s);sockets.push({k,i,x:sx,y:sy,d})}}
+ // маркер хода
+ turnEl=document.createElement('div');turnEl.className='prop';turnEl.style.width=turnEl.style.height=CW*.7+'px';turnEl.innerHTML=`<img src="${A.turn}" alt="">`;table.appendChild(turnEl);turnP={x:0,y:0,lift:0,rot:0};
+ // два ряда зон
+ const cx=W*0.585,rowW=CW*5+CW*.22*4,x0=cx-rowW/2;[[0,0.31],[1,0.60]].forEach(([row,fy])=>{for(let i=0;i<5;i++){const z=document.createElement('div');z.className='zone';const x=x0+i*CW*1.22,y=H*fy-CHh/2;Object.assign(z.style,{left:x+'px',top:y+'px',width:CW+'px',height:CHh+'px'});table.appendChild(z);zones.push({x,y,row,i,el:z,card:null})}});
+ // рука
+ ['F','S','I','F','S'].forEach((l,i)=>{const el=document.createElement('div');el.className='card';el.style.width=CW+'px';el.style.height=CHh+'px';el.style.backgroundImage=`url(${A[l]})`;table.appendChild(el);const step=CW*1.06;const c={el,l,x:cx-2*step+i*step-CW/2,y:H-CHh*.55-CHh/2+Math.abs(i-2)*4,rot:(i-2)*2.5,lift:0,phase:Math.random()*6.28,where:'hand',hx:0,hy:0};c.hx=c.x;c.hy=c.y;cards.push(c);el.onclick=()=>play(c)});
+ setTurn(turn,true)}
+function drawLit(cv,img,w,lit){const k=w/img.width;cv.width=Math.round(img.width*k*devicePixelRatio);cv.height=Math.round(img.height*k*devicePixelRatio);const c=cv.getContext('2d');c.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);const h=img.height*k;
+ c.clearRect(0,0,w,h);c.drawImage(img,0,0,w,h);if(!lit)return;c.globalCompositeOperation='source-atop';
+ const g=c.createLinearGradient(w,0,0,h);g.addColorStop(0,'rgba(255,205,130,.40)');g.addColorStop(.38,'rgba(255,205,130,.10)');g.addColorStop(.55,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(10,12,30,.42)');c.fillStyle=g;c.fillRect(0,0,w,h);
+ const g2=c.createLinearGradient(0,h*.6,0,h);g2.addColorStop(0,'rgba(0,0,0,0)');g2.addColorStop(1,'rgba(20,14,8,.35)');c.fillStyle=g2;c.fillRect(0,0,w,h); // низ фигурки темнее: тень стола
+ c.globalCompositeOperation='source-over'}
+function turnPos(t){const m=minis[t?'me':'opp'];return {x:m.x-CW*.5,y:m.y+m.h*.62}}
+function setTurn(t,instant){turn=t;$('turn').textContent=t?'ТВОЙ ХОД':'ХОД ПРОТИВНИКА';zones.forEach(z=>z.el.classList.toggle('active',z.row===t));const tp=turnPos(t);
+ if(instant){turnP.x=tp.x;turnP.y=tp.y;return} const sx=turnP.x,sy=turnP.y;
+ tween(.5,(e,lin)=>{turnP.x=sx+(tp.x-sx)*e;turnP.y=sy+(tp.y-sy)*e;turnP.lift=Math.sin(lin*Math.PI)*50},'sineOut',()=>{turnP.lift=0;dust(tp.x+CW*.3,tp.y+CW*.5,5);jolt=Math.max(jolt,1.5)});
+}
+// ---------- idle ----------
+let lampA=.30,lampT=0,lampNoise=0; const motes=[]; for(let i=0;i<120;i++)motes.push({x:Math.random(),y:Math.random(),r:1+Math.random()*2.4,vx:(Math.random()-.5)*.004,vy:-.002-Math.random()*.004,a:Math.random()*6.28,s:.5+Math.random()*.5});
+let jolt=0,lampKick=0;
+function render(now){for(const t of [...tweens])t.step(now);const t=now/1000;
+ if(on('oLamp')){lampNoise+=(Math.random()-.5)*.03;lampNoise*=.9;lampA=.44+Math.sin(t*.7)*.05+Math.sin(t*2.3)*.015+lampNoise*.8}else lampA=.44;
+ lampA+=lampKick;lampKick*=.85;document.documentElement.style.setProperty('--la',lampA.toFixed(3));document.documentElement.style.setProperty('--da',(.34-(lampA-.44)*.8).toFixed(3));
+ for(const k in minis){const m=minis[k];m.el.style.transform=`translate(0,${-m.lift}px) rotate(${m.rot}deg) scale(${m.sc})`;const L=on('oLight');m.sh.style.display=m.cast.style.display=L?'':'none';
+  m.sh.style.opacity=(1-Math.min(.6,m.lift/80))*parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--shade')||'.7');m.sh.style.transform=`scale(${1+m.lift/200})`}
+ if(turnEl){turnEl.style.display=on('oTurn')?'':'none';turnEl.style.transform=`translate(${turnP.x}px,${turnP.y-turnP.lift}px) rotate(${turnP.rot}deg) scale(${1+turnP.lift/150})`}
+ for(const p of props){p.el.style.transform=`translate(${p.x}px,${p.y-p.lift}px) rotate(${p.rot}deg) scale(${p.scale})`;p.el.style.opacity=p.alpha}
+ for(const c of cards){let dy=0,dr=0;if(c.where==='hand'){dy=Math.sin(t*2*Math.PI/2.4+c.phase)*3;dr=Math.sin(t*2*Math.PI/2.4*.7+c.phase)*1.2}c.el.style.transform=`translate3d(${c.x}px,${c.y-c.lift+dy}px,0) rotateX(${c.where==='hand'?-8:0}deg) rotate(${c.rot+dr}deg)`}
+ if(jolt>0){scene.style.transform=`translate(${(Math.random()*2-1)*jolt}px,${(Math.random()*2-1)*jolt}px)`;jolt*=.86;if(jolt<.3){jolt=0;scene.style.transform=''}}
+ drawFx(t);requestAnimationFrame(render)}
+requestAnimationFrame(render);
+const parts=[];let last=performance.now();
+function drawFx(t){const now=performance.now();const dt=Math.min(.05,(now-last)/1000);last=now;ctx.clearRect(0,0,W,H);
+ if(on('oDust')){ // пылинки живут в луче лампы: справа-сверху ярче
+  for(const m of motes){m.x+=m.vx*dt*8*m.s;m.y+=m.vy*dt*8*m.s;m.a+=dt;if(m.y<-.02){m.y=1.02;m.x=Math.random()}if(m.x<-.02||m.x>1.02){m.x=Math.random();m.y=Math.random()}
+   const inLight=Math.max(0,1-Math.hypot((m.x-.88)*1.1,(m.y-.04)*1.4)/1.05); const a=inLight*(.55+.35*Math.sin(m.a*3))*(lampA/.44);
+   if(a<.02)continue;ctx.globalAlpha=a;ctx.fillStyle='#ffe2b0';ctx.beginPath();ctx.arc(m.x*W,m.y*H,m.r,0,Math.PI*2);ctx.fill()}}
+ for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.t+=dt;if(p.t>=p.life){parts.splice(i,1);continue}const k=1-p.t/p.life;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=60*dt;ctx.globalAlpha=k*.55;ctx.fillStyle='#cdb894';ctx.beginPath();ctx.arc(p.x,p.y,p.r*(2-k),0,Math.PI*2);ctx.fill()}
+ ctx.globalAlpha=1}
+function dust(x,y,n){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*90;parts.push({x,y,vx:Math.cos(a)*sp*.6,vy:-Math.abs(Math.sin(a))*sp*.5-20,life:.5+Math.random()*.4,t:0,r:2+Math.random()*4})}}
+// ---------- реакции ----------
+function hit(px=5){jolt=px;if(on('oLampR'))lampKick=.12;if(on('oReact')){for(const k in minis){const m=minis[k];const s0=m.sc;tween(.45,(e,lin)=>{m.rot=Math.sin(lin*Math.PI*4)*2.5*(1-lin);m.lift=Math.max(0,Math.sin(lin*Math.PI*2))*4},'linear',()=>{m.rot=0;m.lift=0;m.sc=s0})}}}
+async function hop(k){const m=minis[k];if(m.hopping)return;m.hopping=true;await tw(.55,(e,lin)=>{m.lift=Math.sin(lin*Math.PI)*46;m.rot=360*e},'swingOut');m.lift=0;m.rot=0;dust(m.x+m.w/2,m.y+m.h*.9,10);jolt=Math.max(jolt,3);m.hopping=false}
+const socketBusy={};
+async function socketDemo(){const s=sockets.find(s=>s.k==='opp'&&s.i===0);if(!s||socketBusy.a)return;socketBusy.a=true;const el=document.createElement('div');el.className='prop';el.style.width=el.style.height=s.d*.98+'px';el.innerHTML=`<img src="${A.lock}" alt="">`;table.appendChild(el);const p={el,x:s.x+s.d*.01,y:s.y+s.d*.01,lift:140,rot:0,scale:1.25,alpha:0};props.push(p);
+ await tw(.38,(e,lin)=>{p.lift=140*(1-e);p.alpha=Math.min(1,lin*4);p.scale=1.25-.25*e},'pow2In');jolt=Math.max(jolt,5);dust(p.x+s.d/2,p.y+s.d*.85,10);await tw(.18,(e,lin)=>{p.scale=1+.08*Math.sin(lin*Math.PI)},'linear');
+ await wait(1.6);await tw(.3,(e)=>{p.lift=120*e;p.alpha=1-e;p.rot=15*e},'pow2In');el.remove();props.splice(props.indexOf(p),1);socketBusy.a=false}
+function react(k,kind){if(!on('oReact'))return;const m=minis[k];
+ if(kind==='ouch'){hit(6)}
+ if(kind==='cheer'){tween(.6,(e,lin)=>{m.lift=Math.abs(Math.sin(lin*Math.PI*2))*22*(1-lin*.4)},'linear',()=>{m.lift=0;dust(m.x+m.w/2,m.y+m.h*.9,6)})}}
+async function play(c){if(c.where!=='hand')return;const z=zones.find(z=>z.row===1&&!z.card);if(!z)return;c.where='fly';c.el.style.zIndex=50;const sx=c.x,sy=c.y,sr=c.rot;
+ await tw(.42,(e,lin)=>{c.x=sx+(z.x-sx)*e;c.y=sy+(z.y-sy)*e-Math.sin(lin*Math.PI)*90;c.lift=Math.sin(lin*Math.PI)*30;c.rot=sr*(1-e)+Math.sin(lin*Math.PI)*6},'swingOut');
+ c.x=z.x;c.y=z.y;c.rot=0;c.lift=0;c.where='zone';z.card=c;c.el.style.zIndex='';dust(z.x+CW/2,z.y+CHh*.95,12);hit(4);}
+document.querySelectorAll('.acts button').forEach(b=>b.onclick=async()=>{const a=b.dataset.act;
+ if(a==='turn'){setTurn(turn?0:1)}
+ if(a==='play'){const c=cards.find(c=>c.where==='hand');if(c)play(c)}
+ if(a==='hit')hit(7); if(a==='ouch')react('opp','ouch'); if(a==='cheer')react('me','cheer'); if(a==='socket')socketDemo(); if(a==='reset'){layout()}});
+$('minb').onclick=()=>{const p=$('panel');p.classList.toggle('min');$('minb').textContent=p.classList.contains('min')?'+':'–'};
+window.addEventListener('resize',layout); layout();
+</script>

@@ -1,0 +1,184 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>F!RST · E6 UI отвечает</title>
+<style>
+:root{--bg:#15120e;--panel:rgba(30,25,19,.92);--ink:#eadfcd;--muted:#a3957f;--gold:#d3a54a;--rule:#3a3024;--mono:ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,"Helvetica Neue",Arial,sans-serif;overflow:hidden;height:100vh}
+#stage{position:absolute;inset:0;overflow:hidden}
+#scene{position:absolute;inset:0}
+.layer{position:absolute;inset:-3%}
+#bg{background:#1a1712 center/cover no-repeat}
+#lamp{pointer-events:none;mix-blend-mode:screen;background:radial-gradient(ellipse 55% 60% at 88% 4%,rgba(255,190,100,var(--la,.44)),rgba(255,190,100,0) 72%)}
+#dark{pointer-events:none;background:radial-gradient(ellipse 80% 90% at 88% 4%,rgba(0,0,0,0),rgba(0,0,0,.34) 100%)}
+.zone{position:absolute;border:2px solid rgba(214,196,160,.22);border-radius:10px}
+.mini{position:absolute}.mini img{display:block;width:100%;height:auto}
+.shadow{position:absolute;pointer-events:none;border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.75),rgba(0,0,0,.42) 45%,rgba(0,0,0,0) 72%);filter:blur(3px);opacity:.7}
+.card{position:absolute;border-radius:6% / 4%;background:#efe6d3 center/cover;box-shadow:0 6px 14px rgba(0,0,0,.45);cursor:pointer;transition:transform .14s cubic-bezier(.34,1.56,.64,1),box-shadow .14s}
+.card.pick:hover{transform:translateY(-22px) scale(1.06);box-shadow:0 22px 30px rgba(0,0,0,.5)}
+/* --- предметы интерфейса --- */
+.ui{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;user-select:none;filter:drop-shadow(0 5px 6px rgba(0,0,0,.5));transition:transform .13s cubic-bezier(.34,1.56,.64,1),filter .13s}
+.ui img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none}
+.ui span{position:relative;z-index:1;pointer-events:none}
+.ui.btn{cursor:pointer}
+.ui.btn:hover{transform:translateY(-3px);filter:drop-shadow(0 9px 10px rgba(0,0,0,.5))}
+.ui.btn:active,.ui.btn.down{transform:translateY(1px) scale(.97);filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+.ui.btn.disabled{pointer-events:none;opacity:.75;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4)) saturate(.6)}
+/* U1 бумага */
+.u1 .ui span{font:italic 600 var(--fs,16px)/1.1 Georgia,"Iowan Old Style",serif;color:#3a2a1a;letter-spacing:.01em}
+.u1 .ui.btn.disabled span{color:#8a7b66;text-decoration:line-through}
+.u1 .hud span{font:italic 500 var(--fs,15px)/1.35 Georgia,serif;color:#3a2a1a;text-align:left;white-space:pre}
+.u1 .hud .num{font-weight:700}
+.u1 .ring{border:2.5px solid rgba(58,42,26,.8);border-radius:46% 50% 44% 52% / 58% 48% 56% 50%}
+/* U3 снаряжение гика */
+.u3 .ui span{font:600 var(--fs,16px)/1.1 "Noteworthy","Bradley Hand","Marker Felt","Segoe Print","Comic Sans MS",cursive;color:#2e2418;letter-spacing:.01em}
+.u3 .hand span{font:700 var(--fs,16px)/1.05 "Noteworthy","Bradley Hand","Marker Felt","Segoe Print",cursive;color:#2e2418}
+.u3 .brass span{font:800 var(--fs,15px)/1.1 "Iowan Old Style",Georgia,serif;color:#3b2a12;letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 0 rgba(255,235,180,.35)}
+.u3 .chip span{font:800 var(--fs,16px)/1 "Iowan Old Style",Georgia,serif;color:#2e2418}
+.u3 .chip small{display:block;font:600 calc(var(--fs,16px)*.42)/1.1 "Noteworthy","Bradley Hand","Marker Felt",cursive;color:#6a5a44;letter-spacing:0;text-transform:none}
+.u3 .ui.btn.disabled span{color:#8a7b66}
+.u3 .ring{border:2.5px solid rgba(46,36,24,.75);border-radius:46% 50% 44% 52% / 58% 48% 56% 50%}
+.u3 .chalk{border-color:rgba(232,220,192,.55)}.u3 .chalk span{color:#e8dcc0;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.rope{position:absolute;pointer-events:none;filter:drop-shadow(0 4px 5px rgba(0,0,0,.5))}
+.rope .body{position:absolute;inset:0;background:var(--rope) right center/100% 100% no-repeat;clip-path:inset(0 0 0 var(--burn,0%))}
+.rope .flame{position:absolute;top:-40%;height:180%;aspect-ratio:.83;background:var(--flame) center/contain no-repeat;left:calc(var(--burn,0%) - 3%);transform-origin:50% 80%;animation:flick .35s infinite alternate ease-in-out}
+@keyframes flick{from{transform:scale(1,1) rotate(-2deg)}to{transform:scale(1.06,1.1) rotate(2deg)}}
+.candle{position:absolute;pointer-events:none;filter:drop-shadow(0 6px 8px rgba(0,0,0,.55))}
+.candle .l{position:absolute;inset:0;background:var(--img) center/100% 100% no-repeat}
+.candle .holder{clip-path:inset(72% 0 0 0)}
+.candle .body{clip-path:inset(calc(13% + var(--burn,0%) * .59) 0 28% 0)}
+.candle .flame{clip-path:inset(0 0 87% 0);transform:translateY(calc(var(--burn,0%) * .59 * var(--h) / 100%));animation:cflick .4s infinite alternate ease-in-out}
+@keyframes cflick{from{filter:brightness(1)}to{filter:brightness(1.15)}}
+.candle .glow{position:absolute;left:-40%;width:180%;top:calc(-12% + var(--burn,0%) * .59);height:30%;background:radial-gradient(ellipse at center,rgba(255,190,110,.55),rgba(255,190,110,0) 70%);mix-blend-mode:screen;pointer-events:none}
+.tally{position:absolute;font:600 var(--fs,14px)/1.2 "Noteworthy","Bradley Hand","Marker Felt",cursive;color:#2e2418;white-space:pre;text-align:left}
+/* U2 дерево и латунь */
+.u2 .ui span{font:600 var(--fs,15px)/1.1 "Iowan Old Style",Georgia,serif;color:#3b2a12;letter-spacing:.06em;text-transform:uppercase;text-shadow:0 1px 0 rgba(255,235,180,.35)}
+.u2 .ui.btn.disabled span{color:#7a6a4a}
+.u2 .hud span{font:600 var(--fs,14px)/1.35 "Iowan Old Style",Georgia,serif;color:#3b2a12;text-align:left;white-space:pre;letter-spacing:.04em}
+.u2 .hud .num{font-weight:800}
+.u2 .ring{border:0;box-shadow:inset 0 0 0 2px rgba(90,60,20,.55)}
+.chit{position:absolute;display:flex;align-items:center;justify-content:center;cursor:pointer;filter:drop-shadow(0 5px 6px rgba(0,0,0,.5));transition:transform .13s cubic-bezier(.34,1.56,.64,1)}
+.chit img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none}
+.chit b{position:relative;z-index:1;font:900 var(--fs,30px)/1 Georgia,serif}
+.chit:hover{transform:translateY(-6px) scale(1.08)}
+.veil{position:absolute;inset:0;background:rgba(0,0,0,0);pointer-events:none;transition:background .3s}
+.veil.on{background:rgba(0,0,0,.28)}
+#fx{position:absolute;inset:0;pointer-events:none}
+#panel{position:absolute;top:12px;right:12px;width:270px;max-height:calc(100vh - 24px);overflow:auto;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;backdrop-filter:blur(6px);z-index:10}
+#panel h1{font:400 18px Georgia,serif;margin:0 0 2px}#panel .sub{color:var(--muted);font-size:12px;margin:0 0 10px}
+#panel h2{font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin:12px 0 6px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.acts button,.sk button{background:#2a231b;color:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:8px 6px;font:13px inherit;cursor:pointer;text-align:left}
+.sk{display:grid;grid-template-columns:1fr 1fr;gap:6px}.sk button.on{border-color:var(--gold);color:var(--gold)}
+.acts button:hover,.sk button:hover{border-color:#6a5636}
+#panel h1 button{float:right;background:none;border:0;color:var(--muted);cursor:pointer;font-size:14px}
+#panel.min{width:auto}#panel.min>*:not(h1){display:none}
+#log{font:11px/1.5 var(--mono);color:#cbbfa8;background:#0f0d0a;border-radius:6px;padding:8px;margin-top:6px;max-height:120px;overflow:auto;white-space:pre-wrap}
+</style>
+<div id="stage" class="u3">
+  <div id="scene">
+    <div class="layer" id="bg"></div><div class="layer" id="dark"></div><div class="layer" id="lamp"></div>
+    <div class="layer" id="table"></div>
+    <div class="veil" id="veil"></div>
+    <div class="layer" id="uiLayer" style="inset:0"></div>
+    <canvas id="fx"></canvas>
+  </div>
+</div>
+<div id="panel">
+  <h1>E6 · UI отвечает <button id="minb">–</button></h1>
+  <p class="sub">Интерфейс — тоже предметы на столе. Два направления, переключаются на лету. Наводите и нажимайте на кнопки, пробуйте окна выбора.</p>
+  <h2>Направление</h2>
+  <div class="sk"><button data-sk="u3" class="on">U3 снаряжение гика</button><button data-sk="u1">U1 бумага</button><button data-sk="u2">U2 латунь</button></div>
+  <h2>Экраны и окна</h2>
+  <div class="acts">
+    <button data-act="menu">Главное меню</button>
+    <button data-act="game">Партия (HUD + кнопки)</button>
+    <button data-act="forbid">Окно: выбор буквы (F)</button>
+    <button data-act="discard">Окно: выбор карты (T)</button>
+    <button data-act="pause">Пауза</button>
+    <button data-act="disabled">Кнопка недоступна</button>
+  </div>
+  <h2>Журнал</h2><div id="log"></div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const A={bg:'../e3-living-table/out/BG_gpt-5.4-image-2_1.png',opp:'../e3-living-table/props/TOP_OPP.png',me:'../e3-living-table/props/TOP_ME.png',
+ F:'../e2-letter-hero/out/C1F_gpt-5.4-image-2_1.png',I:'../e2-letter-hero/out/C1I_gpt-5.4-image-2_1.png',R:'../e2-letter-hero/out/C1R_gpt-5.4-image-2_1.png',S:'../e2-letter-hero/out/C1S_gpt-5.4-image-2_1.png',T:'../e2-letter-hero/out/C1T_gpt-5.4-image-2_1.png',
+ note:'../e5-rituals/props/NOTE.png',pTag:'props/P_TAG.png',pNote:'props/P_NOTE.png',pPad:'props/P_PAD.png',wBtn:'props/W_BTN.png',wBoard:'props/W_BOARD.png',wPlate:'props/W_PLATE.png',gEnd:'props/G_ENDTURN.png',gChip:'props/G_CHIP.png',gD20:'props/G_D20.png',gPunch:'props/G_PUNCH.png',gBox:'props/G_DECKBOX.png',gRope:'props/G_ROPE_BODY.png',gFlame:'props/G_FLAME.png',gCandle:'props/G_CANDLE.png'};
+$('bg').style.backgroundImage=`url(${A.bg})`;
+const stage=$('stage'),table=$('table'),ui=$('uiLayer'),fx=$('fx'),ctx=fx.getContext('2d');
+let W,H,CW,CHh,skin='u3';const SCHOOL={F:'#3f7fc2',I:'#2f8a55',R:'#c9801a',S:'#b8332a',T:'#5d3a9a'};
+const SK={u1:{btn:A.pTag,board:A.pNote,hud:A.pPad,menu:A.note,ratioBtn:3.2,chit:A.pTag},u2:{btn:A.wBtn,board:A.wBoard,hud:A.wPlate,menu:A.wBoard,ratioBtn:2.9,chit:A.wPlate},u3:{btn:A.pTag,board:A.note,hud:A.gChip,menu:A.note,ratioBtn:3.2,chit:A.gPunch}};
+function log(s){const l=$('log');l.textContent+=s+'\n';l.scrollTop=l.scrollHeight}
+function layout(){W=stage.clientWidth;H=stage.clientHeight;fx.width=W*devicePixelRatio;fx.height=H*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);CW=Math.min(H*0.15,W*0.075);CHh=CW*1.5;table.innerHTML='';
+ const mw=CW*1.4;for(const [k,src,fy] of [['opp',A.opp,0.10],['me',A.me,0.52]]){const x=W*0.145,y=H*fy,mh=mw*1.5;const sh=document.createElement('div');sh.className='shadow';Object.assign(sh.style,{left:(x+mw*.02)+'px',top:(y+mh*.80)+'px',width:mw*.96+'px',height:mw*.36+'px'});table.appendChild(sh);const el=document.createElement('div');el.className='mini';el.style.width=mw+'px';el.style.left=x+'px';el.style.top=y+'px';el.innerHTML=`<img src="${src}" alt="">`;table.appendChild(el)}
+ const cx=W*0.585,rowW=CW*5+CW*.22*4,x0=cx-rowW/2;[[0,0.31],[1,0.60]].forEach(([row,fy])=>{for(let i=0;i<5;i++){const z=document.createElement('div');z.className='zone';Object.assign(z.style,{left:(x0+i*CW*1.22)+'px',top:(H*fy-CHh/2)+'px',width:CW+'px',height:CHh+'px'});table.appendChild(z)}});
+ L.cx=cx;L.x0=x0;L.rowW=rowW; show(current)}
+const L={};let current='game';
+function el(cls,style,html){const d=document.createElement('div');d.className=cls;for(const k in style){if(k.startsWith('--'))d.style.setProperty(k,style[k]);else d.style[k]=style[k]}d.innerHTML=html||'';ui.appendChild(d);return d}
+function btn(label,x,y,w,onClick,opts={}){const s=SK[skin];const h=w/s.ratioBtn;const b=el('ui btn'+(opts.disabled?' disabled':''),{left:x+'px',top:y+'px',width:w+'px',height:h+'px','--fs':(h*.36)+'px'},`<img src="${s.btn}" alt=""><span>${label}</span>`);
+ b.onclick=()=>{b.classList.add('down');dust(x+w/2,y+h,6);setTimeout(()=>b.classList.remove('down'),120);log('нажато: '+label);onClick&&onClick()};return b}
+function hand(letters,pick){const n=letters.length,step=CW*1.06;letters.forEach((l,i)=>{const c=document.createElement('div');c.className='card'+(pick?' pick':'');Object.assign(c.style,{left:(L.cx-((n-1)/2)*step+i*step-CW/2)+'px',top:(H-CHh*.55-CHh/2+Math.abs(i-(n-1)/2)*4)+'px',width:CW+'px',height:CHh+'px',backgroundImage:`url(${A[l]})`,transform:`rotate(${(i-(n-1)/2)*2.5}deg)`});c.onclick=()=>pick&&pick(l,c);ui.appendChild(c)})}
+function clear(){ui.innerHTML='';$('veil').classList.remove('on')}
+// ---------- экраны ----------
+function show(what){clear();current=what;const s=SK[skin];if(skin==='u3')return showU3(what);
+ if(what==='menu'){ // меню — блокнот/дощечка на столе со списком
+  const nw=Math.min(W*.36,H*.64),nx=L.cx-nw/2,ny=H*.5-nw/2;el('ui',{left:nx+'px',top:ny+'px',width:nw+'px',height:nw+'px'},`<img src="${s.menu}" alt="">`);
+  const items=['Продолжить','Играть','Игра по сети','Правила','Настройки'];const bw=nw*.46,bh=bw/ s.ratioBtn;
+  items.forEach((t,i)=>{const b=btn(t,nx+nw*.27,ny+nw*.2+i*(bh*1.1),bw,null,{disabled:i===0});if(skin==='u1'){b.querySelector('img').style.opacity=0;b.classList.add('ring');b.style.filter='none'}});
+  el('ui',{left:nx+'px',top:(ny-nw*.02)+'px',width:nw+'px',height:nw*.16+'px','--fs':(nw*.09)+'px'},`<span style="font:900 ${nw*.09}px Georgia,serif;color:#3a2a1a;letter-spacing:.12em">F!RST</span>`);
+  log('Меню: '+(skin==='u1'?'блокнот, пункты обведены карандашом':'дощечка, пункты — планки с латунью'))}
+ if(what==='game'||what==='forbid'||what==='discard'||what==='pause'||what==='disabled'){
+  // HUD: блокнот-счётчик / латунная табличка у верхнего края коврика справа
+  const hw=CW*2.2,hh=hw/1.45,hx=L.cx-hw/2,hy=H*.02;
+  el('ui hud',{left:hx+'px',top:hy+'px',width:hw+'px',height:hh+'px','--fs':(hh*.17)+'px'},`<img src="${s.hud}" alt=""><span>рука  <b class="num">5/7</b>\nколода <b class="num">44</b>\nсброс  <b class="num">5</b>\n⌛ <b class="num">00:42</b></span>`);
+  // кнопки у нижнего правого края
+  const bw=CW*1.9,bh=bw/s.ratioBtn,bx=L.x0+L.rowW+CW*.35,by=H*.60+CHh/2+CW*.25;btn('Правила',bx,by,bw);btn('Меню',bx,by+bh*1.15,bw);
+  if(what==='disabled')btn('Разыграть',bx,by+bh*2.3,bw,null,{disabled:true});
+  hand(['F','I','R','S','T'],what==='discard'?(l,c)=>{log('выбрана карта '+l+' для сброса');c.style.transform+=' translateY(-60px)';c.style.opacity=.4;setTimeout(()=>show('game'),500)}:null);
+  if(what==='forbid'){$('veil').classList.add('on');const nw=Math.min(W*.30,H*.48),nx=L.cx-nw/2,ny=H*.44-nw/2;el('ui',{left:nx+'px',top:ny+'px',width:nw+'px',height:nw+'px','--fs':(nw*.075)+'px'},`<img src="${s.board}" alt=""><span style="position:absolute;top:12%;left:10%;width:80%">Запретить букву:</span>`);
+   const cw=nw*.15,gap=nw*.03,total=5*cw+4*gap;'FIRST'.split('').forEach((l,i)=>{const c=document.createElement('div');c.className='chit';Object.assign(c.style,{left:(nx+(nw-total)/2+i*(cw+gap))+'px',top:(ny+nw*.42)+'px',width:cw+'px',height:cw+'px'});c.style.setProperty('--fs',(cw*.62)+'px');c.innerHTML=`<img src="${s.chit}" alt=""><b style="color:${SCHOOL[l]}">${l}</b>`;c.onclick=()=>{log('запрет: '+l);dust(nx+nw/2,ny+nw*.6,8);setTimeout(()=>show('game'),300)};ui.appendChild(c)});
+   log('Окно выбора буквы: '+(skin==='u1'?'стикер на коврике, буквы на бирках':'дощечка, буквы на латунных табличках'))}
+  if(what==='discard'){$('veil').classList.add('on');const nw=Math.min(W*.26,H*.3);el('ui',{left:(L.cx-nw/2)+'px',top:(H*.40-nw*.35)+'px',width:nw+'px',height:nw*.7+'px','--fs':(nw*.07)+'px'},`<img src="${skin==='u1'?s.board:s.hud}" alt=""><span style="width:80%">Ловушка сработала:\nвыбери карту для сброса</span>`);log('Окно выбора карты: карты в руке поднимаются при наведении')}
+  if(what==='pause'){$('veil').classList.add('on');const nw=Math.min(W*.28,H*.46),nx=L.cx-nw/2,ny=H*.44-nw/2;el('ui',{left:nx+'px',top:ny+'px',width:nw+'px',height:nw+'px','--fs':(nw*.08)+'px'},`<img src="${s.board}" alt=""><span style="position:absolute;top:14%;left:10%;width:80%">Пауза</span>`);const bw=nw*.6,bh=bw/s.ratioBtn;['Продолжить','Сдаться','В меню'].forEach((t,i)=>btn(t,nx+nw*.2,ny+nw*.36+i*bh*1.2,bw,()=>i===0&&show('game')))}
+  if(what==='game')log('Партия: HUD '+(skin==='u1'?'блокнот с карандашными цифрами':'латунная табличка')+', кнопки у края стола')}}
+// ---------- U3: снаряжение гика ----------
+function chip(label,value,x,y,d){return el('ui chip',{left:x+'px',top:y+'px',width:d+'px',height:d+'px','--fs':(d*.34)+'px'},`<img src="${A.gChip}" alt=""><span>${value}<small>${label}</small></span>`)}
+function brassBtn(label,x,y,d,onClick,opts={}){const b=el('ui btn brass'+(opts.disabled?' disabled':''),{left:x+'px',top:y+'px',width:d+'px',height:d+'px','--fs':(d*.13)+'px'},`<img src="${A.gEnd}" alt=""><span style="width:62%">${label}</span>`);b.onclick=()=>{b.classList.add('down');dust(x+d/2,y+d,8);setTimeout(()=>b.classList.remove('down'),120);log('нажато: '+label);onClick&&onClick()};return b}
+function handBtn(label,x,y,w,onClick,opts={}){const h=w*.34;const b=el('ui btn hand ring'+(opts.disabled?' disabled':''),{left:x+'px',top:y+'px',width:w+'px',height:h+'px','--fs':(h*.5)+'px',filter:'none'},`<span>${label}</span>`);b.onclick=()=>{b.classList.add('down');setTimeout(()=>b.classList.remove('down'),120);log('нажато: '+label);onClick&&onClick()};return b}
+let ropeStart=performance.now();
+function candle(x,y,w){const h=w*2.2;const c=el('candle',{left:x+'px',top:y+'px',width:w+'px',height:h+'px','--img':'url('+A.gCandle+')','--h':h+'px'},'<div class="glow"></div><div class="l holder"></div><div class="l body"></div><div class="l flame"></div>');c.dataset.candle=1;ropeStart=performance.now();return c}
+function rope(x,y,w){const r=el('rope',{left:x+'px',top:y+'px',width:w+'px',height:(w*.06)+'px','--rope':`url(${A.gRope})`,'--flame':`url(${A.gFlame})`},`<div class="body"></div><div class="flame"></div>`);r.dataset.rope=1;ropeStart=performance.now();return r}
+function showU3(what){
+ if(what==='menu'){ // блокнот счёта (MTG) с рукописными пунктами + коробка колоды = «Играть»
+  const nw=Math.min(W*.34,H*.62),nx=L.cx-nw/2-CW*.9,ny=H*.5-nw/2;el('ui',{left:nx+'px',top:ny+'px',width:nw+'px',height:nw+'px'},`<img src="${A.note}" alt="">`);
+  el('tally',{left:(nx+nw*.18)+'px',top:(ny+nw*.12)+'px','--fs':(nw*.085)+'px'},`F!RST\n`);
+  const items=['Продолжить','Играть','Игра по сети','Правила','Настройки'];items.forEach((t,i)=>{const b=handBtn(t,nx+nw*.2,ny+nw*.26+i*nw*.115,nw*.56,()=>{},{disabled:i===0});b.style.setProperty('--fs',nw*.06+'px')});
+  const bw=CW*1.5,bx=nx+nw+CW*.3,by=ny+nw*.18;const box=el('ui btn',{left:bx+'px',top:by+'px',width:bw+'px',height:bw*1.25+'px','--fs':(bw*.16)+'px'},`<img src="${A.gBox}" alt=""><span style="position:absolute;bottom:-28%;width:100%">взять колоду — играть</span>`);box.onclick=()=>{log('коробка колоды: Играть');dust(bx+bw/2,by+bw*1.2,8)};
+  el('ui',{left:(bx-CW*.1)+'px',top:(by+bw*1.6)+'px',width:CW*.9+'px',height:CW*.9+'px'},`<img src="${A.gD20}" alt="">`);
+  log('Меню: блокнот счёта жизней (дух MTG) с рукописным почерком, коробка колоды = «Играть», спин-даун рядом')}
+ if(['game','forbid','discard','pause','disabled'].includes(what)){
+  // HUD: фишки-счётчики (дух Balatro/покер) у верхнего края; фитиль хода вдоль верха коврика (дух Hearthstone)
+  const d=CW*.78;const hx=L.cx-d*1.8,hy=H*.035;chip('рука','5/7',hx,hy,d);chip('колода','44',hx+d*1.25,hy,d);chip('сброс','5',hx+d*2.5,hy,d);
+  
+  // большая кнопка подтверждения справа, как «конец хода»
+  const bd=CW*1.25,bx=Math.min(L.x0+L.rowW+CW*.55,W-300-bd),by=H*.50-bd/2;brassBtn(what==='disabled'?'Ждите':'Конец хода',bx,by,bd,null,{disabled:what==='disabled'});
+  candle(bx+bd*.22,H*.31-CHh/2-CW*.9,CW*.8);
+  const tw=CW*1.7;handBtn('правила',bx-tw*.15,by+bd*1.25,tw).classList.add('chalk');handBtn('меню',bx-tw*.15,by+bd*1.25+tw*.38,tw).classList.add('chalk');
+  hand(['F','I','R','S','T'],what==='discard'?(l,c)=>{log('выбрана карта '+l+' для сброса');c.style.transform+=' translateY(-60px)';c.style.opacity=.4;setTimeout(()=>show('game'),500)}:null);
+  if(what==='forbid'){$('veil').classList.add('on');const nw=Math.min(W*.30,H*.5),nx=L.cx-nw/2,ny=H*.44-nw/2;el('ui',{left:nx+'px',top:ny+'px',width:nw+'px',height:nw+'px'},`<img src="${A.note}" alt="">`);el('tally',{left:(nx+nw*.2)+'px',top:(ny+nw*.16)+'px','--fs':(nw*.07)+'px'},'Запретить букву:');
+   const cw=nw*.14,gap=nw*.03,total=5*cw+4*gap;'FIRST'.split('').forEach((l,i)=>{const c=document.createElement('div');c.className='chit';Object.assign(c.style,{left:(nx+(nw-total)/2+i*(cw+gap))+'px',top:(ny+nw*.44)+'px',width:cw+'px',height:cw+'px'});c.style.setProperty('--fs',(cw*.62)+'px');c.innerHTML=`<img src="${A.gPunch}" alt=""><b style="color:${SCHOOL[l]};font-family:Noteworthy,'Bradley Hand','Marker Felt',cursive">${l}</b>`;c.onclick=()=>{log('запрет: '+l);dust(nx+nw/2,ny+nw*.6,8);setTimeout(()=>show('game'),300)};ui.appendChild(c)});
+   log('Окно выбора буквы: блокнот + картонные жетоны-выбивки с буквами')}
+  if(what==='discard'){$('veil').classList.add('on');const nw=Math.min(W*.26,H*.34);el('ui',{left:(L.cx-nw/2)+'px',top:(H*.40-nw*.5)+'px',width:nw+'px',height:nw+'px'},`<img src="${A.note}" alt="">`);el('tally',{left:(L.cx-nw*.3)+'px',top:(H*.40-nw*.2)+'px','--fs':(nw*.085)+'px'},'Ловушка!\nсбрось карту');log('Окно выбора карты: запись в блокноте, карты в руке поднимаются')}
+  if(what==='pause'){$('veil').classList.add('on');const nw=Math.min(W*.30,H*.5),nx=L.cx-nw/2,ny=H*.44-nw/2;el('ui',{left:nx+'px',top:ny+'px',width:nw+'px',height:nw+'px'},`<img src="${A.note}" alt="">`);el('tally',{left:(nx+nw*.2)+'px',top:(ny+nw*.14)+'px','--fs':(nw*.08)+'px'},'Пауза');['Продолжить','Сдаться','В меню'].forEach((t,i)=>handBtn(t,nx+nw*.22,ny+nw*.34+i*nw*.14,nw*.52,()=>i===0&&show('game')).style.setProperty('--fs',nw*.065+'px'))}
+  if(what==='game')log('Партия: фишки-счётчики сверху, свеча-таймер хода сгорает за ход (40 с в демо), латунная кнопка «конец хода» справа')}}
+// ---------- пыль ----------
+const parts=[];let last=performance.now();
+function dust(x,y,n){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*90;parts.push({x,y,vx:Math.cos(a)*sp*.6,vy:-Math.abs(Math.sin(a))*sp*.5-20,life:.5+Math.random()*.4,t:0,r:2+Math.random()*4})}}
+function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;document.querySelectorAll('.rope,.candle').forEach(r=>{const k=Math.min(100,((now-ropeStart)/1000/40)*100);r.style.setProperty('--burn',k.toFixed(2)+'%')});ctx.clearRect(0,0,W,H);document.documentElement.style.setProperty('--la',(.44+Math.sin(now/1000*.7)*.05).toFixed(3));
+ for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.t+=dt;if(p.t>=p.life){parts.splice(i,1);continue}const k=1-p.t/p.life;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=60*dt;ctx.globalAlpha=k*.55;ctx.fillStyle='#cdb894';ctx.beginPath();ctx.arc(p.x,p.y,p.r*(2-k),0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+document.querySelectorAll('.sk button').forEach(b=>b.onclick=()=>{skin=b.dataset.sk;stage.className=skin;document.querySelectorAll('.sk button').forEach(x=>x.classList.toggle('on',x===b));show(current)});
+document.querySelectorAll('.acts button').forEach(b=>b.onclick=()=>show(b.dataset.act));
+$('minb').onclick=()=>{const p=$('panel');p.classList.toggle('min');$('minb').textContent=p.classList.contains('min')?'+':'–'};
+window.addEventListener('resize',layout);layout();
+</script>

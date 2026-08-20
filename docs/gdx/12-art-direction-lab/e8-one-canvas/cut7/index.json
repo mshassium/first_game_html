@@ -1,0 +1,57 @@
+{
+ "source": "/Users/railkhamitov/projects/personal/first_game_html/docs/gdx/12-art-direction-lab/e8-one-canvas/out/M7_gpt-5.4-image-2_1.png",
+ "size": [
+  1536,
+  864
+ ],
+ "mat_box": [
+  325,
+  168,
+  1417,
+  703
+ ],
+ "sprites": [
+  {
+   "id": 0,
+   "bbox": [
+    797,
+    378,
+    946,
+    516
+   ],
+   "w": 149,
+   "h": 138,
+   "cx": 871,
+   "cy": 447,
+   "area": 13367
+  },
+  {
+   "id": 1,
+   "bbox": [
+    978,
+    395,
+    1086,
+    498
+   ],
+   "w": 108,
+   "h": 103,
+   "cx": 1032,
+   "cy": 446,
+   "area": 6672
+  },
+  {
+   "id": 2,
+   "bbox": [
+    310,
+    294,
+    818,
+    607
+   ],
+   "w": 508,
+   "h": 313,
+   "cx": 564,
+   "cy": 450,
+   "area": 124017
+  }
+ ]
+}
